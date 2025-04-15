@@ -9,10 +9,11 @@ bot = telebot.TeleBot('7563076857:AAHf5MdmVCDskWN9IL1tNz4eXuwawZ0alMg')
 
 
 def glavnay(message):
-    print(message.text)
+    @bot.message_handler(content_types=['text'])
+    def worc(message):
+        
 
-
-
+    bot.polling(none_stop=True, interval=0)
 
 
 @bot.message_handler(commands=['start'])
@@ -36,10 +37,10 @@ def reg1(message):
         bot.send_message(message.from_user.id, "Пароль верный.")
         print(message.from_user.id)
         add_user(message.from_user.id)
-        bot.send_message(message.from_user.id, "Вы успешно зарегистрованный. \nСнова введите /start")
+        bot.send_message(message.from_user.id, "Вы успешно зарегистрованный.")
         glavnay(message)
     else:
-        bot.send_message(message.from_user.id, "Пароль НЕ верный.")
+        bot.send_message(message.from_user.id, "Пароль НЕ верный. \nСнова введите /start")
         bot.register_next_step_handler_by_chat_id(message,start)
 
 bot.polling(none_stop=True, interval=0)

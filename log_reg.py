@@ -1,8 +1,4 @@
-
 from BD_wock import in_bd
-
-
-
 
 def log(message):
     if in_bd(message.from_user.id) == False:
@@ -10,27 +6,8 @@ def log(message):
     else:
         return 0
 
-
-
-
-
 def registration(message):
     if str(message.text) == "123":
         return 1
     else:
         return 0
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
