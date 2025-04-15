@@ -1,5 +1,5 @@
 
-from BD_wock import in_bd, add_user
+from BD_wock import in_bd
 
 
 
