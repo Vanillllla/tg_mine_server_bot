@@ -2,9 +2,10 @@ import telebot
 import multiprocessing as mp
 from log_reg import log, registration
 from BD_wock import add_user
-from SERV_work import serv
+from SERV_work import ServerManager
 
 bot = telebot.TeleBot('7563076857:AAHf5MdmVCDskWN9IL1tNz4eXuwawZ0alMg')
+server = ServerManager("forge-1.12.2-14.23.5.2859.jar", cwd="Server")
 
 def glavnay():
     @bot.message_handler(content_types=['text'])
@@ -13,23 +14,25 @@ def glavnay():
             bot.send_message(message.from_user.id,
                              "Server starting...")
             print("Server starting...")
-            serv(0)
+            server.start()
         elif str(message.text) == 'stop':
             bot.send_message(message.from_user.id,
                              "Server stopping...")
             print("Server stopping...")
-            serv(2)
+            server.stop()
 
         elif str(message.text) == 'help':
             bot.send_message(message.from_user.id,
                              "Мне тоже нужна помощь")
             print('Мне тоже нужна помощь')
+        elif str(message.text) == 'say':
+            server.send_command("say Привет! Сервер работает!")
         else:
             bot.send_message(message.from_user.id,
                              "Неизвестная команда")
             print("Неизвестная команда")
 
-    bot.polling(none_stop=True, interval=0)
+
 
 
 @bot.message_handler(commands=['start'])

@@ -1,29 +1,59 @@
 import subprocess
-import os
-from time import sleep
+import psutil
 
-def serv(code):
-    if code == 0:
-        #os.startfile("C:/Users/Ivan/Documents/GitHub/tg_mine_server_bot/Server/start.bat")
-        # subprocess.call("C:/Users/Ivan/Documents/GitHub/tg_mine_server_bot/Server/start.bat")
+class ServerManager:
+    def __init__(self, jar_file, cwd, xmx="12G", xms="4G"):
+        self.jar_file = jar_file
+        self.cwd = cwd
+        self.xmx = xmx
+        self.xms = xms
+        self.process = None
 
-        # sv_sp = subprocess.Popen("cd server")  -Xmx12G -Xms4G -jar server/forge-1.12.2-14.23.5.2859.jar
-        sv_sp = subprocess.Popen("java -Xmx12G -Xms4G -jar forge-1.12.2-14.23.5.2859.jar")
-        print("server started")
-        # except:
-        #     print("Error start")
+    def start(self):
+        if self.process is None:
+            try:
+                self.process = subprocess.Popen(
+                    ["java", f"-Xmx{self.xmx}", f"-Xms{self.xms}", "-jar", self.jar_file, "nogui"],
+                    cwd=self.cwd,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,  # используем stderr для захвата ошибок
+                    text=True
+                )
+                print("Сервер запущен.")
+            except Exception as e:
+                print(f"Ошибка при запуске сервера: {e}")
+        else:
+            print("Сервер уже работает.")
 
+    def stop(self):
+        if self.process is not None:
+            try:
+                parent = psutil.Process(self.process.pid)
+                children = parent.children(recursive=True)
+                for child in children:
+                    child.terminate()
+                psutil.wait_procs(children, timeout=5)
+                parent.terminate()
+                parent.wait(5)
+                print("Сервер остановлен.")
+            except Exception as e:
+                print(f"Ошибка при остановке сервера: {e}")
+            self.process = None
+        else:
+            print("Сервер не запущен.")
 
-    if code == 2:
-        # os.system("taskkill /im firefox.exe")
-        try:
-            sv_sp.terminate()
-            print("server terminated")
-        except:
-            print("Error stop")
-        # os.stopfile("C:/Users/Ivan/Documents/GitHub/tg_mine_server_bot/Server/start.bat")
-
-
-serv(0)
-
-sleep(20)
+    def send_command(self, command):
+        if self.process is not None and self.process.stdin:
+            try:
+                # Проверим доступность stdin
+                if self.process.stdin.closed:
+                    print("stdin для процесса закрыт, не могу отправить команду.")
+                    return
+                self.process.stdin.write(command + "\n")
+                self.process.stdin.flush()
+                print(f"Команда отправлена: {command}")
+            except Exception as e:
+                print(f"Ошибка при отправке команды: {e}")
+        else:
+            print("Сервер не запущен или stdin недоступен.")

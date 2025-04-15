@@ -23,6 +23,12 @@
     },
     "done": true
   },
+  "minecraft:recipes/transportation/carrot_on_a_stick": {
+    "criteria": {
+      "has_carrot": "2025-04-15 21:53:08 +0300"
+    },
+    "done": true
+  },
   "minecraft:recipes/building_blocks/gray_concrete_powder": {
     "criteria": {
       "has_sand": "2025-04-15 21:57:24 +0300"
@@ -32,12 +38,6 @@
   "minecraft:recipes/transportation/dark_oak_boat": {
     "criteria": {
       "entered_water": "2025-04-15 21:57:59 +0300"
-    },
-    "done": true
-  },
-  "minecraft:recipes/transportation/carrot_on_a_stick": {
-    "criteria": {
-      "has_carrot": "2025-04-15 21:53:08 +0300"
     },
     "done": true
   },
@@ -74,6 +74,7 @@
   "minecraft:adventure/adventuring_time": {
     "criteria": {
       "forest": "2025-04-15 20:13:10 +0300",
+      "birch_forest": "2025-04-16 00:55:01 +0300",
       "beaches": "2025-04-15 21:59:27 +0300",
       "desert_hills": "2025-04-15 21:57:22 +0300",
       "forest_hills": "2025-04-15 20:12:25 +0300",
@@ -91,15 +92,21 @@
     },
     "done": true
   },
+  "minecraft:recipes/food/bread": {
+    "criteria": {
+      "has_wheat": "2025-04-15 21:55:58 +0300"
+    },
+    "done": true
+  },
   "minecraft:recipes/building_blocks/black_concrete_powder": {
     "criteria": {
       "has_sand": "2025-04-15 21:57:24 +0300"
     },
     "done": true
   },
-  "minecraft:recipes/food/bread": {
+  "minecraft:husbandry/root": {
     "criteria": {
-      "has_wheat": "2025-04-15 21:55:58 +0300"
+      "consumed_item": "2025-04-16 01:13:04 +0300"
     },
     "done": true
   },
