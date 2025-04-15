@@ -4,14 +4,10 @@ from BD_wock import add_user
 
 bot = telebot.TeleBot('7563076857:AAHf5MdmVCDskWN9IL1tNz4eXuwawZ0alMg')
 
-
-
-
-
 def glavnay(message):
     @bot.message_handler(content_types=['text'])
     def worc(message):
-        
+
 
     bot.polling(none_stop=True, interval=0)
 
