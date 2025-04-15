@@ -18,8 +18,6 @@ def start(message):
 
     else:
         bot.send_message(message.from_user.id, "Добро пожаловать" + str(message.from_user.id) + ".")
-bot.polling(none_stop=True, interval=0)
-
 
 def reg1(message):
     if registration(message):
@@ -29,6 +27,10 @@ def reg1(message):
         bot.register_next_step_handler_by_chat_id(message.from_user.id, glavnay)
     else:
         bot.send_message(message.from_user.id, "Пароль НЕ верный.")
+bot.polling(none_stop=True, interval=0)
+
+
+
 
 def glavnay(message):
     print(message.text)

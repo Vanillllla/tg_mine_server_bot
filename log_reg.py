@@ -1,6 +1,6 @@
-import telebot
+
 from BD_wock import in_bd, add_user
-bot = telebot.TeleBot('7563076857:AAHf5MdmVCDskWN9IL1tNz4eXuwawZ0alMg')
+
 
 
 
