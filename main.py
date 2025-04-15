@@ -2,7 +2,7 @@ import telebot
 import multiprocessing as mp
 from log_reg import log, registration
 from BD_wock import add_user
-from SERV_work import serv_start
+from SERV_work import serv
 
 bot = telebot.TeleBot('7563076857:AAHf5MdmVCDskWN9IL1tNz4eXuwawZ0alMg')
 
@@ -13,8 +13,12 @@ def glavnay():
             bot.send_message(message.from_user.id,
                              "Server starting...")
             print("Server starting...")
-            serv_start()
-
+            serv(0)
+        elif str(message.text) == 'stop':
+            bot.send_message(message.from_user.id,
+                             "Server stopping...")
+            print("Server stopping...")
+            serv(2)
 
         elif str(message.text) == 'help':
             bot.send_message(message.from_user.id,
