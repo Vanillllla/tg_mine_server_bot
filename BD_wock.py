@@ -20,6 +20,7 @@ def add_user(user_id):
     connection = sqlite3.connect('my_database.db')
     cursor = connection.cursor()
     cursor.execute('INSERT INTO Users (users_tg_id, name, status) VALUES (?, ?, ?)', (user_id, 0, 0))
+    print("reg gg!!!")
 
 
 
