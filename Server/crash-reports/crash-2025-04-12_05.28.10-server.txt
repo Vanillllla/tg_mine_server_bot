@@ -1,0 +1,73 @@
+---- Minecraft Crash Report ----
+
+WARNING: coremods are present:
+  SecurityCraftLoadingPlugin (1.12.2securitycraftv1.9.8.jar)
+  EnderCorePlugin (EnderCore-1.12.2-0.5.78-core.jar)
+Contact their authors BEFORE contacting forge
+
+// You're mean.
+
+Time: 12.04.25 5:28
+Description: Exception in server tick loop
+
+Missing Mods:
+	unknown : need [1.12.2-0.1.2.9,1.12.2-2.0.0.0): have missing
+
+net.minecraftforge.fml.common.MissingModsException: Mod bigreactors (Extreme Reactors) requires [zerocore@[1.12.2-0.1.2.9,1.12.2-2.0.0.0)]
+	at net.minecraftforge.fml.common.Loader.sortModList(Loader.java:266)
+	at net.minecraftforge.fml.common.Loader.loadMods(Loader.java:572)
+	at net.minecraftforge.fml.server.FMLServerHandler.beginServerLoading(FMLServerHandler.java:98)
+	at net.minecraftforge.fml.common.FMLCommonHandler.onServerStart(FMLCommonHandler.java:333)
+	at net.minecraft.server.dedicated.DedicatedServer.func_71197_b(DedicatedServer.java:125)
+	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:486)
+	at java.lang.Thread.run(Unknown Source)
+
+
+A detailed walkthrough of the error, its code path and all known details is as follows:
+---------------------------------------------------------------------------------------
+
+-- System Details --
+Details:
+	Minecraft Version: 1.12.2
+	Operating System: Windows 11 (amd64) version 10.0
+	Java Version: 1.8.0_441, Oracle Corporation
+	Java VM Version: Java HotSpot(TM) 64-Bit Server VM (mixed mode), Oracle Corporation
+	Memory: 5813842632 bytes (5544 MB) / 6074925056 bytes (5793 MB) up to 11453595648 bytes (10923 MB)
+	JVM Flags: 2 total; -Xmx12G -Xms4G
+	IntCache: cache: 0, tcache: 0, allocated: 0, tallocated: 0
+	FML: MCP 9.42 Powered by Forge 14.23.5.2859 21 mods loaded, 21 mods active
+	States: 'U' = Unloaded 'L' = Loaded 'C' = Constructed 'H' = Pre-initialized 'I' = Initialized 'J' = Post-initialized 'A' = Available 'D' = Disabled 'E' = Errored
+
+	| State | ID                                | Version           | Source                                  | Signature                                |
+	|:----- |:--------------------------------- |:----------------- |:--------------------------------------- |:---------------------------------------- |
+	| L     | minecraft                         | 1.12.2            | minecraft.jar                           | None                                     |
+	| L     | mcp                               | 9.42              | minecraft.jar                           | None                                     |
+	| L     | FML                               | 8.0.99.99         | forge-1.12.2-14.23.5.2859.jar           | e3c3d50c7c986df74c645c0ac54639741c90a557 |
+	| L     | forge                             | 14.23.5.2859      | forge-1.12.2-14.23.5.2859.jar           | e3c3d50c7c986df74c645c0ac54639741c90a557 |
+	| L     | securitycraft                     | v1.9.8            | 1.12.2securitycraftv1.9.8.jar           | None                                     |
+	| L     | endercore                         | 1.12.2-0.5.78     | endercore-1.12.2-0.5.78.jar             | None                                     |
+	| L     | enderio                           | 5.3.72            | enderio-1.12.2-5.3.72.jar               | None                                     |
+	| L     | enderiobase                       | 5.3.72            | enderio-1.12.2-5.3.72.jar               | None                                     |
+	| L     | enderioconduitsappliedenergistics | 5.3.72            | enderio-1.12.2-5.3.72.jar               | None                                     |
+	| L     | enderioconduitsopencomputers      | 5.3.72            | enderio-1.12.2-5.3.72.jar               | None                                     |
+	| L     | enderioconduitsrefinedstorage     | 5.3.72            | enderio-1.12.2-5.3.72.jar               | None                                     |
+	| L     | enderioconduits                   | 5.3.72            | enderio-1.12.2-5.3.72.jar               | None                                     |
+	| L     | enderiointegrationforestry        | 5.3.72            | enderio-1.12.2-5.3.72.jar               | None                                     |
+	| L     | enderiointegrationtic             | 5.3.72            | enderio-1.12.2-5.3.72.jar               | None                                     |
+	| L     | enderiointegrationticlate         | 5.3.72            | enderio-1.12.2-5.3.72.jar               | None                                     |
+	| L     | enderioinvpanel                   | 5.3.72            | enderio-1.12.2-5.3.72.jar               | None                                     |
+	| L     | enderiomachines                   | 5.3.72            | enderio-1.12.2-5.3.72.jar               | None                                     |
+	| L     | enderiopowertools                 | 5.3.72            | enderio-1.12.2-5.3.72.jar               | None                                     |
+	| L     | bigreactors                       | 1.12.2-0.4.5.68   | extremereactors-1.12.2-0.4.5.68.jar     | None                                     |
+	| L     | ic2                               | 2.8.222-ex112     | industrialcraft-2-2.8.222-ex112 (2).jar | None                                     |
+	| L     | ironchest                         | 1.12.2-7.0.67.844 | ironchest-1.12.2-7.0.72.847.jar         | None                                     |
+
+	Loaded coremods (and transformers): 
+SecurityCraftLoadingPlugin (1.12.2securitycraftv1.9.8.jar)
+  
+EnderCorePlugin (EnderCore-1.12.2-0.5.78-core.jar)
+  com.enderio.core.common.transform.EnderCoreTransformer
+  com.enderio.core.common.transform.SimpleMixinPatcher
+	Profiler Position: N/A (disabled)
+	Is Modded: Definitely; Server brand changed to 'fml,forge'
+	Type: Dedicated Server (map_server.txt)

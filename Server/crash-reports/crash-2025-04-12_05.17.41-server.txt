@@ -1,0 +1,223 @@
+---- Minecraft Crash Report ----
+
+WARNING: coremods are present:
+  ForgelinPlugin (Forgelin_1.8.4.jar)
+  IELoadingPlugin (ImmersiveEngineering-core-0.12-98.jar)
+  EngineersDoorsLoadingPlugin (engineers_doors-1.12.2-0.9.1.jar)
+  TransformerLoader (OpenComputers-MC1.12.2-1.7.5.192.jar)
+  CoreMod (aroma1997core-1.12.2-2.0.0.2.b167.jar)
+  FP2MixinLoader (fp2-0.0.1.617-1.12.2.jar)
+  IILoadingPlugin (immersiveintelligence-core-0.2.1.jar)
+  UniDictCoreMod (unidict-1.12.2-3.0.10.jar)
+  EnderCorePlugin (EnderCore-1.12.2-0.5.78-core.jar)
+  MicdoodlePlugin (micdoodlecore-1.12.2-4.0.2.281.jar)
+  SecurityCraftLoadingPlugin (1.12.2securitycraftv1.9.8.jar)
+  ECHookLoader (EnergyControl-1.12.2-0.3.1.jar)
+  weaponlib (mw3.0_sqr-0.7.25_BETA_mc1.12.2.jar)
+  MalisisCorePlugin (malisiscore-1.12.2-6.5.1.jar)
+  TLSkinCapeHookLoader (tlskincape1.12.2-1.4.jar)
+Contact their authors BEFORE contacting forge
+
+// Why did you do that?
+
+Time: 12.04.25 5:17
+Description: Exception in server tick loop
+
+net.minecraftforge.fml.common.LoaderExceptionModCrash: Caught exception from TLSkinCape (tlauncher_custom_cape_skin)
+Caused by: java.lang.NoClassDefFoundError: net/minecraft/client/Minecraft
+	at org.tlauncher.skin.cape.util.PreparedProfileManager.<init>(PreparedProfileManager.java:43)
+	at org.tlauncher.skin.cape.TLSkinCape.event(TLSkinCape.java:28)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
+	at java.lang.reflect.Method.invoke(Unknown Source)
+	at net.minecraftforge.fml.common.FMLModContainer.handleModStateEvent(FMLModContainer.java:637)
+	at sun.reflect.GeneratedMethodAccessor10.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
+	at java.lang.reflect.Method.invoke(Unknown Source)
+	at com.google.common.eventbus.Subscriber.invokeSubscriberMethod(Subscriber.java:91)
+	at com.google.common.eventbus.Subscriber$SynchronizedSubscriber.invokeSubscriberMethod(Subscriber.java:150)
+	at com.google.common.eventbus.Subscriber$1.run(Subscriber.java:76)
+	at com.google.common.util.concurrent.MoreExecutors$DirectExecutor.execute(MoreExecutors.java:399)
+	at com.google.common.eventbus.Subscriber.dispatchEvent(Subscriber.java:71)
+	at com.google.common.eventbus.Dispatcher$PerThreadQueuedDispatcher.dispatch(Dispatcher.java:116)
+	at com.google.common.eventbus.EventBus.post(EventBus.java:217)
+	at net.minecraftforge.fml.common.LoadController.sendEventToModContainer(LoadController.java:219)
+	at net.minecraftforge.fml.common.LoadController.propogateStateMessage(LoadController.java:197)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
+	at java.lang.reflect.Method.invoke(Unknown Source)
+	at com.google.common.eventbus.Subscriber.invokeSubscriberMethod(Subscriber.java:91)
+	at com.google.common.eventbus.Subscriber$SynchronizedSubscriber.invokeSubscriberMethod(Subscriber.java:150)
+	at com.google.common.eventbus.Subscriber$1.run(Subscriber.java:76)
+	at com.google.common.util.concurrent.MoreExecutors$DirectExecutor.execute(MoreExecutors.java:399)
+	at com.google.common.eventbus.Subscriber.dispatchEvent(Subscriber.java:71)
+	at com.google.common.eventbus.Dispatcher$PerThreadQueuedDispatcher.dispatch(Dispatcher.java:116)
+	at com.google.common.eventbus.EventBus.post(EventBus.java:217)
+	at net.minecraftforge.fml.common.LoadController.distributeStateMessage(LoadController.java:136)
+	at net.minecraftforge.fml.common.Loader.initializeMods(Loader.java:754)
+	at net.minecraftforge.fml.server.FMLServerHandler.finishServerLoading(FMLServerHandler.java:108)
+	at net.minecraftforge.fml.common.FMLCommonHandler.onServerStarted(FMLCommonHandler.java:338)
+	at net.minecraft.server.dedicated.DedicatedServer.func_71197_b(DedicatedServer.java:219)
+	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:486)
+	at java.lang.Thread.run(Unknown Source)
+Caused by: java.lang.ClassNotFoundException: net.minecraft.client.Minecraft
+	at net.minecraft.launchwrapper.LaunchClassLoader.findClass(LaunchClassLoader.java:101)
+	at java.lang.ClassLoader.loadClass(Unknown Source)
+	at java.lang.ClassLoader.loadClass(Unknown Source)
+	... 37 more
+
+
+A detailed walkthrough of the error, its code path and all known details is as follows:
+---------------------------------------------------------------------------------------
+
+-- System Details --
+Details:
+	Minecraft Version: 1.12.2
+	Operating System: Windows 11 (amd64) version 10.0
+	Java Version: 1.8.0_441, Oracle Corporation
+	Java VM Version: Java HotSpot(TM) 64-Bit Server VM (mixed mode), Oracle Corporation
+	Memory: 710359608 bytes (677 MB) / 3084386304 bytes (2941 MB) up to 3765960704 bytes (3591 MB)
+	JVM Flags: 0 total; 
+	IntCache: cache: 0, tcache: 0, allocated: 0, tallocated: 0
+	FML: MCP 9.42 Powered by Forge 14.23.5.2859 84 mods loaded, 84 mods active
+	States: 'U' = Unloaded 'L' = Loaded 'C' = Constructed 'H' = Pre-initialized 'I' = Initialized 'J' = Post-initialized 'A' = Available 'D' = Disabled 'E' = Errored
+
+	| State | ID                                | Version               | Source                                          | Signature                                |
+	|:----- |:--------------------------------- |:--------------------- |:----------------------------------------------- |:---------------------------------------- |
+	| LCHIJ | minecraft                         | 1.12.2                | minecraft.jar                                   | None                                     |
+	| LCHIJ | mcp                               | 9.42                  | minecraft.jar                                   | None                                     |
+	| LCHIJ | FML                               | 8.0.99.99             | forge-1.12.2-14.23.5.2859.jar                   | e3c3d50c7c986df74c645c0ac54639741c90a557 |
+	| LCHIJ | forge                             | 14.23.5.2859          | forge-1.12.2-14.23.5.2859.jar                   | e3c3d50c7c986df74c645c0ac54639741c90a557 |
+	| LCHIJ | micdoodlecore                     |                       | minecraft.jar                                   | None                                     |
+	| LCHIJ | opencomputers|core                | 1.7.5.192             | minecraft.jar                                   | None                                     |
+	| LCHIJ | securitycraft                     | v1.9.8                | 1.12.2securitycraftv1.9.8.jar                   | None                                     |
+	| LCHIJ | quarryplus                        | 12.5.7                | additionalenchantedminer-1.12.2-12.5.7.jar      | 617a4e95f0af9de5402bb9883abe0f53a6bfa230 |
+	| LCHIJ | quarryplus_ct                     | 12.5.7                | additionalenchantedminer-1.12.2-12.5.7.jar      | 617a4e95f0af9de5402bb9883abe0f53a6bfa230 |
+	| LCHIJ | aireducer                         | 0.3.0                 | aireducer-1.12.2-0.3.0.jar                      | None                                     |
+	| LCHIJ | aroma1997core                     | 2.0.0.2.b167          | aroma1997core-1.12.2-2.0.0.2.b167.jar           | dfbfe4c473253d8c5652417689848f650b2cbe32 |
+	| LCHIJ | codechickenlib                    | 3.2.3.358             | codechickenlib-1.12.2-3.2.3.358-universal.jar   | f1850c39b2516232a2108a7bd84d1cb5df93b261 |
+	| LCHIJ | collective                        | 3.0                   | collective-1.12.2-3.0.jar                       | None                                     |
+	| LCHIJ | computercraft                     | 1.80pr1               | computercraft1.80pr1.jar                        | None                                     |
+	| LCHIJ | endercore                         | 1.12.2-0.5.78         | endercore-1.12.2-0.5.78.jar                     | None                                     |
+	| LCHIJ | jei                               | 4.16.1.1003           | jei_1.12.2-4.16.1.1003.jar                      | None                                     |
+	| LCHIJ | enderio                           | 5.3.72                | enderio-1.12.2-5.3.72.jar                       | None                                     |
+	| LCHIJ | enderiointegrationtic             | 5.3.72                | enderio-1.12.2-5.3.72.jar                       | None                                     |
+	| LCHIJ | enderiobase                       | 5.3.72                | enderio-1.12.2-5.3.72.jar                       | None                                     |
+	| LCHIJ | enderioconduits                   | 5.3.72                | enderio-1.12.2-5.3.72.jar                       | None                                     |
+	| LCHIJ | enderioconduitsappliedenergistics | 5.3.72                | enderio-1.12.2-5.3.72.jar                       | None                                     |
+	| LCHIJ | opencomputers                     | 1.7.5.192             | OpenComputers-MC1.12.2-1.7.5.192.jar            | None                                     |
+	| LCHIJ | enderioconduitsopencomputers      | 5.3.72                | enderio-1.12.2-5.3.72.jar                       | None                                     |
+	| LCHIJ | refinedstorage                    | 1.6.16                | refinedstorage-1.6.16.jar                       | 57893d5b90a7336e8c63fe1c1e1ce472c3d59578 |
+	| LCHIJ | enderioconduitsrefinedstorage     | 5.3.72                | enderio-1.12.2-5.3.72.jar                       | None                                     |
+	| LCHIJ | enderiointegrationforestry        | 5.3.72                | enderio-1.12.2-5.3.72.jar                       | None                                     |
+	| LCHIJ | enderiointegrationticlate         | 5.3.72                | enderio-1.12.2-5.3.72.jar                       | None                                     |
+	| LCHIJ | enderioinvpanel                   | 5.3.72                | enderio-1.12.2-5.3.72.jar                       | None                                     |
+	| LCHIJ | enderiomachines                   | 5.3.72                | enderio-1.12.2-5.3.72.jar                       | None                                     |
+	| LCHIJ | enderiopowertools                 | 5.3.72                | enderio-1.12.2-5.3.72.jar                       | None                                     |
+	| LCHIJ | ic2                               | 2.8.222-ex112         | industrialcraft-2-2.8.222-ex112 (2).jar         | de041f9f6187debbc77034a344134053277aa3b0 |
+	| LCHIJ | energycontrol                     | 1.12.2-0.3.1          | EnergyControl-1.12.2-0.3.1.jar                  | None                                     |
+	| LCHIJ | immersiveengineering              | 0.12-98               | immersiveengineering-0.12-98 (1).jar            | None                                     |
+	| LCHIJ | engineersdoors                    | 0.9.1                 | engineers_doors-1.12.2-0.9.1.jar                | None                                     |
+	| LCHIJ | zerocore                          | 1.12.2-0.1.2.9        | zerocore-1.12.2-0.1.2.9.jar                     | None                                     |
+	| LCHIJ | bigreactors                       | 1.12.2-0.4.5.68       | extremereactors-1.12.2-0.4.5.68.jar             | None                                     |
+	| LCHIJ | forgelin                          | 1.8.4                 | Forgelin_1.8.4.jar                              | None                                     |
+	| LCHIJ | forgemultipartcbe                 | 2.6.2.83              | forgemultipart-1.12.2-2.6.2.83-universal.jar    | f1850c39b2516232a2108a7bd84d1cb5df93b261 |
+	| LCHIJ | microblockcbe                     | 2.6.2.83              | forgemultipart-1.12.2-2.6.2.83-universal.jar    | None                                     |
+	| LCHIJ | minecraftmultipartcbe             | 2.6.2.83              | forgemultipart-1.12.2-2.6.2.83-universal.jar    | None                                     |
+	| LCHIJ | forgerocks                        | 7.7.3-1.12.2          | ForgeRocks-7.7.3-1.12.2-full.jar                | None                                     |
+	| LCHIJ | fp2                               | 0.0.1.617             | fp2-0.0.1.617-1.12.2.jar                        | None                                     |
+	| LCHIJ | cfm                               | 6.3.0                 | furniture-6.3.2-1.12.2 (1).jar                  | None                                     |
+	| LCHIJ | galacticraftcore                  | 4.0.2.281             | GalacticraftCore-1.12.2-4.0.2.281.jar           | None                                     |
+	| LCHIJ | galacticraftplanets               | 4.0.2.281             | Galacticraft-Planets-1.12.2-4.0.2.281.jar       | None                                     |
+	| LCHIJ | hbm                               | hbm-1.8.4a-G          | hbm-1.8.4a-G-1.12.2.jar                         | None                                     |
+	| LCHIJ | mts                               | 22.15.0               | Immersive Vehicles-1.12.2-22.15.0.jar           | None                                     |
+	| LCHIJ | immersivecables                   | 1.3.2                 | immersivecables-1.12.2-1.3.2.jar                | None                                     |
+	| LCHIJ | immersivepetroleum                | 1.1.10                | immersivepetroleum-1.12.2-1.1.10.jar            | None                                     |
+	| LCHIJ | ironchest                         | 1.12.2-7.0.67.844     | ironchest-1.12.2-7.0.72.847.jar                 | None                                     |
+	| LCHIJ | journeymap                        | 1.12.2-5.7.1          | journeymap-1.12.2-5.7.1.jar                     | None                                     |
+	| LCHIJ | malisiscore                       | 1.12.2-6.5.1-SNAPSHOT | malisiscore-1.12.2-6.5.1.jar                    | None                                     |
+	| LCHIJ | malisisdoors                      | 1.12.2-7.3.0          | malisisdoors-1.12.2-7.3.0.jar                   | None                                     |
+	| LCHIJ | miniheads                         | 1.0.7                 | miniheads_1.0.7a_1.12.jar                       | None                                     |
+	| LCHIJ | mrtjpcore                         | 2.1.4.43              | mrtjpcore-1.12.2-2.1.4.43-universal.jar         | None                                     |
+	| LCHIJ | mtsofficialpack                   | 1.2                   | MTS Official Pack-1.12.2-V27.jar                | None                                     |
+	| LCHIJ | mw                                | 0.7.1                 | mw3.0_sqr-0.7.25_BETA_mc1.12.2.jar              | None                                     |
+	| LCHIJ | openpython                        | 1.0.1                 | OpenPython-MC1.12.2-OC1.7-1.0.1.jar             | None                                     |
+	| LCHIJ | projectred-core                   | 4.9.4.120             | projectred-1.12.2-4.9.4.120-base.jar            | None                                     |
+	| LCHIJ | projectred-compat                 | 1.0                   | projectred-1.12.2-4.9.4.120-compat.jar          | None                                     |
+	| LCHIJ | projectred-integration            | 4.9.4.120             | projectred-1.12.2-4.9.4.120-integration.jar     | None                                     |
+	| LCHIJ | projectred-transmission           | 4.9.4.120             | projectred-1.12.2-4.9.4.120-integration.jar     | None                                     |
+	| LCHIJ | projectred-fabrication            | 4.9.4.120             | projectred-1.12.2-4.9.4.120-fabrication.jar     | None                                     |
+	| LCHIJ | projectred-illumination           | 4.9.4.120             | projectred-1.12.2-4.9.4.120-lighting.jar        | None                                     |
+	| LCHIJ | projectred-expansion              | 4.9.4.120             | projectred-1.12.2-4.9.4.120-mechanical.jar      | None                                     |
+	| LCHIJ | projectred-relocation             | 4.9.4.120             | projectred-1.12.2-4.9.4.120-mechanical.jar      | None                                     |
+	| LCHIJ | projectred-transportation         | 4.9.4.120             | projectred-1.12.2-4.9.4.120-mechanical.jar      | None                                     |
+	| LCHIJ | projectred-exploration            | 4.9.4.120             | projectred-1.12.2-4.9.4.120-world.jar           | None                                     |
+	| LCHIJ | reborncore                        | 3.19.5                | reborncore-1.12.2-3.19.5-universal.jar          | None                                     |
+	| LCHIJ | rebornstorage                     | 1.0.0                 | rebornstorage-1.12.2-3.3.4.1.jar                | None                                     |
+	| LCHIJ | rsgauges                          | 1.2.8                 | rsgauges-1.12.2-1.2.8.jar                       | ed58ed655893ced6280650866985abcae2bf7559 |
+	| LCHIJ | srparasites                       | 1.9.21                | SRParasites-1.12.2v1.9.21.jar                   | None                                     |
+	| LCHIJ | thutcore                          | 5.21.0                | thutcore-1.12.2-5.21.0.jar                      | None                                     |
+	| LCHIJ | thutcore_compat                   | 1.0                   | thutcore-1.12.2-5.21.0.jar                      | None                                     |
+	| LCHIJ | thuttech                          | 6.1.6                 | thuttech-1.12.2-6.1.6.jar                       | None                                     |
+	| LCHIE | tlauncher_custom_cape_skin        | 1.4                   | tlskincape1.12.2-1.4.jar                        | None                                     |
+	| LCHI  | unuparts                          | 6.5.0                 | UNU Parts Pack [MTS] 1.12.2-22.13.0-6.5.0.jar   | None                                     |
+	| LCHI  | unumilitary                       | 5.0.0                 | UNU Military Pack [MTS] 1.12.2-21.3.0-5.0.0.jar | None                                     |
+	| LCHI  | vehiclesandroads                  | 2.23                  | var_2.23_1.12.2.jar                             | None                                     |
+	| LCHI  | villagespawnpoint                 | 1.8                   | villagespawnpoint_1.12.2-1.8.jar                | None                                     |
+	| LCHI  | wanionlib                         | 1.12.2-2.91           | wanionlib-1.12.2-2.91.jar                       | None                                     |
+	| LCHI  | worldedit                         | 6.1.10                | worldedit-forgemc1.12.2-6.1.10-dist.jar         | None                                     |
+	| LCHI  | immersiveintelligence             | 0.2.1                 | immersiveintelligence-0.2.1.jar                 | 770570c49a2652e64a9b29b9b9d9919ca68b7065 |
+	| LCHI  | unidict                           | 1.12.2-3.0.10         | unidict-1.12.2-3.0.10.jar                       | None                                     |
+
+	Loaded coremods (and transformers): 
+ForgelinPlugin (Forgelin_1.8.4.jar)
+  
+IELoadingPlugin (ImmersiveEngineering-core-0.12-98.jar)
+  blusunrize.immersiveengineering.common.asm.IEClassTransformer
+EngineersDoorsLoadingPlugin (engineers_doors-1.12.2-0.9.1.jar)
+  nihiltres.engineersdoors.common.asm.EngineersDoorsClassTransformer
+TransformerLoader (OpenComputers-MC1.12.2-1.7.5.192.jar)
+  li.cil.oc.common.asm.ClassTransformer
+CoreMod (aroma1997core-1.12.2-2.0.0.2.b167.jar)
+  
+FP2MixinLoader (fp2-0.0.1.617-1.12.2.jar)
+  
+IILoadingPlugin (immersiveintelligence-core-0.2.1.jar)
+  pl.pabilo8.immersiveintelligence.common.asm.IIClassTransformer
+UniDictCoreMod (unidict-1.12.2-3.0.10.jar)
+  wanion.unidict.core.UniDictCoreModTransformer
+EnderCorePlugin (EnderCore-1.12.2-0.5.78-core.jar)
+  com.enderio.core.common.transform.EnderCoreTransformer
+  com.enderio.core.common.transform.SimpleMixinPatcher
+MicdoodlePlugin (micdoodlecore-1.12.2-4.0.2.281.jar)
+  micdoodle8.mods.miccore.MicdoodleTransformer
+SecurityCraftLoadingPlugin (1.12.2securitycraftv1.9.8.jar)
+  
+ECHookLoader (EnergyControl-1.12.2-0.3.1.jar)
+  com.zuxelus.hooklib.minecraft.PrimaryClassTransformer
+weaponlib (mw3.0_sqr-0.7.25_BETA_mc1.12.2.jar)
+  com.vicmatskiv.weaponlib.core.WeaponlibClassTransformer
+MalisisCorePlugin (malisiscore-1.12.2-6.5.1.jar)
+  
+TLSkinCapeHookLoader (tlskincape1.12.2-1.4.jar)
+  gloomyfolken.hooklib.minecraft.PrimaryClassTransformer
+	Ender IO: Found the following problem(s) with your installation (That does NOT mean that Ender IO caused the crash or was involved in it in any way. We add this information to help finding common problems, not as an invitation to post any crash you encounter to Ender IO's issue tracker. Always check the stack trace above to see which mod is most likely failing.):
+                  * Offline mode for dedicated servers is NOT supported by Ender IO.
+                 This may (look up the meaning of 'may' in the dictionary if you're not sure what it means) have caused the error. Try reproducing the crash WITHOUT this/these mod(s) before reporting it.
+	Authlib is : /C:/Users/user/Desktop/Server/minecraft_server.1.12.2.jar
+
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!You are looking at the diagnostics information, not at the crash.       !!!
+	!!!Scroll up until you see the line with '---- Minecraft Crash Report ----'!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+	RebornCore: 
+		Plugin Engine: 0
+		RebornCore Version: 3.19.5
+		Runtime Debofucsation 1
+		Invalid fingerprint detected for RebornCore!
+	Profiler Position: N/A (disabled)
+	Is Modded: Definitely; Server brand changed to 'fml,forge'
+	Type: Dedicated Server (map_server.txt)
