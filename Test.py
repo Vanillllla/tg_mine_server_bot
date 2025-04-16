@@ -7,16 +7,16 @@ server = ServerManager(
 )
 
 # Запускаем сервер
-server.start()
-
-# Ждём загрузки
-sleep(15)
+# server.start()
+#
+# # Ждём загрузки
+# sleep(30)
 
 # Отправляем команду в Minecraft чат
 server.send_command("say Привет! Сервер работает!")
 
 # Ещё немного ждём
-sleep(10)
+sleep(100)
 
 # Останавливаем сервер
 server.stop()

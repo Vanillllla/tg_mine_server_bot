@@ -1,5 +1,7 @@
 import subprocess
 import psutil
+import threading
+
 
 class ServerManager:
     def __init__(self, jar_file, cwd, xmx="12G", xms="4G"):
@@ -11,20 +13,19 @@ class ServerManager:
 
     def start(self):
         if self.process is None:
-            try:
-                self.process = subprocess.Popen(
-                    ["java", f"-Xmx{self.xmx}", f"-Xms{self.xms}", "-jar", self.jar_file, "nogui"],
-                    cwd=self.cwd,
-                    stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,  # используем stderr для захвата ошибок
-                    text=True
-                )
-                print("Сервер запущен.")
-            except Exception as e:
-                print(f"Ошибка при запуске сервера: {e}")
+            self.process = subprocess.Popen(
+                ["java", f"-Xmx{self.xmx}", f"-Xms{self.xms}", "-jar", self.jar_file], # , "nogui"
+                cwd=self.cwd,
+                stdin = subprocess.PIPE,
+                stdout = subprocess.PIPE,
+                stderr = subprocess.STDOUT,
+                text = True
+            )
+            print("Server started.")
+            self.output_thread = threading.Thread(target=self.read_output, daemon=True)
+            self.output_thread.start()
         else:
-            print("Сервер уже работает.")
+            print("Server is already running.")
 
     def stop(self):
         if self.process is not None:
@@ -33,15 +34,15 @@ class ServerManager:
                 children = parent.children(recursive=True)
                 for child in children:
                     child.terminate()
-                psutil.wait_procs(children, timeout=5)
+                gone, alive = psutil.wait_procs(children, timeout=5)
                 parent.terminate()
                 parent.wait(5)
-                print("Сервер остановлен.")
+                print("Server terminated.")
             except Exception as e:
-                print(f"Ошибка при остановке сервера: {e}")
+                print(f"Error during termination: {e}")
             self.process = None
         else:
-            print("Сервер не запущен.")
+            print("Server is not running.")
 
     def send_command(self, command):
         if self.process is not None and self.process.stdin:
