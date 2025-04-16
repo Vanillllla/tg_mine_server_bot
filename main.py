@@ -30,10 +30,13 @@ def glavnay():
                              "Команды :\n"
                              "start, stop, help, op, say - писать в телеграм БЕЗ слеша\n")
             print('Мне тоже нужна помощь')
-        elif str(message.text) == 'say':
-            server.send_command("say Привет! Сервер работает!")
-        elif str(message.text) == 'op':
-            server.send_command("op T_55AMD_1")
+        # elif str(message.text) == 'say':
+        #     server.send_command("say Привет! Сервер работает!")
+        # elif str(message.text) == 'op':
+        #     server.send_command("op T_55AMD_1")
+
+
+
         else:
             bot.send_message(message.from_user.id,
                              "Неизвестная команда")
