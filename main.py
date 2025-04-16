@@ -22,10 +22,18 @@ def glavnay():
 
         elif str(message.text) == 'help':
             bot.send_message(message.from_user.id,
-                             "Мне тоже нужна помощь")
+                             "Мне тоже нужна помощь\n"
+                             "IP + порт : 26.50.226.151:25565\n"
+                             "Minecraft_version : forge-1.12.2-14.23.5.2859.jar"
+                             "Bot_version : 1.0.0 it_work\n"
+                             "Петя, при первом входе на сервер, после полдключения пропиши в тг 'op' \n\n"
+                             "Команды :\n"
+                             "start, stop, help, op, say - писать в телеграм БЕЗ слеша\n")
             print('Мне тоже нужна помощь')
         elif str(message.text) == 'say':
             server.send_command("say Привет! Сервер работает!")
+        elif str(message.text) == 'op':
+            server.send_command("op T_55AMD_1")
         else:
             bot.send_message(message.from_user.id,
                              "Неизвестная команда")
