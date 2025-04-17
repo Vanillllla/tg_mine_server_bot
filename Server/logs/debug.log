@@ -4292,3 +4292,8 @@
 
 [23:21:55] [Server thread/DEBUG] [FML]: The world 62dc351e (world) may have leaked: first encounter (5 occurrences).
 
+[23:22:03] [Server Shutdown Thread/INFO] [net.minecraft.server.MinecraftServer]: Stopping server
+[23:22:03] [Server Shutdown Thread/INFO] [net.minecraft.server.MinecraftServer]: Saving players
+[23:22:03] [Server Shutdown Thread/INFO] [net.minecraft.server.MinecraftServer]: Saving worlds
+[23:22:03] [Server Shutdown Thread/INFO] [net.minecraft.server.MinecraftServer]: Saving chunks for level 'world'/overworld
+[23:22:03] [Server Shutdown Thread/DEBUG] [FML]: Gathering id map for writing to world save world
