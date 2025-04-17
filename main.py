@@ -7,11 +7,12 @@ from SERV_work import ServerManager
 bot = telebot.TeleBot('7563076857:AAHf5MdmVCDskWN9IL1tNz4eXuwawZ0alMg')
 server = ServerManager("forge-1.12.2-14.23.5.2859.jar", cwd="Server")
 
+user_state = {}
+STATE_MAIN_MENU = "main"
+STATE_SUBMENU = "com_menu"
 
 def glavnay(message):
-    user_state = {}
-    STATE_MAIN_MENU = "main"
-    STATE_SUBMENU = "com_menu"
+
 
     def mane_menu(message):
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -28,13 +29,13 @@ def glavnay(message):
         if state == STATE_MAIN_MENU:
             if message.text == "⚙️ Запустить сервер":
                 bot.send_message(message.chat.id,
-                                 "Server starting...")
+                                 "🟢 Сервер запускается ...")
                 print("Server starting...")
                 bot.send_message(message.chat.id,str(server.start()))
             elif message.text == "⚙️ Остановить сервер":
                 bot.send_message(message.chat.id,
-                                 "🛑 Сервер остонавливается ...")
-                print(server.stop())
+                                 "🔴 Сервер остонавливается ...")
+                # print(server.stop())
                 bot.send_message(message.chat.id,
                                  str(server.stop()))
             elif message.text == "🧪 Режим консоли":
@@ -80,6 +81,7 @@ def glavnay(message):
 
 @bot.message_handler(commands=['start'])
 def start(message):
+    user_state[message.chat.id] = STATE_MAIN_MENU
     print(message)
     bot.send_message(message.chat.id,
                      "Привет, готов настроить контакт с сервером, " + str(message.chat.username) + "?")

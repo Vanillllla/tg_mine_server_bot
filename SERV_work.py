@@ -38,6 +38,8 @@ class ServerManager:
             )
             self._reader_thread = threading.Thread(target=self._read_output, daemon=True)
             self._reader_thread.start()
+            import time
+            sleep(7)
             print("✅ Сервер запущен.")
             return "✅ Сервер запущен."
 
@@ -90,7 +92,7 @@ class ServerManager:
             self.process.stdin.write(command + "\n")
             self.process.stdin.flush()
             print(f"✅ Команда отправлена: {command}")
-            a += (f"✅ Команда отправлена: {command}" + "\n")
+            a += (f"✅ Команда отправлена: '{command}'" + "\n")
             import time
             sleep(0.25)
 
@@ -102,7 +104,7 @@ class ServerManager:
                 a += ("📨 Ответ сервера:" + "\n")
                 for line in new_logs:
                     print(line)
-                    a += line + "\n"
+                    a += "```" + line + "```" + "\n"
                 return a
             else:
                 print("🔇 Сервер не вернул новых строк.")
