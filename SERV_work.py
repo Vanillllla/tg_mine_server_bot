@@ -1,4 +1,7 @@
+
 import subprocess
+from time import sleep
+
 import psutil
 import threading
 
@@ -9,7 +12,17 @@ class ServerManager:
         self.xmx = xmx
         self.xms = xms
         self.process = None
-        self.output_thread = None
+        self.log_buffer = []
+        self._reader_thread = None
+        self._lock = threading.Lock()
+
+    def _read_output(self):
+        while self.process and self.process.stdout:
+            line = self.process.stdout.readline()
+            if line:
+                with self._lock:
+                    self.log_buffer.append(line.strip())
+                    print(line.strip())  # Для вывода в терминал
 
     def start(self):
         if self.process is None:
@@ -20,52 +33,98 @@ class ServerManager:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
-                encoding = "utf-8"
+                encoding = "utf-8",
+                bufsize = 1
             )
-            print("Server started.")
-
-            # Запускаем чтение вывода в отдельном потоке
-            self.output_thread = threading.Thread(target=self.read_output, daemon=True)
-            self.output_thread.start()
+            self._reader_thread = threading.Thread(target=self._read_output, daemon=True)
+            self._reader_thread.start()
+            print("✅ Сервер запущен.")
+            return "✅ Сервер запущен."
 
         else:
-            print("Server is already running.")
-
-    def read_output(self):
-        try:
-            for line in self.process.stdout:
-                if line:
-                    print("[SERVER]", line.strip())
-        except Exception as e:
-            print(f"Ошибка чтения stdout: {e}")
+            print("⚠️ Сервер уже запущен.")
+            return "⚠️ Сервер уже запущен."
 
     def stop(self):
-        if self.process is not None:
-            try:
-                parent = psutil.Process(self.process.pid)
-                children = parent.children(recursive=True)
-                for child in children:
-                    child.terminate()
-                psutil.wait_procs(children, timeout=5)
-                parent.terminate()
-                parent.wait(5)
-                print("Server terminated.")
-            except Exception as e:
-                print(f"Error during termination: {e}")
+        a = ''
+        if not self.process or self.process.poll() is not None:
+            print("⚠️ Сервер не запущен.")
+            a += "⚠️ Сервер не запущен."
             self.process = None
-        else:
-            print("Server is not running.")
+            return a
+
+        try:
+            print("💾 Сохраняем миры...")
+            self.send_command("save-all")
+
+            print("🛑 Останавливаем сервер...")
+            self.send_command("stop")
+
+            # Подождём, пока сервер завершится корректно
+            self.process.wait(timeout=30)
+            print("✅ Сервер завершил работу.")
+            a += "✅ Сервер завершил работу."
+            return a
+        except subprocess.TimeoutExpired:
+            print("❌ Сервер не завершился вовремя.")
+            a += "❌ Сервер не завершился вовремя."
+            return a
+        except Exception as e:
+            print(f"❌ Ошибка при завершении сервера: {e}")
+            a += f"❌ Ошибка при завершении сервера: {e}"
+            return a
+        finally:
+            self.process = None
 
     def send_command(self, command):
-        if self.process is not None and self.process.stdin:
-            try:
-                if self.process.stdin.closed:
-                    print("stdin закрыт, не могу отправить команду.")
-                    return
-                self.process.stdin.write(command + "\n")
-                self.process.stdin.flush()
-                print(f"Команда отправлена: {command}")
-            except Exception as e:
-                print(f"Ошибка при отправке команды: {e}")
-        else:
-            print("Сервер не запущен или stdin недоступен.")
+        a = ''
+        if self.process is None or self.process.stdin is None:
+            print("⚠️ Сервер не запущен или stdin недоступен.")
+            a += "⚠️ Сервер не запущен или stdin недоступен."
+            return a
+
+        try:
+            with self._lock:
+                old_log_len = len(self.log_buffer)
+
+            self.process.stdin.write(command + "\n")
+            self.process.stdin.flush()
+            print(f"✅ Команда отправлена: {command}")
+            a += (f"✅ Команда отправлена: {command}" + "\n")
+            import time
+            sleep(0.25)
+
+            with self._lock:
+                new_logs = self.log_buffer[old_log_len:]
+
+            if new_logs:
+                print("📨 Ответ сервера:")
+                a += ("📨 Ответ сервера:" + "\n")
+                for line in new_logs:
+                    print(line)
+                    a += line + "\n"
+                return a
+            else:
+                print("🔇 Сервер не вернул новых строк.")
+                a += ("🔇 Сервер не вернул новых строк." + "\n")
+                return a
+
+        except Exception as e:
+            print(f"❌ Ошибка при отправке команды: {e}")
+            return a + f"❌ Ошибка при отправке команды: {e}"
+    # def send_command(self, command):
+    #     if self.process is not None and self.process.stdin:
+    #         try:
+    #             if self.process.stdin.closed:
+    #                 print("stdin закрыт, не могу отправить команду.")
+    #                 return 1
+    #             self.process.stdin.write(command + "\n")
+    #             self.process.stdin.flush()
+    #             print(f"Команда отправлена: {command}")
+    #             return 0
+    #         except Exception as e:
+    #             print(f"Ошибка при отправке команды: {e}")
+    #             return 1
+    #     else:
+    #         print("Сервер не запущен или stdin недоступен.")
+    #         return 2
