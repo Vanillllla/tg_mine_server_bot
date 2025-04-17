@@ -42,13 +42,16 @@ def glavnay(message):
                 com()
             elif message.text == "❓ Помощь":
                 bot.send_message(message.chat.id,
-                                 "IP + порт : 26.50.226.151:25565\n"
-                                 "Minecraft_version : forge-1.12.2-14.23.5.2859.jar"
-                                 "Bot_version : 1.0.0 it_work\n"
-                                 "\n"
-                                 "Команды :\n"
-                                 "start, stop, help - писать в телеграм БЕЗ слеша\n")
-                print('Мне тоже нужна помощь')
+                                 "Minecraft_version : forge-1.12.2-14.23.5.2859.jar\n"
+                                 "IP + порт : <code>26.50.226.151:25565</code>\n"
+                                 "Сеть RadminVPN : \n"
+                                 "  login: <b>''.join(str(i) for i in range(1,10))+'0'*10</b>\n"
+                                 "  password:123456\n"
+                                 "Команды для майнкрафт консоли : <a href='https://timeweb.com/ru/community/articles/komandy-dlya-servera-minecraft'>ТЫК</a>\n"
+                                 "P. S. Чтобы выдать админку: <b>op ник</b>",
+                                 parse_mode='HTML',
+                                 disable_web_page_preview=True)
+                print('❓Мне тоже нужна помощь!❓')
             else:
                 bot.send_message(message.chat.id, "Не понял 🤔")
         elif state == STATE_SUBMENU:
@@ -100,9 +103,9 @@ def reg1(message):
     # print(123123123)
     if registration(message):
         bot.send_message(message.chat.id, " Пароль верный.")
-        print("Успешно заригистрирован ", message.user.id)
-        add_user(message.user.id)
-        bot.send_message(message.user.id, "Вы успешно зарегистрованный.")
+        print("Успешно заригистрирован ", message.from_user.id)
+        add_user(message.from_user.id)
+        bot.send_message(message.from_user.id, "Вы успешно зарегистрованный.")
         glavnay(message)
     else:
         bot.send_message(message.chat.id, "Пароль НЕ верный. \nСнова введите /start")
