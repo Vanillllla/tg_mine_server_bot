@@ -5,7 +5,7 @@ def in_bd(user_id):
     cursor = connection.cursor()
     cursor.execute('SELECT users_tg_id FROM Users WHERE users_tg_id = ?', (user_id,))
     results = cursor.fetchall()
-    # print(results) ##################################################################################
+    # print(results) #################################################################################
     if results:
         connection.commit()
         connection.close()
