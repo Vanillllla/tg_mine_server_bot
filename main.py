@@ -54,7 +54,7 @@ def glavnay(message):
         elif state == STATE_SUBMENU:
             if message.text == "🔙 Назад":
                 user_state[message.from_user.id] = STATE_MAIN_MENU
-                glavnay(message)
+                mane_menu(message)
 
             else:
                 server.send_command(message.text)
