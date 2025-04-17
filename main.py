@@ -9,53 +9,72 @@ server = ServerManager("forge-1.12.2-14.23.5.2859.jar", cwd="Server")
 
 def glavnay(message):
 
+    user_state = {}
+    STATE_MAIN_MENU = "main"
+    STATE_SUBMENU = "com_menu"
 
 
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    btn1 = types.KeyboardButton("⚙️ Запустить сервер")
-    btn2 = types.KeyboardButton("⚙️ Остановить сервер")
-    btn3 = types.KeyboardButton("🧪 Режим консоли")
-    btn4 = types.KeyboardButton("❓ Помощь")
-    markup.add(btn1, btn2, btn3, btn4)
-    bot.send_message(message.chat.id, "Жми на кнопочки:", reply_markup=markup)
+    def mane_menu(message):
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        btn1 = types.KeyboardButton("⚙️ Запустить сервер")
+        btn2 = types.KeyboardButton("⚙️ Остановить сервер")
+        btn3 = types.KeyboardButton("⌨️ Режим консоли")
+        btn4 = types.KeyboardButton("❓ Помощь")
+        markup.add(btn1, btn2, btn3, btn4)
+        bot.send_message(message.from_user.id, "Жми на кнопочки:", reply_markup=markup)
 
     @bot.message_handler(func=lambda message: True)
     def handle_message(message):
-        if message.text == "⚙️ Запустить сервер":
-            bot.send_message(message.from_user.id,
-                             "Server starting...")
-            print("Server starting...")
-            server.start()
-        elif message.text == "⚙️ Остановить сервер":
-            bot.send_message(message.from_user.id,
-                             "Server stopping...")
-            print("Server stopping...")
-            server.stop()
-        elif message.text == "🧪 Режим консоли":
-            com()
-        elif message.text == "❓ Помощь":
-            bot.send_message(message.from_user.id,
-                "Мне тоже нужна помощь\n"
-                "IP + порт : 26.50.226.151:25565\n"
-                "Minecraft_version : forge-1.12.2-14.23.5.2859.jar"
-                "Bot_version : 1.0.0 it_work\n"
-                "Петя, при первом входе на сервер, после полдключения пропиши в тг 'op' \n\n"
-                "Команды :\n"
-                "start, stop, help - писать в телеграм БЕЗ слеша\n")
-            print('Мне тоже нужна помощь')
-        else:
-            bot.send_message(message.chat.id, "Не понял 🤔")
+        state = user_state.get(message.from_user.id, STATE_MAIN_MENU)
+        if state == STATE_MAIN_MENU:
+            if message.text == "⚙️ Запустить сервер":
+                bot.send_message(message.from_user.id,
+                                 "Server starting...")
+                print("Server starting...")
+                server.start()
+            elif message.text == "⚙️ Остановить сервер":
+                bot.send_message(message.from_user.id,
+                                 "Server stopping...")
+                print("Server stopping...")
+                server.stop()
+            elif message.text == "⌨️ Режим консоли":
+                com()
+            elif message.text == "❓ Помощь":
+                bot.send_message(message.from_user.id,
+                    "Мне тоже нужна помощь\n"
+                    "IP + порт : 26.50.226.151:25565\n"
+                    "Minecraft_version : forge-1.12.2-14.23.5.2859.jar"
+                    "Bot_version : 1.0.0 it_work\n"
+                    "\n"
+                    "Команды :\n"
+                    "start, stop, help - писать в телеграм БЕЗ слеша\n")
+                print('Мне тоже нужна помощь')
+            else:
+                bot.send_message(message.from_user.id, "Не понял 🤔")
+        elif state == STATE_SUBMENU:
+            if message.text == "🔙 Назад":
+                user_state[message.from_user.id] = STATE_MAIN_MENU
+                glavnay(message)
+
+            else:
+                server.send_command(message.text)
+                # bot.send_message(message.from_user.id, "Не понял 🤔")
 
     def com():
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         btn_back = types.KeyboardButton("🔙 Назад")
         markup.add(btn_back)
         bot.send_message(message.chat.id, "Вводите команды:", reply_markup=markup)
+        user_state[message.from_user.id] = STATE_SUBMENU
+        # @bot.message_handler(func=lambda message: True)
+        # def nazad(message):
+        #     if message.text == "🔙 Назад":
+        #         glavnay()
+        # @bot.message_handler(content_types=['text'])
+        # def command_menu(message):
+        #     server.send_command(message.text)
 
-        @bot.message_handler(content_types=['text'])
-        def command_menu(message):
-            server.send_command(message.text)
-
+    mane_menu(message)
 
 
 
