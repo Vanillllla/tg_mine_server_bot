@@ -42,7 +42,6 @@ def glavnay(message):
                 com()
             elif message.text == "❓ Помощь":
                 bot.send_message(message.chat.id,
-                                 "Мне тоже нужна помощь\n"
                                  "IP + порт : 26.50.226.151:25565\n"
                                  "Minecraft_version : forge-1.12.2-14.23.5.2859.jar"
                                  "Bot_version : 1.0.0 it_work\n"
