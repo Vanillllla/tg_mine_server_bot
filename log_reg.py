@@ -7,7 +7,7 @@ def log(message):
         return 0
 
 def registration(message):
-    if str(message.text) == "123":
+    if str(message.text) == "Go_V_Maincraft":
         return 1
     else:
         return 0
