@@ -1,8 +1,12 @@
+# bot = telebot.TeleBot('7563076857:AAHf5MdmVCDskWN9IL1tNz4eXuwawZ0alMg')
 import telebot
 from telebot import types
-from log_reg import log, registration
-from BD_wock import add_user
+
+from BD_wock import add_user, in_bd
 from SERV_work import ServerManager
+import psutil
+import pynvml
+
 
 bot = telebot.TeleBot('7563076857:AAHf5MdmVCDskWN9IL1tNz4eXuwawZ0alMg')
 server = ServerManager("forge-1.12.2-14.23.5.2859.jar", cwd="Server")
@@ -11,149 +15,323 @@ user_state = {}
 STATE_MAIN_MENU = "main"
 STATE_SUBMENU = "com_menu"
 
-def glavnay(message):
+# --- Вспомогательные функции авторизации ---
+
+def is_registered(user_id):
+    return in_bd(user_id)
+
+def check_password(password):
+    return password == "Go_V_Maincraft"
+
+# --- Регистрация и логин ---
+
+def start_registration(message):
+    bot.send_message(message.chat.id, "Введите код активации переданный вам : ")
+    bot.register_next_step_handler_by_chat_id(message.chat.id, handle_registration)
+
+def handle_registration(message):
+    if check_password(message.text):
+        add_user(message.from_user.id)
+        bot.send_message(message.chat.id, "Вы успешно зарегистрированы!")
+        print("Зарегестрирован ", message.from_user.id)
+        show_main_menu(message)
+    else:
+        bot.send_message(message.chat.id, "Пароль неверный. Повторите /start.")
+
+# --- Главное меню ---
+
+def show_main_menu(message):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(
+        types.KeyboardButton("⚙️ Запустить сервер"),
+        types.KeyboardButton("⚙️ Остановить сервер"),
+        types.KeyboardButton("🧪 Режим консоли"),
+        types.KeyboardButton("📊 Показать статус"),
+        types.KeyboardButton("❓ Помощь")
+    )
+    bot.send_message(message.chat.id, "Жми на кнопочки:", reply_markup=markup)
+    user_state[message.chat.id] = STATE_MAIN_MENU
+
+def show_console_mode(message):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(types.KeyboardButton("🔙 Назад"))
+    bot.send_message(message.chat.id, "Вводите команды:", reply_markup=markup)
+    user_state[message.chat.id] = STATE_SUBMENU
+
+# --- Отображение статуса сервера и пк ---
+
+def send_server_status(message):
+    # Статус сервера
+    if server.process and server.process.poll() is None:
+        server_status = "✅ Сервер сейчас работает."
+    else:
+        server_status = "❌ Сервер выключен."
+
+    # Загрузка CPU
+    cpu_load = psutil.cpu_percent(interval=1)
+
+    # Загрузка RAM
+    virtual_memory = psutil.virtual_memory()
+    ram_used_gb = virtual_memory.used / (1024 ** 3)
+    ram_total_gb = virtual_memory.total / (1024 ** 3)
+    ram_percent = virtual_memory.percent
+
+    # Загрузка GPU
+    try:
+        pynvml.nvmlInit()
+        handle = pynvml.nvmlDeviceGetHandleByIndex(0)  # Первая видеокарта
+        gpu_util = pynvml.nvmlDeviceGetUtilizationRates(handle)
+        gpu_memory = pynvml.nvmlDeviceGetMemoryInfo(handle)
+        gpu_load = gpu_util.gpu  # в процентах
+        gpu_used_gb = gpu_memory.used / (1024 ** 3)
+        gpu_total_gb = gpu_memory.total / (1024 ** 3)
+        pynvml.nvmlShutdown()
+        gpu_info = (f"🎮 GPU загрузка: {gpu_load}%\n"
+                    f"🎮 GPU память: {gpu_used_gb:.2f}ГБ / {gpu_total_gb:.2f}ГБ")
+    except Exception as e:
+        gpu_info = "🎮 GPU: Недоступно"
+
+    # Формируем ответ
+    response = (
+        f"{server_status}\n\n"
+        f"🧠 CPU загрузка: {cpu_load}%\n"
+        f"💾 RAM: {ram_used_gb:.2f}ГБ / {ram_total_gb:.2f}ГБ ({ram_percent}%)\n"
+        f"{gpu_info}"
+    )
+    print(response)
+    bot.send_message(message.chat.id, response)
+
+def send_help(message):
 
 
-    def mane_menu(message):
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        btn1 = types.KeyboardButton("⚙️ Запустить сервер")
-        btn2 = types.KeyboardButton("⚙️ Остановить сервер")
-        btn3 = types.KeyboardButton("🧪 Режим консоли")
-        btn4 = types.KeyboardButton("❓ Помощь")
-        markup.add(btn1, btn2, btn3, btn4)
-        bot.send_message(message.chat.id, "Жми на кнопочки:", reply_markup=markup)
-
-    @bot.message_handler(func=lambda message: True)
-    def handle_message(message):
-        state = user_state.get(message.chat.id, STATE_MAIN_MENU)
-        if state == STATE_MAIN_MENU:
-            if message.text == "⚙️ Запустить сервер":
-                bot.send_message(message.chat.id,
-                                 "🟢 Сервер запускается ...")
-                print("Server starting...")
-                bot.send_message(message.chat.id,str(server.start()))
-            elif message.text == "⚙️ Остановить сервер":
-                bot.send_message(message.chat.id,
-                                 "🔴 Сервер остонавливается ...")
-                # print(server.stop())
-                bot.send_message(message.chat.id,
-                                 str(server.stop()))
-            elif message.text == "🧪 Режим консоли":
-                com()
-            elif message.text == "❓ Помощь":
-                bot.send_message(message.chat.id,
-                                 "Minecraft_version : forge-1.12.2-14.23.5.2859.jar\n"
-                                 "IP + порт : <code>26.50.226.151:25565</code>\n"
-                                 "Сеть RadminVPN : \n"
-                                 "  login: <b>''.join(str(i) for i in range(1,10))+'0'*10</b>\n"
-                                 "  password:123456\n"
-                                 "Команды для майнкрафт консоли : <a href='https://timeweb.com/ru/community/articles/komandy-dlya-servera-minecraft'>ТЫК</a>\n"
-                                 "P. S. Чтобы выдать админку: <b>op ник</b>",
-                                 parse_mode='HTML',
-                                 disable_web_page_preview=True)
-                print('❓Мне тоже нужна помощь!❓')
-            else:
-                bot.send_message(message.chat.id, "Не понял 🤔")
-        elif state == STATE_SUBMENU:
-            if message.text == "🔙 Назад":
-                user_state[message.chat.id] = STATE_MAIN_MENU
-                mane_menu(message)
-
-            else:
-                #print(server.send_command(message.text))
-                bot.send_message(message.chat.id,str(server.send_command(message.text)))
-                # ret = server.send_command(message.text)
-                # if ret == 0:
-                #     bot.send_message(message.chat.id, "Команда "+str(message.text)+"успешно отправленна")
-                # elif ret == 1:
-                #     bot.send_message(message.chat.id, "Ошибка в команде")
-                # elif ret == 2:
-                #     bot.send_message(message.chat.id,"Ты чё дурак!!! Сервер выключен!")
+    bot.send_message(message.chat.id,
+        "Minecraft_version : forge-1.12.2-14.23.5.2859.jar\n"
+        "IP + порт : <code>26.50.226.151:25565</code>\n\n"
+        "Сеть RadminVPN : \n"
+        "  login: <b>''.join(str(i) for i in range(1,10))+'0'*10</b>\n"
+        "  password:123456\n\n"
+        "Команды для майнкрафт консоли : <a href='https://timeweb.com/ru/community/articles/komandy-dlya-servera-minecraft'>ТЫК</a>\n"
+        "P. S. Чтобы выдать админку: <b>op ник</b>",
+        parse_mode='HTML',
+        disable_web_page_preview=True)
 
 
-    def com():
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        btn_back = types.KeyboardButton("🔙 Назад")
-        markup.add(btn_back)
-        bot.send_message(message.chat.id, "Вводите команды:", reply_markup=markup)
-        user_state[message.chat.id] = STATE_SUBMENU
 
-    mane_menu(message)
-
+# --- Обработчики сообщений ---
 
 @bot.message_handler(commands=['start'])
-def start(message):
-    user_state[message.chat.id] = STATE_MAIN_MENU
-    print(message)
-    bot.send_message(message.chat.id,
-                     "Привет, готов настроить контакт с сервером, " + str(message.chat.username) + "?")
-    if log(message):
-        bot.send_message(message.chat.id,
-                         "Сначало надо зарегистривроваться.")
-        bot.send_message(message.chat.id,
-                         "Введите код активации переданный вам : ")
-        bot.register_next_step_handler_by_chat_id(message.chat.id, reg1)
-
+def handle_start(message):
+    if is_registered(message.from_user.id):
+        bot.send_message(message.chat.id, f"Добро пожаловать, {message.chat.username}!")
+        print("Вошёл ", message.chat.username)
+        show_main_menu(message)
     else:
-        bot.send_message(message.chat.id, "Добро пожаловать " + str(message.chat.id) + ".")
-        glavnay(message)
+        bot.send_message(message.chat.id, f"Привет, {message.chat.username}! Необходимо зарегистрироваться.")
+        start_registration(message)
+
+@bot.message_handler(func=lambda message: True)
+def handle_all_messages(message):
+    if not is_registered(message.from_user.id):
+        bot.send_message(message.chat.id, "⛔ Вы не зарегистрированы. Введите /start")
+        return
+
+    state = user_state.get(message.chat.id, STATE_MAIN_MENU)
+
+    if state == STATE_MAIN_MENU:
+        if message.text == "⚙️ Запустить сервер":
+            bot.send_message(message.chat.id,"⏳ Ожидание запуска сервера...")
+            print("⏳ Ожидание запуска сервера...")
+            sand = server.start()
+            print(sand)
+            bot.send_message(message.chat.id, sand)
+        elif message.text == "⚙️ Остановить сервер":
+            bot.send_message(message.chat.id, "🛑 Останавливаем сервер...")
+            sand = server.stop()
+            print(sand)
+            bot.send_message(message.chat.id, sand)
+        elif message.text == "🧪 Режим консоли":
+            print("🧪 Режим консоли")
+            show_console_mode(message)
+        elif message.text == "📊 Показать статус":
+            print("📊 Показать статус")
+            send_server_status(message)
+        elif message.text == "❓ Помощь":
+            print('❓Мне тоже нужна помощь!❓')
+            send_help(message)
+        else:
+            bot.send_message(message.chat.id, "Не понял 🤔")
+    elif state == STATE_SUBMENU:
+        if message.text == "🔙 Назад":
+            show_main_menu(message)
+        else:
+            bot.send_message(message.chat.id, server.send_command(message.text))
+
+# --- Запуск бота ---
+bot.polling(none_stop=True)
 
 
-def reg1(message):
-    # print(123123123)
-    if registration(message):
-        bot.send_message(message.chat.id, " Пароль верный.")
-        print("Успешно заригистрирован ", message.from_user.id)
-        add_user(message.from_user.id)
-        bot.send_message(message.from_user.id, "Вы успешно зарегистрованный.")
-        glavnay(message)
-    else:
-        bot.send_message(message.chat.id, "Пароль НЕ верный. \nСнова введите /start")
-        bot.register_next_step_handler_by_chat_id(message, start)
 
 
-bot.polling(none_stop=True, interval=0)
-
-# @bot.message_handler(func=lambda message: True)
-# def nazad(message):
-#     if message.text == "🔙 Назад":
-#         glavnay()
-# @bot.message_handler(content_types=['text'])
-# def command_menu(message):
-#     server.send_command(message.text)
 
 
-# @bot.message_handler(content_types=['text'])
-# def worc(message):
-#     if str(message.text) == 'start':
-#         bot.send_message(message.chat.id,
-#                          "Server starting...")
-#         print("Server starting...")
-#         server.start()
-#     elif str(message.text) == 'stop':
-#         bot.send_message(message.chat.id,
-#                          "Server stopping...")
-#         print("Server stopping...")
-#         server.stop()
-
-#         elif str(message.text) == 'help':
-#             bot.send_message(message.chat.id,
-#                              "Мне тоже нужна помощь\n"
-#                              "IP + порт : 26.50.226.151:25565\n"
-#                              "Minecraft_version : forge-1.12.2-14.23.5.2859.jar"
-#                              "Bot_version : 1.0.0 it_work\n"
-#                              "Петя, при первом входе на сервер, после полдключения пропиши в тг 'op' \n\n"
-#                              "Команды :\n"
-#                              "start, stop, help - писать в телеграм БЕЗ слеша\n")
-#             print('Мне тоже нужна помощь')
-#         # elif str(message.text) == 'say':
-#         #     server.send_command("say Привет! Сервер работает!")
-#         # elif str(message.text) == 'op':
-#         #     server.send_command("op T_55AMD_1")
-#         # elif str(message.text) == 'op':
 
 
+# import telebot
+# from telebot import types
+# from log_reg import log, registration
+# from BD_wock import add_user
+# from SERV_work import ServerManager
+# import psutil
+# import pynvml
+#
+#
+# bot = telebot.TeleBot('7563076857:AAHf5MdmVCDskWN9IL1tNz4eXuwawZ0alMg')
+# server = ServerManager("forge-1.12.2-14.23.5.2859.jar", cwd="Server")
+#
+# user_state = {}
+# STATE_MAIN_MENU = "main"
+# STATE_SUBMENU = "com_menu"
+#
+# def is_registered(func):
+#     def wrapper(message, *args, **kwargs):
+#         if log(message):
+#             bot.send_message(message.chat.id, "⚠️ Вы не зарегистрированы. Введите /start для регистрации.")
+#             return
+#         return func(message, *args, **kwargs)
+#     return wrapper
+#
+# def glavnay(message):
+#     def mane_menu(message):
+#         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+#         btn1 = types.KeyboardButton("⚙️ Запустить сервер")
+#         btn2 = types.KeyboardButton("⚙️ Остановить сервер")
+#         btn3 = types.KeyboardButton("🧪 Режим консоли")
+#         btn4 = types.KeyboardButton("❓ Помощь")
+#         markup.add(btn1, btn2, btn3, btn4)
+#         bot.send_message(message.chat.id, "Жми на кнопочки:", reply_markup=markup)
+#
+#     @bot.message_handler(commands=['status'])
+#     def status(message):
+#         # Статус сервера
+#         if server.process and server.process.poll() is None:
+#             server_status = "✅ Сервер сейчас работает."
 #         else:
-#             bot.send_message(message.chat.id,
-#                              "Неизвестная команда")
-#             print("Неизвестная команда: ", message.text)
+#             server_status = "❌ Сервер выключен."
+#
+#         # Загрузка CPU
+#         cpu_load = psutil.cpu_percent(interval=1)
+#
+#         # Загрузка RAM
+#         virtual_memory = psutil.virtual_memory()
+#         ram_used_gb = virtual_memory.used / (1024 ** 3)
+#         ram_total_gb = virtual_memory.total / (1024 ** 3)
+#         ram_percent = virtual_memory.percent
+#
+#         # Загрузка GPU
+#         try:
+#             pynvml.nvmlInit()
+#             handle = pynvml.nvmlDeviceGetHandleByIndex(0)  # Первая видеокарта
+#             gpu_util = pynvml.nvmlDeviceGetUtilizationRates(handle)
+#             gpu_memory = pynvml.nvmlDeviceGetMemoryInfo(handle)
+#             gpu_load = gpu_util.gpu  # в процентах
+#             gpu_used_gb = gpu_memory.used / (1024 ** 3)
+#             gpu_total_gb = gpu_memory.total / (1024 ** 3)
+#             pynvml.nvmlShutdown()
+#             gpu_info = (f"🎮 GPU загрузка: {gpu_load}%\n"
+#                         f"🎮 GPU память: {gpu_used_gb:.2f}ГБ / {gpu_total_gb:.2f}ГБ")
+#         except Exception as e:
+#             gpu_info = "🎮 GPU: Недоступно"
+#
+#         # Формируем ответ
+#         response = (
+#             f"{server_status}\n\n"
+#             f"🖥 CPU загрузка: {cpu_load}%\n"
+#             f"🧠 RAM: {ram_used_gb:.2f}ГБ / {ram_total_gb:.2f}ГБ ({ram_percent}%)\n"
+#             f"{gpu_info}"
+#         )
+#
+#         bot.send_message(message.chat.id, response)
+#
+#     @bot.message_handler(func=lambda message: True)
+#     def handle_message(message):
+#         state = user_state.get(message.chat.id, STATE_MAIN_MENU)
+#         if state == STATE_MAIN_MENU:
+#             if message.text == "⚙️ Запустить сервер":
+#                 bot.send_message(message.chat.id,
+#                                  "⏳ Ожидание запуска сервера...")
+#                 print("⏳ Ожидание запуска сервера...")
+#                 bot.send_message(message.chat.id, str(server.start()))
+#             elif message.text == "⚙️ Остановить сервер":
+#                 bot.send_message(message.chat.id,
+#                                  "🔴 Сервер остонавливается ...")
+#                 # print(server.stop())
+#                 bot.send_message(message.chat.id,
+#                                  str(server.stop()))
+#             elif message.text == "🧪 Режим консоли":
+#                 com()
+#             elif message.text == "❓ Помощь":
+#                 bot.send_message(message.chat.id,
+#                                  "Minecraft_version : forge-1.12.2-14.23.5.2859.jar\n"
+#                                  "IP + порт : <code>26.50.226.151:25565</code>\n"
+#                                  "Сеть RadminVPN : \n"
+#                                  "  login: <b>''.join(str(i) for i in range(1,10))+'0'*10</b>\n"
+#                                  "  password:123456\n"
+#                                  "Команды для майнкрафт консоли : <a href='https://timeweb.com/ru/community/articles/komandy-dlya-servera-minecraft'>ТЫК</a>\n"
+#                                  "P. S. Чтобы выдать админку: <b>op ник</b>",
+#                                  parse_mode='HTML',
+#                                  disable_web_page_preview=True)
+#                 print('❓Мне тоже нужна помощь!❓')
+#             else:
+#                 bot.send_message(message.chat.id, "Не понял 🤔")
+#         elif state == STATE_SUBMENU:
+#             if message.text == "🔙 Назад":
+#                 user_state[message.chat.id] = STATE_MAIN_MENU
+#                 mane_menu(message)
+#
+#             else:
+#
+#                 bot.send_message(message.chat.id, str(server.send_command(message.text)))
+#
+#
+#     def com():
+#         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+#         btn_back = types.KeyboardButton("🔙 Назад")
+#         markup.add(btn_back)
+#         bot.send_message(message.chat.id, "Вводите команды:", reply_markup=markup)
+#         user_state[message.chat.id] = STATE_SUBMENU
+#
+#     mane_menu(message)
+#
+#
+# @bot.message_handler(commands=['start'])
+# def start(message):
+#     user_state[message.chat.id] = STATE_MAIN_MENU
+#     print(message)
+#     bot.send_message(message.chat.id,
+#                      "Привет, готов настроить контакт с сервером, " + str(message.chat.username) + "?")
+#     if log(message):
+#         bot.send_message(message.chat.id,
+#                          "Сначало надо зарегистривроваться.")
+#         bot.send_message(message.chat.id,
+#                          "Введите код активации переданный вам : ")
+#         bot.register_next_step_handler_by_chat_id(message.chat.id, reg1)
+#
+#     else:
+#         bot.send_message(message.chat.id, "Добро пожаловать " + str(message.chat.id) + ".")
+#         glavnay(message)
+#
+#
+# def reg1(message):
+#     # print(123123123)
+#     if registration(message):
+#         bot.send_message(message.chat.id, " Пароль верный.")
+#         print("Успешно заригистрирован ", message.from_user.id)
+#         add_user(message.from_user.id)
+#         bot.send_message(message.from_user.id, "Вы успешно зарегистрованный.")
+#         glavnay(message)
+#     else:
+#         bot.send_message(message.chat.id, "Пароль НЕ верный. \nСнова введите /start")
+#         bot.register_next_step_handler_by_chat_id(message, start)
+#
+#
+# bot.polling(none_stop=True, interval=0)
