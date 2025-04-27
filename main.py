@@ -108,8 +108,8 @@ def send_help(message):
         "Minecraft_version : forge-1.12.2-14.23.5.2859.jar\n"
         "IP + порт : <code>26.50.226.151:25565</code>\n\n"
         "Сеть RadminVPN : \n"
-        "  login: <b>''.join(str(i) for i in range(1,10))+'0'*10</b>\n"
-        "  password:123456\n\n"
+        "  login: </code><b>''.join(str(i) for i in range(1,10))+'0'*10</b></code>\n"
+        "  password:<code>123456</code>\n\n"
         "Команды для майнкрафт консоли : <a href='https://timeweb.com/ru/community/articles/komandy-dlya-servera-minecraft'>ТЫК</a>\n"
         "P. S. Чтобы выдать админку: <b>op ник</b>",
         parse_mode='HTML',

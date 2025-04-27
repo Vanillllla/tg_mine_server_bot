@@ -75,12 +75,14 @@
     "criteria": {
       "forest": "2025-04-15 20:13:10 +0300",
       "birch_forest": "2025-04-16 00:55:01 +0300",
+      "deep_ocean": "2025-04-27 11:26:29 +0300",
       "beaches": "2025-04-15 21:59:27 +0300",
       "desert_hills": "2025-04-15 21:57:22 +0300",
       "forest_hills": "2025-04-15 20:12:25 +0300",
       "plains": "2025-04-15 20:13:05 +0300",
       "savanna": "2025-04-15 21:56:59 +0300",
       "birch_forest_hills": "2025-04-16 11:16:21 +0300",
+      "ocean": "2025-04-27 11:26:09 +0300",
       "extreme_hills": "2025-04-15 22:00:25 +0300",
       "river": "2025-04-15 21:57:59 +0300",
       "desert": "2025-04-15 21:57:47 +0300"
@@ -144,6 +146,12 @@
   "minecraft:recipes/building_blocks/light_blue_concrete_powder": {
     "criteria": {
       "has_sand": "2025-04-15 21:57:24 +0300"
+    },
+    "done": true
+  },
+  "mts:rtfm": {
+    "criteria": {
+      "has_manual": "2025-04-27 11:22:08 +0300"
     },
     "done": true
   },

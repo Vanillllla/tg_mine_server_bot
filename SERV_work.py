@@ -65,8 +65,8 @@ class ServerManager:
         while True:
             with self._lock:
                 if any("Done (" in line and ")! For help, type" in line for line in self._output_buffer):
-                    self._log("✅ Сервер полностью запущен.\n⏳Полное время запуска сервера: " + str(round(time.time()-start_time, 2)) + "сек.")
-                    return ("✅ Сервер полностью запущен.\n⏳Полное время запуска сервера: " + str(round(time.time()-start_time, 2)) + "сек.")
+                    self._log("✅ Сервер полностью запущен.\n⏳Полное время запуска сервера: " + str(round(time.time()-start_time, 2)) + " сек.")
+                    return ("✅ Сервер полностью запущен.\n⏳Полное время запуска сервера: " + str(round(time.time()-start_time, 2)) + " сек.")
 
             if self.process.poll() is not None:
                 self._log("❌ Сервер процесс неожиданно завершился.")
