@@ -1,167 +1,167 @@
-[16:34:34] [main/INFO] [LaunchWrapper]: Loading tweak class name net.minecraftforge.fml.common.launcher.FMLServerTweaker
-[16:34:34] [main/INFO] [LaunchWrapper]: Using primary tweak class name net.minecraftforge.fml.common.launcher.FMLServerTweaker
-[16:34:34] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLServerTweaker
-[16:34:34] [main/INFO] [FML]: Forge Mod Loader version 14.23.5.2859 for Minecraft 1.12.2 loading
-[16:34:34] [main/INFO] [FML]: Java is Java HotSpot(TM) 64-Bit Server VM, version 1.8.0_441, running on Windows 11:amd64:10.0, installed at C:\Program Files\Java\jre1.8.0_441
-[16:34:34] [main/INFO] [FML]: Searching C:\Users\Ivan\Documents\GitHub\tg_mine_server_bot\Server\.\mods for mods
-[16:34:34] [main/INFO] [LaunchWrapper]: Loading tweak class name net.minecraftforge.fml.common.launcher.FMLInjectionAndSortingTweaker
-[16:34:34] [main/INFO] [LaunchWrapper]: Loading tweak class name net.minecraftforge.fml.common.launcher.FMLDeobfTweaker
-[16:34:34] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLInjectionAndSortingTweaker
-[16:34:34] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLInjectionAndSortingTweaker
-[16:34:34] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper
-[16:34:35] [main/INFO] [FML]: Found valid fingerprint for Minecraft Forge. Certificate fingerprint e3c3d50c7c986df74c645c0ac54639741c90a557
-[16:34:35] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper
-[16:34:35] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLDeobfTweaker
-[16:34:35] [main/INFO] [LaunchWrapper]: Loading tweak class name net.minecraftforge.fml.common.launcher.TerminalTweaker
-[16:34:35] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.common.launcher.TerminalTweaker
-[16:34:35] [main/INFO] [LaunchWrapper]: Launching wrapped minecraft {net.minecraft.server.MinecraftServer}
-[16:34:38] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Starting minecraft server version 1.12.2
-[16:34:38] [Server thread/INFO] [FML]: MinecraftForge v14.23.5.2859 Initialized
-[16:34:38] [Server thread/INFO] [FML]: Starts to replace vanilla recipe ingredients with ore ingredients.
-[16:34:38] [Server thread/INFO] [FML]: Invalid recipe found with multiple oredict ingredients in the same ingredient...
-[16:34:38] [Server thread/INFO] [FML]: Replaced 1227 ore ingredients
-[16:34:38] [Server thread/INFO] [FML]: Searching C:\Users\Ivan\Documents\GitHub\tg_mine_server_bot\Server\.\mods for mods
-[16:34:38] [Server thread/INFO] [FML]: Forge Mod Loader has identified 8 mods to load
-[16:34:38] [Server thread/WARN] [FML]: Missing English translation for FML: assets/fml/lang/en_us.lang
-[16:34:38] [Server thread/WARN] [FML]: Missing English translation for mtsofficialpack: assets/mtsofficialpack/lang/en_us.lang
-[16:34:38] [Server thread/INFO] [FML]: FML has found a non-mod file AvorisPack-0.0.52.jar in your mods directory. It will now be injected into your classpath. This could severe stability issues, it should be removed if possible.
-[16:34:38] [Server thread/INFO] [FML]: FML has found a non-mod file IAV_Parts_Pack_1.0.2-1.12.2.jar in your mods directory. It will now be injected into your classpath. This could severe stability issues, it should be removed if possible.
-[16:34:38] [Server thread/INFO] [FML]: FML has found a non-mod file VEB-04.03.1971-1.12.2.jar in your mods directory. It will now be injected into your classpath. This could severe stability issues, it should be removed if possible.
-[16:34:38] [Server thread/INFO] [FML]: Attempting connection with missing mods [minecraft, mcp, FML, forge, mts, mtsofficialpack, unumilitary, unuparts] at CLIENT
-[16:34:38] [Server thread/INFO] [FML]: Attempting connection with missing mods [minecraft, mcp, FML, forge, mts, mtsofficialpack, unumilitary, unuparts] at SERVER
-[16:34:39] [Server thread/INFO] [STDOUT]: [mtsofficialpack.MTSPackLoader:<init>:55]: Marco
-[16:34:39] [Server thread/INFO] [FML]: Processing ObjectHolder annotations
-[16:34:39] [Server thread/INFO] [FML]: Found 1168 ObjectHolder annotations
-[16:34:39] [Server thread/INFO] [FML]: Identifying ItemStackHolder annotations
-[16:34:39] [Server thread/INFO] [FML]: Found 0 ItemStackHolder annotations
-[16:34:39] [Server thread/INFO] [FML]: Configured a dormant chunk cache size of 0
-[16:34:39] [Forge Version Check/INFO] [forge.VersionCheck]: [forge] Starting version check at http://files.minecraftforge.net/maven/net/minecraftforge/forge/promotions_slim.json
-[16:34:39] [Server thread/INFO] [mcinterface1122.InterfaceLoader]: Welcome to MTS VERSION:22.15.0
-[16:34:40] [Forge Version Check/INFO] [forge.VersionCheck]: [forge] Found status: UP_TO_DATE Target: null
-[16:34:40] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Could not do model-based legacy compats on mtsofficialpack:engineamci4.  Lights and treads will likely not be present on this model.
-[16:34:40] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: For input string: "roller2"
-[16:34:41] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Could not do model-based legacy compats on avorisparts:iav_z_fuel_pump_charger.  Lights and treads will likely not be present on this model.
-[16:34:41] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Attempted to parse the OBJ model at: /assets/avorisparts/objmodels/decors/iav_z_fuel_pump_charger.obj but could not find it.  Check the path and try again.
-[16:34:41] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: avorisparts:iav_z_fuel_pump_charger/definitions/extraMaterialLists, entry #1, is missing from the JSON and is required!
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: java.lang.NullPointerException: avorisparts:iav_z_fuel_pump_charger/definitions/extraMaterialLists, entry #1, is missing from the JSON and is required!
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at minecrafttransportsimulator.packloading.JSONParser.validateFields(JSONParser.java:747)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at minecrafttransportsimulator.packloading.JSONParser.validateFields(JSONParser.java:766)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at minecrafttransportsimulator.packloading.PackParser.registerItem(PackParser.java:470)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at minecrafttransportsimulator.packloading.PackParser.parseAllPacks(PackParser.java:436)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at minecrafttransportsimulator.packloading.PackParser.parsePacks(PackParser.java:156)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at mcinterface1122.InterfaceLoader.preInit(InterfaceLoader.java:72)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at java.lang.reflect.Method.invoke(Unknown Source)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.FMLModContainer.handleModStateEvent(FMLModContainer.java:637)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at java.lang.reflect.Method.invoke(Unknown Source)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber.invokeSubscriberMethod(Subscriber.java:91)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber$SynchronizedSubscriber.invokeSubscriberMethod(Subscriber.java:150)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber$1.run(Subscriber.java:76)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.util.concurrent.MoreExecutors$DirectExecutor.execute(MoreExecutors.java:399)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber.dispatchEvent(Subscriber.java:71)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Dispatcher$PerThreadQueuedDispatcher.dispatch(Dispatcher.java:116)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.EventBus.post(EventBus.java:217)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.LoadController.sendEventToModContainer(LoadController.java:219)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.LoadController.propogateStateMessage(LoadController.java:197)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at java.lang.reflect.Method.invoke(Unknown Source)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber.invokeSubscriberMethod(Subscriber.java:91)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber$SynchronizedSubscriber.invokeSubscriberMethod(Subscriber.java:150)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber$1.run(Subscriber.java:76)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.util.concurrent.MoreExecutors$DirectExecutor.execute(MoreExecutors.java:399)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber.dispatchEvent(Subscriber.java:71)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Dispatcher$PerThreadQueuedDispatcher.dispatch(Dispatcher.java:116)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.EventBus.post(EventBus.java:217)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.LoadController.distributeStateMessage(LoadController.java:136)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.Loader.preinitializeMods(Loader.java:629)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.server.FMLServerHandler.beginServerLoading(FMLServerHandler.java:99)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.FMLCommonHandler.onServerStart(FMLCommonHandler.java:333)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraft.server.dedicated.DedicatedServer.func_71197_b(DedicatedServer.java:125)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:486)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at java.lang.Thread.run(Unknown Source)
-[16:34:41] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Could not do model-based legacy compats on avorisparts:iav_z_fuel_pump_modern.  Lights and treads will likely not be present on this model.
-[16:34:41] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Attempted to parse the OBJ model at: /assets/avorisparts/objmodels/decors/iav_z_fuel_pump_modern.obj but could not find it.  Check the path and try again.
-[16:34:41] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: avorisparts:iav_z_fuel_pump_modern/definitions/extraMaterialLists, entry #1, is missing from the JSON and is required!
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: java.lang.NullPointerException: avorisparts:iav_z_fuel_pump_modern/definitions/extraMaterialLists, entry #1, is missing from the JSON and is required!
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at minecrafttransportsimulator.packloading.JSONParser.validateFields(JSONParser.java:747)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at minecrafttransportsimulator.packloading.JSONParser.validateFields(JSONParser.java:766)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at minecrafttransportsimulator.packloading.PackParser.registerItem(PackParser.java:470)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at minecrafttransportsimulator.packloading.PackParser.parseAllPacks(PackParser.java:436)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at minecrafttransportsimulator.packloading.PackParser.parsePacks(PackParser.java:156)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at mcinterface1122.InterfaceLoader.preInit(InterfaceLoader.java:72)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at java.lang.reflect.Method.invoke(Unknown Source)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.FMLModContainer.handleModStateEvent(FMLModContainer.java:637)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at java.lang.reflect.Method.invoke(Unknown Source)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber.invokeSubscriberMethod(Subscriber.java:91)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber$SynchronizedSubscriber.invokeSubscriberMethod(Subscriber.java:150)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber$1.run(Subscriber.java:76)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.util.concurrent.MoreExecutors$DirectExecutor.execute(MoreExecutors.java:399)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber.dispatchEvent(Subscriber.java:71)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Dispatcher$PerThreadQueuedDispatcher.dispatch(Dispatcher.java:116)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.EventBus.post(EventBus.java:217)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.LoadController.sendEventToModContainer(LoadController.java:219)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.LoadController.propogateStateMessage(LoadController.java:197)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at java.lang.reflect.Method.invoke(Unknown Source)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber.invokeSubscriberMethod(Subscriber.java:91)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber$SynchronizedSubscriber.invokeSubscriberMethod(Subscriber.java:150)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber$1.run(Subscriber.java:76)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.util.concurrent.MoreExecutors$DirectExecutor.execute(MoreExecutors.java:399)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber.dispatchEvent(Subscriber.java:71)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Dispatcher$PerThreadQueuedDispatcher.dispatch(Dispatcher.java:116)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.EventBus.post(EventBus.java:217)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.LoadController.distributeStateMessage(LoadController.java:136)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.Loader.preinitializeMods(Loader.java:629)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.server.FMLServerHandler.beginServerLoading(FMLServerHandler.java:99)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.FMLCommonHandler.onServerStart(FMLCommonHandler.java:333)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraft.server.dedicated.DedicatedServer.func_71197_b(DedicatedServer.java:125)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:486)
-[16:34:41] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at java.lang.Thread.run(Unknown Source)
-[16:34:41] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Could not do model-based legacy compats on avorisparts:flag.  Lights and treads will likely not be present on this model.
-[16:34:41] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Attempted to parse the OBJ model at: /assets/avorisparts/objmodels/decors/flag.obj but could not find it.  Check the path and try again.
-[16:34:41] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Could not do model-based legacy compats on avorisparts:flag_wall.  Lights and treads will likely not be present on this model.
-[16:34:41] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Attempted to parse the OBJ model at: /assets/avorisparts/objmodels/decors/flag_wall.obj but could not find it.  Check the path and try again.
-[16:34:41] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Could not parse: unuparts:unuparts_currency.json
-[16:34:41] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: com.google.gson.stream.MalformedJsonException: Expected name at line 48 column 4 path $.general.stackSize
-[16:34:41] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Could not parse: unuparts:unuparts_decor_unu_debug_textscale.json
-[16:34:41] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: com.google.gson.stream.MalformedJsonException: Expected name at line 7 column 4 path $.definitions[0].subName
-[16:34:43] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: ConfigSystem failed to save modified config files.  Report to the mod author!
-[16:34:43] [Server thread/INFO] [FML]: Applying holder lookups
-[16:34:43] [Server thread/INFO] [FML]: Holder lookups applied
-[16:34:43] [Server thread/INFO] [STDOUT]: [mtsofficialpack.MTSPackLoader:registerItems:119]: Polo!
-[16:34:43] [Server thread/INFO] [FML]: Applying holder lookups
-[16:34:43] [Server thread/INFO] [FML]: Holder lookups applied
-[16:34:43] [Server thread/INFO] [FML]: Applying holder lookups
-[16:34:43] [Server thread/INFO] [FML]: Holder lookups applied
-[16:34:43] [Server thread/INFO] [FML]: Applying holder lookups
-[16:34:43] [Server thread/INFO] [FML]: Holder lookups applied
-[16:34:43] [Server thread/INFO] [FML]: Injecting itemstacks
-[16:34:43] [Server thread/INFO] [FML]: Itemstack injection complete
-[16:34:43] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Loading properties
-[16:34:43] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Default game type: SURVIVAL
-[16:34:43] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Generating keypair
-[16:34:43] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Starting Minecraft server on 26.50.226.151:25565
-[16:34:43] [Server thread/INFO] [net.minecraft.network.NetworkSystem]: Using default channel type
-[16:34:43] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer]: **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!
-[16:34:43] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer]: The server will make no attempt to authenticate usernames. Beware.
-[16:34:43] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer]: While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.
-[16:34:43] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer]: To change this, set "online-mode" to "true" in the server.properties file.
-[16:34:44] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:unu_emblem_ie
+[13:06:03] [main/INFO] [LaunchWrapper]: Loading tweak class name net.minecraftforge.fml.common.launcher.FMLServerTweaker
+[13:06:03] [main/INFO] [LaunchWrapper]: Using primary tweak class name net.minecraftforge.fml.common.launcher.FMLServerTweaker
+[13:06:03] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLServerTweaker
+[13:06:03] [main/INFO] [FML]: Forge Mod Loader version 14.23.5.2859 for Minecraft 1.12.2 loading
+[13:06:03] [main/INFO] [FML]: Java is Java HotSpot(TM) 64-Bit Server VM, version 1.8.0_441, running on Windows 11:amd64:10.0, installed at C:\Program Files\Java\jre1.8.0_441
+[13:06:03] [main/INFO] [FML]: Searching C:\Users\Ivan\Documents\GitHub\tg_mine_server_bot\Server\.\mods for mods
+[13:06:03] [main/INFO] [LaunchWrapper]: Loading tweak class name net.minecraftforge.fml.common.launcher.FMLInjectionAndSortingTweaker
+[13:06:03] [main/INFO] [LaunchWrapper]: Loading tweak class name net.minecraftforge.fml.common.launcher.FMLDeobfTweaker
+[13:06:03] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLInjectionAndSortingTweaker
+[13:06:03] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLInjectionAndSortingTweaker
+[13:06:03] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper
+[13:06:04] [main/INFO] [FML]: Found valid fingerprint for Minecraft Forge. Certificate fingerprint e3c3d50c7c986df74c645c0ac54639741c90a557
+[13:06:04] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper
+[13:06:04] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLDeobfTweaker
+[13:06:05] [main/INFO] [LaunchWrapper]: Loading tweak class name net.minecraftforge.fml.common.launcher.TerminalTweaker
+[13:06:05] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.common.launcher.TerminalTweaker
+[13:06:05] [main/INFO] [LaunchWrapper]: Launching wrapped minecraft {net.minecraft.server.MinecraftServer}
+[13:06:07] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Starting minecraft server version 1.12.2
+[13:06:07] [Server thread/INFO] [FML]: MinecraftForge v14.23.5.2859 Initialized
+[13:06:07] [Server thread/INFO] [FML]: Starts to replace vanilla recipe ingredients with ore ingredients.
+[13:06:07] [Server thread/INFO] [FML]: Invalid recipe found with multiple oredict ingredients in the same ingredient...
+[13:06:07] [Server thread/INFO] [FML]: Replaced 1227 ore ingredients
+[13:06:07] [Server thread/INFO] [FML]: Searching C:\Users\Ivan\Documents\GitHub\tg_mine_server_bot\Server\.\mods for mods
+[13:06:07] [Server thread/INFO] [FML]: Forge Mod Loader has identified 8 mods to load
+[13:06:07] [Server thread/WARN] [FML]: Missing English translation for FML: assets/fml/lang/en_us.lang
+[13:06:07] [Server thread/WARN] [FML]: Missing English translation for mtsofficialpack: assets/mtsofficialpack/lang/en_us.lang
+[13:06:07] [Server thread/INFO] [FML]: FML has found a non-mod file AvorisPack-0.0.52.jar in your mods directory. It will now be injected into your classpath. This could severe stability issues, it should be removed if possible.
+[13:06:07] [Server thread/INFO] [FML]: FML has found a non-mod file IAV_Parts_Pack_1.0.2-1.12.2.jar in your mods directory. It will now be injected into your classpath. This could severe stability issues, it should be removed if possible.
+[13:06:07] [Server thread/INFO] [FML]: FML has found a non-mod file VEB-04.03.1971-1.12.2.jar in your mods directory. It will now be injected into your classpath. This could severe stability issues, it should be removed if possible.
+[13:06:07] [Server thread/INFO] [FML]: Attempting connection with missing mods [minecraft, mcp, FML, forge, mts, mtsofficialpack, unumilitary, unuparts] at CLIENT
+[13:06:07] [Server thread/INFO] [FML]: Attempting connection with missing mods [minecraft, mcp, FML, forge, mts, mtsofficialpack, unumilitary, unuparts] at SERVER
+[13:06:08] [Server thread/INFO] [STDOUT]: [mtsofficialpack.MTSPackLoader:<init>:55]: Marco
+[13:06:08] [Server thread/INFO] [FML]: Processing ObjectHolder annotations
+[13:06:08] [Server thread/INFO] [FML]: Found 1168 ObjectHolder annotations
+[13:06:08] [Server thread/INFO] [FML]: Identifying ItemStackHolder annotations
+[13:06:08] [Server thread/INFO] [FML]: Found 0 ItemStackHolder annotations
+[13:06:08] [Server thread/INFO] [FML]: Configured a dormant chunk cache size of 0
+[13:06:08] [Forge Version Check/INFO] [forge.VersionCheck]: [forge] Starting version check at http://files.minecraftforge.net/maven/net/minecraftforge/forge/promotions_slim.json
+[13:06:08] [Server thread/INFO] [mcinterface1122.InterfaceLoader]: Welcome to MTS VERSION:22.15.0
+[13:06:09] [Forge Version Check/INFO] [forge.VersionCheck]: [forge] Found status: UP_TO_DATE Target: null
+[13:06:09] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Could not do model-based legacy compats on mtsofficialpack:engineamci4.  Lights and treads will likely not be present on this model.
+[13:06:09] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: For input string: "roller2"
+[13:06:09] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Could not do model-based legacy compats on avorisparts:iav_z_fuel_pump_charger.  Lights and treads will likely not be present on this model.
+[13:06:09] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Attempted to parse the OBJ model at: /assets/avorisparts/objmodels/decors/iav_z_fuel_pump_charger.obj but could not find it.  Check the path and try again.
+[13:06:09] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: avorisparts:iav_z_fuel_pump_charger/definitions/extraMaterialLists, entry #1, is missing from the JSON and is required!
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: java.lang.NullPointerException: avorisparts:iav_z_fuel_pump_charger/definitions/extraMaterialLists, entry #1, is missing from the JSON and is required!
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at minecrafttransportsimulator.packloading.JSONParser.validateFields(JSONParser.java:747)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at minecrafttransportsimulator.packloading.JSONParser.validateFields(JSONParser.java:766)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at minecrafttransportsimulator.packloading.PackParser.registerItem(PackParser.java:470)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at minecrafttransportsimulator.packloading.PackParser.parseAllPacks(PackParser.java:436)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at minecrafttransportsimulator.packloading.PackParser.parsePacks(PackParser.java:156)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at mcinterface1122.InterfaceLoader.preInit(InterfaceLoader.java:72)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at java.lang.reflect.Method.invoke(Unknown Source)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.FMLModContainer.handleModStateEvent(FMLModContainer.java:637)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at java.lang.reflect.Method.invoke(Unknown Source)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber.invokeSubscriberMethod(Subscriber.java:91)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber$SynchronizedSubscriber.invokeSubscriberMethod(Subscriber.java:150)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber$1.run(Subscriber.java:76)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.util.concurrent.MoreExecutors$DirectExecutor.execute(MoreExecutors.java:399)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber.dispatchEvent(Subscriber.java:71)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Dispatcher$PerThreadQueuedDispatcher.dispatch(Dispatcher.java:116)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.EventBus.post(EventBus.java:217)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.LoadController.sendEventToModContainer(LoadController.java:219)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.LoadController.propogateStateMessage(LoadController.java:197)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at java.lang.reflect.Method.invoke(Unknown Source)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber.invokeSubscriberMethod(Subscriber.java:91)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber$SynchronizedSubscriber.invokeSubscriberMethod(Subscriber.java:150)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber$1.run(Subscriber.java:76)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.util.concurrent.MoreExecutors$DirectExecutor.execute(MoreExecutors.java:399)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber.dispatchEvent(Subscriber.java:71)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Dispatcher$PerThreadQueuedDispatcher.dispatch(Dispatcher.java:116)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.EventBus.post(EventBus.java:217)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.LoadController.distributeStateMessage(LoadController.java:136)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.Loader.preinitializeMods(Loader.java:629)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.server.FMLServerHandler.beginServerLoading(FMLServerHandler.java:99)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.FMLCommonHandler.onServerStart(FMLCommonHandler.java:333)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraft.server.dedicated.DedicatedServer.func_71197_b(DedicatedServer.java:125)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:486)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at java.lang.Thread.run(Unknown Source)
+[13:06:09] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Could not do model-based legacy compats on avorisparts:iav_z_fuel_pump_modern.  Lights and treads will likely not be present on this model.
+[13:06:09] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Attempted to parse the OBJ model at: /assets/avorisparts/objmodels/decors/iav_z_fuel_pump_modern.obj but could not find it.  Check the path and try again.
+[13:06:09] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: avorisparts:iav_z_fuel_pump_modern/definitions/extraMaterialLists, entry #1, is missing from the JSON and is required!
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: java.lang.NullPointerException: avorisparts:iav_z_fuel_pump_modern/definitions/extraMaterialLists, entry #1, is missing from the JSON and is required!
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at minecrafttransportsimulator.packloading.JSONParser.validateFields(JSONParser.java:747)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at minecrafttransportsimulator.packloading.JSONParser.validateFields(JSONParser.java:766)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at minecrafttransportsimulator.packloading.PackParser.registerItem(PackParser.java:470)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at minecrafttransportsimulator.packloading.PackParser.parseAllPacks(PackParser.java:436)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at minecrafttransportsimulator.packloading.PackParser.parsePacks(PackParser.java:156)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at mcinterface1122.InterfaceLoader.preInit(InterfaceLoader.java:72)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at java.lang.reflect.Method.invoke(Unknown Source)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.FMLModContainer.handleModStateEvent(FMLModContainer.java:637)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at java.lang.reflect.Method.invoke(Unknown Source)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber.invokeSubscriberMethod(Subscriber.java:91)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber$SynchronizedSubscriber.invokeSubscriberMethod(Subscriber.java:150)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber$1.run(Subscriber.java:76)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.util.concurrent.MoreExecutors$DirectExecutor.execute(MoreExecutors.java:399)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber.dispatchEvent(Subscriber.java:71)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Dispatcher$PerThreadQueuedDispatcher.dispatch(Dispatcher.java:116)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.EventBus.post(EventBus.java:217)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.LoadController.sendEventToModContainer(LoadController.java:219)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.LoadController.propogateStateMessage(LoadController.java:197)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at java.lang.reflect.Method.invoke(Unknown Source)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber.invokeSubscriberMethod(Subscriber.java:91)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber$SynchronizedSubscriber.invokeSubscriberMethod(Subscriber.java:150)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber$1.run(Subscriber.java:76)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.util.concurrent.MoreExecutors$DirectExecutor.execute(MoreExecutors.java:399)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Subscriber.dispatchEvent(Subscriber.java:71)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.Dispatcher$PerThreadQueuedDispatcher.dispatch(Dispatcher.java:116)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at com.google.common.eventbus.EventBus.post(EventBus.java:217)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.LoadController.distributeStateMessage(LoadController.java:136)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.Loader.preinitializeMods(Loader.java:629)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.server.FMLServerHandler.beginServerLoading(FMLServerHandler.java:99)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraftforge.fml.common.FMLCommonHandler.onServerStart(FMLCommonHandler.java:333)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraft.server.dedicated.DedicatedServer.func_71197_b(DedicatedServer.java:125)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:486)
+[13:06:09] [Server thread/INFO] [STDERR]: [minecrafttransportsimulator.packloading.PackParser:registerItem:520]: 	at java.lang.Thread.run(Unknown Source)
+[13:06:09] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Could not do model-based legacy compats on avorisparts:flag.  Lights and treads will likely not be present on this model.
+[13:06:09] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Attempted to parse the OBJ model at: /assets/avorisparts/objmodels/decors/flag.obj but could not find it.  Check the path and try again.
+[13:06:09] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Could not do model-based legacy compats on avorisparts:flag_wall.  Lights and treads will likely not be present on this model.
+[13:06:09] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Attempted to parse the OBJ model at: /assets/avorisparts/objmodels/decors/flag_wall.obj but could not find it.  Check the path and try again.
+[13:06:10] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Could not parse: unuparts:unuparts_currency.json
+[13:06:10] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: com.google.gson.stream.MalformedJsonException: Expected name at line 48 column 4 path $.general.stackSize
+[13:06:10] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: Could not parse: unuparts:unuparts_decor_unu_debug_textscale.json
+[13:06:10] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: com.google.gson.stream.MalformedJsonException: Expected name at line 7 column 4 path $.definitions[0].subName
+[13:06:12] [Server thread/ERROR] [mcinterface1122.InterfaceLoader]: MTSERROR: ConfigSystem failed to save modified config files.  Report to the mod author!
+[13:06:12] [Server thread/INFO] [FML]: Applying holder lookups
+[13:06:12] [Server thread/INFO] [FML]: Holder lookups applied
+[13:06:12] [Server thread/INFO] [STDOUT]: [mtsofficialpack.MTSPackLoader:registerItems:119]: Polo!
+[13:06:12] [Server thread/INFO] [FML]: Applying holder lookups
+[13:06:12] [Server thread/INFO] [FML]: Holder lookups applied
+[13:06:12] [Server thread/INFO] [FML]: Applying holder lookups
+[13:06:12] [Server thread/INFO] [FML]: Holder lookups applied
+[13:06:12] [Server thread/INFO] [FML]: Applying holder lookups
+[13:06:12] [Server thread/INFO] [FML]: Holder lookups applied
+[13:06:12] [Server thread/INFO] [FML]: Injecting itemstacks
+[13:06:12] [Server thread/INFO] [FML]: Itemstack injection complete
+[13:06:12] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Loading properties
+[13:06:12] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Default game type: SURVIVAL
+[13:06:12] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Generating keypair
+[13:06:12] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Starting Minecraft server on 26.50.226.151:25565
+[13:06:12] [Server thread/INFO] [net.minecraft.network.NetworkSystem]: Using default channel type
+[13:06:12] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer]: **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!
+[13:06:12] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer]: The server will make no attempt to authenticate usernames. Beware.
+[13:06:12] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer]: While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.
+[13:06:12] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer]: To change this, set "online-mode" to "true" in the server.properties file.
+[13:06:12] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:unu_emblem_ie
 com.google.gson.JsonSyntaxException: Unknown item 'immersiveengineering:metal'
 	at net.minecraftforge.common.crafting.CraftingHelper.getItemStackBasic(CraftingHelper.java:262) ~[CraftingHelper.class:?]
 	at net.minecraftforge.common.crafting.CraftingHelper.lambda$init$16(CraftingHelper.java:544) ~[CraftingHelper.class:?]
@@ -179,7 +179,7 @@ com.google.gson.JsonSyntaxException: Unknown item 'immersiveengineering:metal'
 	at net.minecraft.server.dedicated.DedicatedServer.func_71197_b(DedicatedServer.java:219) [nz.class:?]
 	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:486) [MinecraftServer.class:?]
 	at java.lang.Thread.run(Unknown Source) [?:1.8.0_441]
-[16:34:44] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:unuparts_item_unu_fertilizer
+[13:06:12] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:unuparts_item_unu_fertilizer
 com.google.gson.JsonSyntaxException: Unknown item 'immersiveengineering:material'
 	at net.minecraftforge.common.crafting.CraftingHelper.getItemStackBasic(CraftingHelper.java:262) ~[CraftingHelper.class:?]
 	at net.minecraftforge.common.crafting.CraftingHelper.lambda$init$16(CraftingHelper.java:544) ~[CraftingHelper.class:?]
@@ -197,7 +197,7 @@ com.google.gson.JsonSyntaxException: Unknown item 'immersiveengineering:material
 	at net.minecraft.server.dedicated.DedicatedServer.func_71197_b(DedicatedServer.java:219) [nz.class:?]
 	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:486) [MinecraftServer.class:?]
 	at java.lang.Thread.run(Unknown Source) [?:1.8.0_441]
-[16:34:44] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:currency/5to10
+[13:06:12] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:currency/5to10
 com.google.gson.JsonSyntaxException: Unknown item 'mts:unuparts.unuparts_currency_blackthorne_5'
 	at net.minecraftforge.common.crafting.CraftingHelper.getItemStackBasic(CraftingHelper.java:262) ~[CraftingHelper.class:?]
 	at net.minecraftforge.common.crafting.CraftingHelper.lambda$init$16(CraftingHelper.java:544) ~[CraftingHelper.class:?]
@@ -215,7 +215,7 @@ com.google.gson.JsonSyntaxException: Unknown item 'mts:unuparts.unuparts_currenc
 	at net.minecraft.server.dedicated.DedicatedServer.func_71197_b(DedicatedServer.java:219) [nz.class:?]
 	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:486) [MinecraftServer.class:?]
 	at java.lang.Thread.run(Unknown Source) [?:1.8.0_441]
-[16:34:44] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:currency/5to1
+[13:06:12] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:currency/5to1
 com.google.gson.JsonSyntaxException: Unknown item 'mts:unuparts.unuparts_currency_blackthorne_5'
 	at net.minecraftforge.common.crafting.CraftingHelper.getItemStackBasic(CraftingHelper.java:262) ~[CraftingHelper.class:?]
 	at net.minecraftforge.common.crafting.CraftingHelper.lambda$init$16(CraftingHelper.java:544) ~[CraftingHelper.class:?]
@@ -233,7 +233,7 @@ com.google.gson.JsonSyntaxException: Unknown item 'mts:unuparts.unuparts_currenc
 	at net.minecraft.server.dedicated.DedicatedServer.func_71197_b(DedicatedServer.java:219) [nz.class:?]
 	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:486) [MinecraftServer.class:?]
 	at java.lang.Thread.run(Unknown Source) [?:1.8.0_441]
-[16:34:44] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:currency/50to100
+[13:06:12] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:currency/50to100
 com.google.gson.JsonSyntaxException: Unknown item 'mts:unuparts.unuparts_currency_blackthorne_50'
 	at net.minecraftforge.common.crafting.CraftingHelper.getItemStackBasic(CraftingHelper.java:262) ~[CraftingHelper.class:?]
 	at net.minecraftforge.common.crafting.CraftingHelper.lambda$init$16(CraftingHelper.java:544) ~[CraftingHelper.class:?]
@@ -251,7 +251,7 @@ com.google.gson.JsonSyntaxException: Unknown item 'mts:unuparts.unuparts_currenc
 	at net.minecraft.server.dedicated.DedicatedServer.func_71197_b(DedicatedServer.java:219) [nz.class:?]
 	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:486) [MinecraftServer.class:?]
 	at java.lang.Thread.run(Unknown Source) [?:1.8.0_441]
-[16:34:44] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:currency/50to10
+[13:06:12] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:currency/50to10
 com.google.gson.JsonSyntaxException: Unknown item 'mts:unuparts.unuparts_currency_blackthorne_50'
 	at net.minecraftforge.common.crafting.CraftingHelper.getItemStackBasic(CraftingHelper.java:262) ~[CraftingHelper.class:?]
 	at net.minecraftforge.common.crafting.CraftingHelper.lambda$init$16(CraftingHelper.java:544) ~[CraftingHelper.class:?]
@@ -269,7 +269,7 @@ com.google.gson.JsonSyntaxException: Unknown item 'mts:unuparts.unuparts_currenc
 	at net.minecraft.server.dedicated.DedicatedServer.func_71197_b(DedicatedServer.java:219) [nz.class:?]
 	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:486) [MinecraftServer.class:?]
 	at java.lang.Thread.run(Unknown Source) [?:1.8.0_441]
-[16:34:44] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:currency/500to100
+[13:06:12] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:currency/500to100
 com.google.gson.JsonSyntaxException: Unknown item 'mts:unuparts.unuparts_currency_blackthorne_500'
 	at net.minecraftforge.common.crafting.CraftingHelper.getItemStackBasic(CraftingHelper.java:262) ~[CraftingHelper.class:?]
 	at net.minecraftforge.common.crafting.CraftingHelper.lambda$init$16(CraftingHelper.java:544) ~[CraftingHelper.class:?]
@@ -287,7 +287,7 @@ com.google.gson.JsonSyntaxException: Unknown item 'mts:unuparts.unuparts_currenc
 	at net.minecraft.server.dedicated.DedicatedServer.func_71197_b(DedicatedServer.java:219) [nz.class:?]
 	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:486) [MinecraftServer.class:?]
 	at java.lang.Thread.run(Unknown Source) [?:1.8.0_441]
-[16:34:44] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:currency/1to5
+[13:06:12] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:currency/1to5
 com.google.gson.JsonSyntaxException: Unknown item 'mts:unuparts.unuparts_currency_blackthorne_1'
 	at net.minecraftforge.common.crafting.CraftingHelper.getItemStackBasic(CraftingHelper.java:262) ~[CraftingHelper.class:?]
 	at net.minecraftforge.common.crafting.CraftingHelper.lambda$init$16(CraftingHelper.java:544) ~[CraftingHelper.class:?]
@@ -305,7 +305,7 @@ com.google.gson.JsonSyntaxException: Unknown item 'mts:unuparts.unuparts_currenc
 	at net.minecraft.server.dedicated.DedicatedServer.func_71197_b(DedicatedServer.java:219) [nz.class:?]
 	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:486) [MinecraftServer.class:?]
 	at java.lang.Thread.run(Unknown Source) [?:1.8.0_441]
-[16:34:44] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:currency/10to50
+[13:06:12] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:currency/10to50
 com.google.gson.JsonSyntaxException: Unknown item 'mts:unuparts.unuparts_currency_blackthorne_10'
 	at net.minecraftforge.common.crafting.CraftingHelper.getItemStackBasic(CraftingHelper.java:262) ~[CraftingHelper.class:?]
 	at net.minecraftforge.common.crafting.CraftingHelper.lambda$init$16(CraftingHelper.java:544) ~[CraftingHelper.class:?]
@@ -323,7 +323,7 @@ com.google.gson.JsonSyntaxException: Unknown item 'mts:unuparts.unuparts_currenc
 	at net.minecraft.server.dedicated.DedicatedServer.func_71197_b(DedicatedServer.java:219) [nz.class:?]
 	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:486) [MinecraftServer.class:?]
 	at java.lang.Thread.run(Unknown Source) [?:1.8.0_441]
-[16:34:44] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:currency/10to5
+[13:06:12] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:currency/10to5
 com.google.gson.JsonSyntaxException: Unknown item 'mts:unuparts.unuparts_currency_blackthorne_10'
 	at net.minecraftforge.common.crafting.CraftingHelper.getItemStackBasic(CraftingHelper.java:262) ~[CraftingHelper.class:?]
 	at net.minecraftforge.common.crafting.CraftingHelper.lambda$init$16(CraftingHelper.java:544) ~[CraftingHelper.class:?]
@@ -341,7 +341,7 @@ com.google.gson.JsonSyntaxException: Unknown item 'mts:unuparts.unuparts_currenc
 	at net.minecraft.server.dedicated.DedicatedServer.func_71197_b(DedicatedServer.java:219) [nz.class:?]
 	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:486) [MinecraftServer.class:?]
 	at java.lang.Thread.run(Unknown Source) [?:1.8.0_441]
-[16:34:44] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:currency/100to500
+[13:06:12] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:currency/100to500
 com.google.gson.JsonSyntaxException: Unknown item 'mts:unuparts.unuparts_currency_blackthorne_100'
 	at net.minecraftforge.common.crafting.CraftingHelper.getItemStackBasic(CraftingHelper.java:262) ~[CraftingHelper.class:?]
 	at net.minecraftforge.common.crafting.CraftingHelper.lambda$init$16(CraftingHelper.java:544) ~[CraftingHelper.class:?]
@@ -359,7 +359,7 @@ com.google.gson.JsonSyntaxException: Unknown item 'mts:unuparts.unuparts_currenc
 	at net.minecraft.server.dedicated.DedicatedServer.func_71197_b(DedicatedServer.java:219) [nz.class:?]
 	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:486) [MinecraftServer.class:?]
 	at java.lang.Thread.run(Unknown Source) [?:1.8.0_441]
-[16:34:44] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:currency/100to50
+[13:06:12] [Server thread/ERROR] [FML]: Parsing error loading recipe unuparts:currency/100to50
 com.google.gson.JsonSyntaxException: Unknown item 'mts:unuparts.unuparts_currency_blackthorne_100'
 	at net.minecraftforge.common.crafting.CraftingHelper.getItemStackBasic(CraftingHelper.java:262) ~[CraftingHelper.class:?]
 	at net.minecraftforge.common.crafting.CraftingHelper.lambda$init$16(CraftingHelper.java:544) ~[CraftingHelper.class:?]
@@ -377,21 +377,31 @@ com.google.gson.JsonSyntaxException: Unknown item 'mts:unuparts.unuparts_currenc
 	at net.minecraft.server.dedicated.DedicatedServer.func_71197_b(DedicatedServer.java:219) [nz.class:?]
 	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:486) [MinecraftServer.class:?]
 	at java.lang.Thread.run(Unknown Source) [?:1.8.0_441]
-[16:34:44] [Server thread/INFO] [FML]: Applying holder lookups
-[16:34:44] [Server thread/INFO] [FML]: Holder lookups applied
-[16:34:44] [Server thread/INFO] [FML]: Injecting itemstacks
-[16:34:44] [Server thread/INFO] [FML]: Itemstack injection complete
-[16:34:44] [Server thread/INFO] [FML]: Forge Mod Loader has successfully loaded 8 mods
-[16:34:44] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Preparing level "world"
-[16:34:44] [Server thread/INFO] [FML]: Injecting existing registry data into this server instance
-[16:34:44] [Server thread/INFO] [FML]: Applying holder lookups
-[16:34:44] [Server thread/INFO] [FML]: Holder lookups applied
-[16:34:44] [Server thread/INFO] [FML]: Loading dimension 0 (world) (net.minecraft.server.dedicated.DedicatedServer@16f07906)
-[16:34:44] [Server thread/INFO] [net.minecraft.advancements.AdvancementList]: Loaded 530 advancements
-[16:34:44] [Server thread/INFO] [FML]: Loading dimension -1 (world) (net.minecraft.server.dedicated.DedicatedServer@16f07906)
-[16:34:44] [Server thread/INFO] [FML]: Loading dimension 1 (world) (net.minecraft.server.dedicated.DedicatedServer@16f07906)
-[16:34:44] [Server thread/INFO] [net.minecraft.server.MinecraftServer]: Preparing start region for level 0
-[16:34:45] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Done (1,379s)! For help, type "help" or "?"
-[16:34:45] [Server thread/INFO] [FML]: Unloading dimension -1
-[16:34:45] [Server thread/INFO] [FML]: Unloading dimension 1
-[16:35:42] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: [Server] aboba
+[13:06:12] [Server thread/INFO] [FML]: Applying holder lookups
+[13:06:12] [Server thread/INFO] [FML]: Holder lookups applied
+[13:06:12] [Server thread/INFO] [FML]: Injecting itemstacks
+[13:06:12] [Server thread/INFO] [FML]: Itemstack injection complete
+[13:06:12] [Server thread/INFO] [FML]: Forge Mod Loader has successfully loaded 8 mods
+[13:06:12] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Preparing level "world"
+[13:06:12] [Server thread/INFO] [FML]: Injecting existing registry data into this server instance
+[13:06:13] [Server thread/INFO] [FML]: Applying holder lookups
+[13:06:13] [Server thread/INFO] [FML]: Holder lookups applied
+[13:06:13] [Server thread/INFO] [FML]: Loading dimension 0 (world) (net.minecraft.server.dedicated.DedicatedServer@4fc3d778)
+[13:06:13] [Server thread/INFO] [net.minecraft.advancements.AdvancementList]: Loaded 530 advancements
+[13:06:13] [Server thread/INFO] [FML]: Loading dimension -1 (world) (net.minecraft.server.dedicated.DedicatedServer@4fc3d778)
+[13:06:13] [Server thread/INFO] [FML]: Loading dimension 1 (world) (net.minecraft.server.dedicated.DedicatedServer@4fc3d778)
+[13:06:13] [Server thread/INFO] [net.minecraft.server.MinecraftServer]: Preparing start region for level 0
+[13:06:14] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Done (1,175s)! For help, type "help" or "?"
+[13:06:14] [Server thread/INFO] [FML]: Unloading dimension -1
+[13:06:14] [Server thread/INFO] [FML]: Unloading dimension 1
+[13:06:16] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Saving...
+[13:06:17] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Saved the world
+[13:06:18] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Stopping the server
+[13:06:18] [Server thread/INFO] [net.minecraft.server.MinecraftServer]: Stopping server
+[13:06:18] [Server thread/INFO] [net.minecraft.server.MinecraftServer]: Saving players
+[13:06:18] [Server thread/INFO] [net.minecraft.server.MinecraftServer]: Saving worlds
+[13:06:18] [Server thread/INFO] [net.minecraft.server.MinecraftServer]: Saving chunks for level 'world'/overworld
+[13:06:18] [Server thread/INFO] [FML]: Unloading dimension 0
+[13:06:18] [Server Shutdown Thread/INFO] [net.minecraft.server.MinecraftServer]: Stopping server
+[13:06:18] [Server Shutdown Thread/INFO] [net.minecraft.server.MinecraftServer]: Saving players
+[13:06:18] [Server Shutdown Thread/INFO] [net.minecraft.server.MinecraftServer]: Saving worlds
