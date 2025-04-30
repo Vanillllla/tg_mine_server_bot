@@ -110,7 +110,8 @@ def send_server_status(message):
 def handle_start(message):
     if is_registered(message.from_user.id):
         bot.send_message(message.chat.id, f"Добро пожаловать, {message.chat.username}!")
-        print("Вошёл ", message.chat.username, ' ' + message.from_user.id)
+        print("Вошёл ", message.chat.username, ' ' + str(message.from_user.id))
+
         show_main_menu(message)
     else:
         bot.send_message(message.chat.id, f"Привет, {message.chat.username}! Необходимо зарегистрироваться.")
@@ -148,10 +149,10 @@ def handle_all_messages(message):
                              "Minecraft_version : forge-1.12.2-14.23.5.2859.jar\n"
                              "IP + порт : <code>26.50.226.151:25565</code>\n\n"
                              "Сеть RadminVPN : \n"
-                             "  login: <code><b>''.join(str(i) for i in range(1,10))+'0'*10</b></code>\n"
+                             "  login: <code>''.join(str(i) for i in range(1,10))+'0'*10</code>\n"
                              "  password: <code>123456</code>\n\n"
                              "Команды для майнкрафт консоли : <a href='https://timeweb.com/ru/community/articles/komandy-dlya-servera-minecraft'>ТЫК</a>\n"
-                             "P. S. Чтобы выдать админку: <b>op ник</b>",
+                             "P. S. Чтобы выдать админку: <code>op</code> <b>ник</b>",
                              parse_mode='HTML',
                              disable_web_page_preview=True)
         else:
@@ -160,7 +161,7 @@ def handle_all_messages(message):
         if message.text == "🔙 Назад":
             show_main_menu(message)
         else:
-            bot.send_message(message.chat.id, server.send_command(message.text))
+            bot.send_message(message.chat.id, "📨 Ответ сервера: \n" + server.send_command(message.text))
 
 # --- Запуск бота ---
 bot.polling(none_stop=True)

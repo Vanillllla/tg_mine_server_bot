@@ -1,6 +1,1 @@
-from time import time, sleep
-
-t = time()
-sleep(1)
-print(round(time()-t, 7))
-print(time() - t)
+print(''.join(str(i) for i in range(1,10))+'0'*10)
