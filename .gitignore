@@ -3,4 +3,3 @@ Server/
 my_database.db
 !Server/mods/
 !Server/server.properties
-.venv/
