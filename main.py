@@ -42,14 +42,22 @@ def handle_registration(message):
 
 def show_main_menu(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add(
-        types.KeyboardButton("⚙️ Запустить сервер"),
-        types.KeyboardButton("⚙️ Остановить сервер"),
-        types.KeyboardButton("🧪 Режим консоли"),
-        types.KeyboardButton("📊 Показать статус"),
-        types.KeyboardButton("❓ Помощь")
-    )
-    bot.send_message(message.chat.id, "Жми на кнопочки:", reply_markup=markup)
+
+    if server.process and server.process.poll() is None:
+        markup.add(
+            types.KeyboardButton("⚙️ Остановить сервер"),
+            types.KeyboardButton("🧪 Режим консоли"),
+            types.KeyboardButton("📊 Показать статус"),
+            types.KeyboardButton("❓ Помощь")
+        )
+    else:
+        markup.add(
+            types.KeyboardButton("⚙️ Запустить сервер"),
+            types.KeyboardButton("🧪 Режим консоли"),
+            types.KeyboardButton("📊 Показать статус"),
+            types.KeyboardButton("❓ Помощь")
+        )
+    # bot.send_message(message.chat.id, "Жми на кнопочки:", reply_markup=markup)
     user_state[message.chat.id] = STATE_MAIN_MENU
 
 def show_console_mode(message):
@@ -132,11 +140,13 @@ def handle_all_messages(message):
             sand = server.start()
             print(sand)
             bot.send_message(message.chat.id, sand)
+            show_main_menu(message)
         elif message.text == "⚙️ Остановить сервер":
             bot.send_message(message.chat.id, "🛑 Останавливаем сервер...")
             sand = server.stop()
             print(sand)
             bot.send_message(message.chat.id, sand)
+            show_main_menu(message)
         elif message.text == "🧪 Режим консоли":
             print("🧪 Режим консоли")
             show_console_mode(message)

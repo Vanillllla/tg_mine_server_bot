@@ -1,0 +1,216 @@
+import asyncio
+import sqlite3
+import psutil
+import pynvml
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters import Command
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from SERV_work import ServerManager
+
+# Инициализация бота и диспетчера
+bot = Bot(token="7563076857:AAHf5MdmVCDskWN9IL1tNz4eXuwawZ0alMg")
+dp = Dispatcher()
+
+# Инициализация сервера
+server = ServerManager("forge-1.12.2-14.23.5.2859.jar", cwd="Server")
+
+global passssss
+passssss = "Go_V_Maincraft"
+# Состояния бота
+class Form(StatesGroup):
+    main_menu = State()
+    console_mode = State()
+    registration = State()
+
+
+# --- Вспомогательные функции базы данных ---
+def in_bd(user_id):
+    connection = sqlite3.connect('my_database.db')
+    cursor = connection.cursor()
+    cursor.execute('SELECT users_tg_id FROM Users WHERE users_tg_id = ?', (user_id,))
+    results = cursor.fetchall()
+    if results:
+        connection.close()
+        return True
+    else:
+        connection.close()
+        return False
+
+
+def add_user(user_id):
+    connection = sqlite3.connect('my_database.db')
+    cursor = connection.cursor()
+    cursor.execute('INSERT INTO Users (users_tg_id) VALUES (?)', (str(user_id),))
+    connection.commit()
+    connection.close()
+
+
+def check_password(password):
+    return password == passssss
+
+
+# --- Клавиатуры ---
+def get_main_keyboard(is_server_running: bool):
+    markup = ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(text="⚙️ Остановить сервер" if is_server_running else "⚙️ Запустить сервер"),
+                KeyboardButton(text="/start", callback_data='0')
+            ],
+            [
+                KeyboardButton(text="🧪 Режим консоли"),
+                KeyboardButton(text="📊 Показать статус"),
+                KeyboardButton(text="❓ Помощь")
+            ]
+        ],
+        resize_keyboard=True
+    )
+    return markup
+
+
+def get_console_keyboard():
+    markup = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="🔙 Назад"), KeyboardButton(text="/start")]
+        ],
+        resize_keyboard=True
+    )
+    return markup
+
+
+# --- Обработчики команд ---
+@dp.message(Command("start"))
+async def cmd_start(message: types.Message, state: FSMContext):
+    if in_bd(message.from_user.id):
+        await message.answer(f"Добро пожаловать, {message.from_user.username}!")
+        await show_main_menu(message, state)
+    else:
+        await message.answer(f"Привет, {message.from_user.username}! Необходимо зарегистрироваться.")
+        await message.answer("Введите код активации переданный вам:")
+        await state.set_state(Form.registration)
+
+
+@dp.message(Form.registration)
+async def process_registration(message: types.Message, state: FSMContext):
+    if check_password(message.text):
+        add_user(message.from_user.id)
+        await message.answer("Вы успешно зарегистрированы!")
+        await show_main_menu(message, state)
+    else:
+        await message.answer("Пароль неверный. Повторите /start.")
+        await state.clear()
+
+
+# --- Основные обработчики ---
+async def show_main_menu(message: types.Message, state: FSMContext):
+    is_running = server.process and server.process.poll() is None
+    await message.answer(
+        "Главное меню:",
+        reply_markup=get_main_keyboard(is_running)
+    )
+    await state.set_state(Form.main_menu)
+
+
+@dp.message(Form.main_menu)
+async def handle_main_menu(message: types.Message, state: FSMContext):
+    is_running = server.process and server.process.poll() is None
+
+    if message.text == "⚙️ Запустить сервер" and not is_running:
+        await message.answer("⏳ Ожидание запуска сервера...")
+        response = await asyncio.to_thread(server.start)
+        await message.answer(response)
+        await show_main_menu(message, state)
+
+    elif message.text == "⚙️ Остановить сервер" and is_running:
+        await message.answer("🛑 Останавливаем сервер...")
+        response = await asyncio.to_thread(server.stop)
+        await message.answer(response)
+        await show_main_menu(message, state)
+
+    elif message.text == "🧪 Режим консоли":
+        await message.answer(
+            "Вводите команды:",
+            reply_markup=get_console_keyboard()
+        )
+        await state.set_state(Form.console_mode)
+
+    elif message.text == "📊 Показать статус":
+        await send_server_status(message)
+
+    elif message.text == "❓ Помощь":
+        await message.answer(
+            "Minecraft_version : forge-1.12.2-14.23.5.2859.jar\n"
+            "IP + порт : <code>26.50.226.151:25565</code>\n\n"
+            "Сеть <a href='https://www.radmin-vpn.com/ru/'>RadminVPN</a> : \n"
+            "  login: <code>12345678900000000000</code>\n"
+            "  password: <code>123456</code>\n\n"
+            "Команды для майнкрафт консоли : <a href='https://timeweb.com/ru/community/articles/komandy-dlya-servera-minecraft'>ТЫК</a>\n"
+            "P. S. Чтобы выдать админку: <code>op</code> <b>ник</b>"
+            "\n\n"
+            f"Пароль для регистрации в боте: <code>{passssss}</code>",
+            parse_mode='HTML',
+            disable_web_page_preview=True
+        )
+    else:
+        await message.answer("Не понял 🤔")
+
+
+@dp.message(Form.console_mode)
+async def handle_console_mode(message: types.Message, state: FSMContext):
+    if message.text == "🔙 Назад":
+        await show_main_menu(message, state)
+    else:
+        response = await asyncio.to_thread(server.send_command, message.text)
+        await message.answer(f"📨 Ответ сервера: \n{response}")
+
+
+# --- Функция статуса сервера ---
+async def send_server_status(message: types.Message):
+    # Статус сервера
+    if server.process and server.process.poll() is None:
+        server_status = "✅ Сервер сейчас работает."
+    else:
+        server_status = "❌ Сервер выключен."
+
+    # Загрузка CPU
+    cpu_load = psutil.cpu_percent(interval=1)
+
+    # Загрузка RAM
+    virtual_memory = psutil.virtual_memory()
+    ram_used_gb = virtual_memory.used / (1024 ** 3)
+    ram_total_gb = virtual_memory.total / (1024 ** 3)
+    ram_percent = virtual_memory.percent
+
+    # Загрузка GPU
+    try:
+        pynvml.nvmlInit()
+        handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+        gpu_util = pynvml.nvmlDeviceGetUtilizationRates(handle)
+        gpu_memory = pynvml.nvmlDeviceGetMemoryInfo(handle)
+        gpu_load = gpu_util.gpu
+        gpu_used_gb = gpu_memory.used / (1024 ** 3)
+        gpu_total_gb = gpu_memory.total / (1024 ** 3)
+        pynvml.nvmlShutdown()
+        gpu_info = (f"🎮 GPU загрузка: {gpu_load}%\n"
+                    f"🎮 GPU память: {gpu_used_gb:.2f}ГБ / {gpu_total_gb:.2f}ГБ")
+    except Exception as e:
+        gpu_info = "🎮 GPU: Недоступно"
+
+    response = (
+        f"{server_status}\n\n"
+        f"🧠 CPU загрузка: {cpu_load}%\n"
+        f"💾 RAM: {ram_used_gb:.2f}ГБ / {ram_total_gb:.2f}ГБ ({ram_percent}%)\n"
+        f"{gpu_info}"
+    )
+    await message.answer(response)
+
+
+# Запуск бота
+async def main():
+    await dp.start_polling(bot)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
