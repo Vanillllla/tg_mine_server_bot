@@ -1,27 +1,29 @@
 from aiogram import Bot, Dispatcher, types
+from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 bot = Bot(token="YOUR_BOT_TOKEN")
-dp = Dispatcher(bot)
+dp = Dispatcher()
 
-@dp.message_handler(commands=['start'])
-async def send_welcome(message: types.Message):
-    # Создаем клавиатуру с кнопками
-    keyboard = InlineKeyboardMarkup(row_width=2)  # row_width - кол-во кнопок в строке
-    buttons = [
-        InlineKeyboardButton("Кнопка 1", callback_data="btn1"),
-        InlineKeyboardButton("Кнопка 2", callback_data="btn2"),
-        InlineKeyboardButton("Google", url="https://google.com"),
-    ]
-    keyboard.add(*buttons)  # Добавляем кнопки в клавиатуру
+# Клавиатура с кнопками
+@dp.message(Command("start"))
+async def cmd_start(message: types.Message):
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Кнопка 1", callback_data="btn1")],
+        [InlineKeyboardButton(text="Google", url="https://google.com")]
+    ])
+    await message.answer("Выберите действие:", reply_markup=keyboard)
 
-    await message.answer("Привет! Выбери действие:", reply_markup=keyboard)
+# Обработка нажатия на кнопку (вариант 1 — через Text("btn1"))
+@dp.callback_query(Text("btn1"))  # Фильтр Text("btn1") вместо lambda
+async def handle_btn1(callback: types.CallbackQuery):
+    await callback.answer("Вы нажали Кнопку 1!", show_alert=True)
+    await callback.message.edit_text("✅ Кнопка 1 нажата!")
 
-@dp.callback_query_handler(lambda c: c.data == "btn1")
-async def process_callback_btn1(callback_query: types.CallbackQuery):
-    await bot.answer_callback_query(callback_query.id)
-    await bot.send_message(callback_query.from_user.id, "Ты нажал Кнопку 1!")
+# Запуск бота
+async def main():
+    await dp.start_polling(bot)
 
-if __name__ == '__main__':
-    from aiogram import executor
-    executor.start_polling(dp)
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())

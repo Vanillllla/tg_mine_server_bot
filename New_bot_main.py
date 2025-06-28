@@ -18,6 +18,8 @@ server = ServerManager("forge-1.12.2-14.23.5.2859.jar", cwd="Server")
 
 global passssss
 passssss = "Go_V_Maincraft"
+
+
 # Состояния бота
 class Form(StatesGroup):
     main_menu = State()
@@ -123,10 +125,18 @@ async def handle_main_menu(message: types.Message, state: FSMContext):
         await message.answer(response)
         await show_main_menu(message, state)
 
+    elif message.text == "⚙️ Запустить сервер" and is_running:
+        await message.answer("ERROR - Вы отстали от всех, консоль обновлена!")
+        await show_main_menu(message, state)
+
     elif message.text == "⚙️ Остановить сервер" and is_running:
         await message.answer("🛑 Останавливаем сервер...")
         response = await asyncio.to_thread(server.stop)
         await message.answer(response)
+        await show_main_menu(message, state)
+
+    elif message.text == "⚙️ Остановить сервер" and not is_running:
+        await message.answer("ERROR - Вы отстали от всех, консоль обновлена!")
         await show_main_menu(message, state)
 
     elif message.text == "🧪 Режим консоли":
