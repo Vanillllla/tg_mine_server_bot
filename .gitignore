@@ -1,5 +1,4 @@
 Server/
 123123_mods/
 my_database.db
-!Server/mods/
-!Server/server.properties
+.env
