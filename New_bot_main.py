@@ -10,14 +10,16 @@ from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from pymysql import connect
+
 from SERV_work import ServerManager
 
+# Подгрузка паролей и т. п.
 from dotenv import load_dotenv
 load_dotenv()
 
-
 # Инициализация бота и диспетчера
-bot = Bot(token="7563076857:AAHf5MdmVCDskWN9IL1tNz4eXuwawZ0alMg")
+bot = Bot(token=os.getenv('BOT_TOKEN'))
 dp = Dispatcher()
 
 # Инициализация сервера
@@ -30,7 +32,8 @@ class Form(StatesGroup):
     console_mode = State()
     registration = State()
     more_mode = State()
-    setings = State()
+    settings_mode = State()
+    settings_nane_mode = State()
 
 # --- Вспомогательные функции базы данных ---
 def in_bd(user_id):
@@ -46,6 +49,26 @@ def in_bd(user_id):
         return False
 
 
+async def update_notification():
+    user_ids = []
+    try:
+        conn = sqlite3.connect('my_database.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT users_tg_id FROM Users WHERE UpDate_flag = 1")
+        rows = cursor.fetchall()
+        user_ids = [row[0] for row in rows]
+        conn.close()
+    except sqlite3.Error as e:
+        print(f"Ошибка при работе с SQLite: {e}")
+
+    try:
+        for i in range(len(user_ids)):
+            await bot.send_message(chat_id=user_ids[i], text=f"Бот обновлён до версии: {os.getenv('PROGRAM_VERSION')}\n\n"
+                                                             "Если бот не запускается, введите /start", parse_mode='HTML')
+    except:
+        print("Error start message!")
+
+
 def add_user(user_id):
     connection = sqlite3.connect('my_database.db')
     cursor = connection.cursor()
@@ -57,6 +80,15 @@ def add_user(user_id):
 def check_password(input_password: str) -> bool:
     correct_password = os.getenv('REGISTRATION_PASSWORD')
     return input_password == correct_password
+
+
+def have_name(message):
+    conn = sqlite3.connect('my_database.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT Game_name FROM users WHERE users_tg_id = ?", (f"{message.from_user.id}",))
+    result = cursor.fetchone()
+    conn.close()
+    return result
 
 
 # --- Клавиатуры ---
@@ -140,8 +172,6 @@ async def cmd_start(message: types.Message, state: FSMContext):
 
 @dp.message(Command("set_password"))
 async def set_password(message: types.Message):
-
-
     conn = sqlite3.connect('my_database.db')
     cursor = conn.cursor()
     cursor.execute("SELECT status FROM Users WHERE users_tg_id = ?", (f"{message.from_user.id}",))
@@ -233,8 +263,16 @@ async def handle_main_menu(message: types.Message, state: FSMContext):
         )
         await state.set_state(Form.more_mode)
 
-    elif message.text == "📊 Показать статус":
-        await send_server_status(message)
+    elif message.text == "🛠️ Настройки":
+        await message.answer(
+            "Ура! Ты открыл новые функции:",
+            reply_markup=get_setings_keyboard()
+        )
+        await state.set_state(Form.settings_mode)
+
+
+    # elif message.text == "📊 Показать статус":
+    #     await send_server_status(message)
 
     elif message.text == "❓ Помощь":
         with open('Server/server.properties', 'r') as file:
@@ -261,11 +299,7 @@ async def handle_more_mode(message: types.Message, state: FSMContext):
         await show_main_menu(message, state)
 
     elif message.text == "Получить администратора":
-        conn = sqlite3.connect('my_database.db')
-        cursor = conn.cursor()
-        cursor.execute("SELECT Game_name FROM users WHERE users_tg_id = ?", (f"{message.from_user.id}",))
-        result = cursor.fetchone()
-        conn.close()
+        result = have_name(message)
         if result[0] == None:
             await message.answer("ERROR - Не указан никнейм в игре, посетите меню настройки!")
         else:
@@ -286,11 +320,7 @@ async def handle_more_mode(message: types.Message, state: FSMContext):
         await message.answer(f"📨 Ответ сервера: \n{response}")
 
     elif message.text == "Харакири":
-        conn = sqlite3.connect('my_database.db')
-        cursor = conn.cursor()
-        cursor.execute("SELECT Game_name FROM users WHERE users_tg_id = ?", (f"{message.from_user.id}",))
-        result = cursor.fetchone()
-        conn.close()
+        result = have_name(message)
         if result[0] == None:
             await message.answer("ERROR - Не указан никнейм в игре, посетите меню настройки!")
         else:
@@ -304,6 +334,32 @@ async def handle_more_mode(message: types.Message, state: FSMContext):
     else:
         await message.answer("неВОРКАЕТ!!!")
 
+@dp.message(Form.settings_mode)
+async def handle_settings_mode(message: types.Message, state: FSMContext):
+    if message.text == "🔙 Назад":
+        await show_main_menu(message, state)
+
+    # elif message.text == "🟢 Уведомления о обновлении":
+
+#     elif message.text == "🔴 Уведомления о обновлении":
+
+    elif message.text == "Прикрепить игровой никнейм":
+        await message.answer("Введите игровой никнейм, если никнейм уже привязан, то он будет заменён:")
+        await state.set_state(Form.settings_nane_mode)
+        # result = have_name(message)
+        # if result[0] == None:
+
+@dp.message(Form.settings_nane_mode)
+async def handle_settings_nane_mode(message: types.Message, state: FSMContext):
+    if message.text == "qqq":
+        await state.set_state(Form.settings_mode)
+    else:
+        connection = sqlite3.connect('my_database.db')
+        cursor = connection.cursor()
+        cursor.execute('UPDATE Users SET Game_name = ? WHERE users_tg_id = ?', (str(message.text), str(message.user_id)))
+        connection.commit()
+        connection.close()
+        await state.set_state(Form.settings_mode)
 
 @dp.message(Form.console_mode)
 async def handle_console_mode(message: types.Message, state: FSMContext):
@@ -358,6 +414,7 @@ async def send_server_status(message: types.Message):
 
 # Запуск бота
 async def main():
+    await update_notification()
     await dp.start_polling(bot)
 
 
