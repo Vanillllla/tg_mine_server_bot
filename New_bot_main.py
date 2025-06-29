@@ -26,7 +26,7 @@ class Form(StatesGroup):
     console_mode = State()
     registration = State()
     more_mode = State()
-
+    setings = State()
 
 # --- Вспомогательные функции базы данных ---
 def in_bd(user_id):
@@ -60,12 +60,11 @@ def get_main_keyboard(is_server_running: bool):
         keyboard=[
             [
                 KeyboardButton(text="⚙️ Остановить сервер" if is_server_running else "⚙️ Запустить сервер"),
-                KeyboardButton(text="/start", callback_data='0')
+                KeyboardButton(text="🧪 Режим консоли")
             ],
             [
-                KeyboardButton(text="TEST Больше функций"),
-                KeyboardButton(text="🧪 Режим консоли"),
-                KeyboardButton(text="📊 Показать статус"),
+                KeyboardButton(text="🚀 Быстрые команды"),
+                KeyboardButton(text="🛠️ Настройки"),
                 KeyboardButton(text="❓ Помощь")
             ]
         ],
@@ -74,16 +73,41 @@ def get_main_keyboard(is_server_running: bool):
     return markup
 
 
-def get_console_keyboard():
+def get_more_keyboard():
     markup = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="🔙 Назад"), KeyboardButton(text="/start")]
+            [
+                KeyboardButton(text="🔙 Назад")
+            ],
+            [
+                KeyboardButton(text="Установить день"),KeyboardButton(text="Узнать онлайн")
+            ],
+            [
+                KeyboardButton(text="Харакири"),KeyboardButton(text="Очистить мир"),KeyboardButton(text="Получить администратора")
+            ],
+            [
+
+            ]
         ],
         resize_keyboard=True
     )
     return markup
 
-def get_more_keyboard():
+def get_setings_keyboard():
+    markup = ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(text="🔙 Назад"), KeyboardButton(text="📊 Показать статус")
+            ],
+            [
+                KeyboardButton(text="/start")
+            ]
+        ],
+        resize_keyboard=True
+    )
+    return markup
+
+def get_console_keyboard():
     markup = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="🔙 Назад"), KeyboardButton(text="/start")]
@@ -157,7 +181,7 @@ async def handle_main_menu(message: types.Message, state: FSMContext):
         )
         await state.set_state(Form.console_mode)
 
-    elif message.text == "TEST Больше функций":
+    elif message.text == "🚀 Быстрые команды":
         await message.answer(
             "Ура! Ты открыл новые функции:",
             reply_markup=get_more_keyboard()
@@ -187,8 +211,45 @@ async def handle_main_menu(message: types.Message, state: FSMContext):
 @dp.message(Form.more_mode)
 async def handle_more_mode(message: types.Message, state: FSMContext):
     if message.text == "🔙 Назад":
-        current_state = await state.get_state()
         await show_main_menu(message, state)
+
+    elif message.text == "Получить администратора":
+        conn = sqlite3.connect('my_database.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT Game_name FROM users WHERE users_tg_id = ?", (f"{message.from_user.id}",))
+        result = cursor.fetchone()
+        conn.close()
+        if result[0] == None:
+            await message.answer("ERROR - Не указан никнейм в игре, посетите меню настройки!")
+        else:
+            response = await asyncio.to_thread(server.send_command, f"/op {result[0]}")
+            await message.answer(f"📨 Ответ сервера: \n{response}")
+
+    elif message.text == "Установить день":
+        response = await asyncio.to_thread(server.send_command, f"/time set day")
+        await message.answer(f"📨 Ответ сервера: \n{response}")
+
+    elif message.text == "Узнать онлайн":
+        response = await asyncio.to_thread(server.send_command, f"/list")
+        await asyncio.to_thread(server.send_command, f"/say Кто-то чекнул онлан )")
+        await message.answer(f"📨 Ответ сервера: \n{response}")
+
+    elif message.text == "Харакири":
+        conn = sqlite3.connect('my_database.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT Game_name FROM users WHERE users_tg_id = ?", (f"{message.from_user.id}",))
+        result = cursor.fetchone()
+        conn.close()
+        if result[0] == None:
+            await message.answer("ERROR - Не указан никнейм в игре, посетите меню настройки!")
+        else:
+            response = await asyncio.to_thread(server.send_command, f"/kill {result[0]}")
+            await message.answer(f"📨 Ответ сервера: \n{response}")
+
+    elif message.text == "Очистить мир":
+        response = await asyncio.to_thread(server.send_command, f"/kill @e[type=item]")
+        await message.answer(f"📨 Ответ сервера: \n{response}")
+
     else:
         await message.answer("неВОРКАЕТ!!!")
 
@@ -198,7 +259,7 @@ async def handle_console_mode(message: types.Message, state: FSMContext):
     if message.text == "🔙 Назад":
         await show_main_menu(message, state)
     else:
-        await message.answer("ВОРКАЕТ!!!")
+        # await message.answer("ВОРКАЕТ!!!")
         response = await asyncio.to_thread(server.send_command, message.text)
         await message.answer(f"📨 Ответ сервера: \n{response}")
 

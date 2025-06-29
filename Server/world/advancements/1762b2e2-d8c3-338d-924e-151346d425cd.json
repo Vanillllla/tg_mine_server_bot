@@ -167,12 +167,6 @@
     },
     "done": true
   },
-  "mts:rtfm": {
-    "criteria": {
-      "has_manual": "2025-04-27 11:22:08 +0300"
-    },
-    "done": true
-  },
   "minecraft:recipes/building_blocks/orange_concrete_powder": {
     "criteria": {
       "has_sand": "2025-04-15 21:57:24 +0300"
