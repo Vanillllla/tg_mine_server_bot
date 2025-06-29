@@ -134,14 +134,15 @@ def get_more_keyboard():
     )
     return markup
 
-def get_setings_keyboard(subscript: bool):
+def get_setings_keyboard(subscript):
+    # print(subscript)
     markup = ReplyKeyboardMarkup(
         keyboard=[
             [
                 KeyboardButton(text="🔙 Назад")
             ],
             [
-                KeyboardButton(text="📊 Показать статус"),KeyboardButton(text="🔴 Уведомления о обновлении" if subscript else "🟢 Уведомления о обновлении")
+                KeyboardButton(text="📊 Показать статус"),KeyboardButton(text="🟢 Уведомления о обновлении" if subscript else "🔴 Уведомления о обновлении")
             ],
             [
                 KeyboardButton(text="👨🏻‍💻 Прикрепить игровой никнейм"),
@@ -271,7 +272,8 @@ async def handle_main_menu(message: types.Message, state: FSMContext):
         cursor = connection.cursor()
         cursor.execute('SELECT UpDate_flag FROM Users WHERE users_tg_id = ?', (message.from_user.id,))
         results = cursor.fetchall()
-        if results:
+        # print(results[0][0])
+        if results[0][0] == 1:
             connection.close()
             subscript = True
         else:
@@ -353,9 +355,30 @@ async def handle_settings_mode(message: types.Message, state: FSMContext):
     elif message.text == "📊 Показать статус":
         await send_server_status(message)
 
-    # elif message.text == "🟢 Уведомления о обновлении":
+    elif message.text == "🟢 Уведомления о обновлении":
+        try:
+            connection = sqlite3.connect('my_database.db')
+            cursor = connection.cursor()
+            cursor.execute('UPDATE Users SET UpDate_flag = ? WHERE users_tg_id = ?', (str(0), str(message.from_user.id)))
+            connection.commit()
+            connection.close()
+            subscript = False
+            await message.answer("Уведомления отключены",reply_markup = get_setings_keyboard(subscript))
+        except:
+            print("ERROR - Ошибка при обращении к БД")
 
-#     elif message.text == "🔴 Уведомления о обновлении":
+    elif message.text == "🔴 Уведомления о обновлении":
+        try:
+            connection = sqlite3.connect('my_database.db')
+            cursor = connection.cursor()
+            cursor.execute('UPDATE Users SET UpDate_flag = ? WHERE users_tg_id = ?', (str(1), str(message.from_user.id)))
+            connection.commit()
+            connection.close()
+            subscript = True
+            await message.answer("Уведомления включены",reply_markup = get_setings_keyboard(subscript))
+
+        except:
+            print("ERROR - Ошибка при обращении к БД")
 
     elif message.text == "👨🏻‍💻 Прикрепить игровой никнейм":
         await message.answer("Введите игровой никнейм, если никнейм уже привязан, то он будет заменён:")

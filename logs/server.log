@@ -15800,3 +15800,4 @@
 [2025-06-29 18:16:33] [SERVER] [18:16:33] [Server thread/WARN] [minecraft/EntityTrackerEntry]: Fetching addPacket for removed entity
 [2025-06-29 18:28:36] [SERVER] [18:28:36] [Server Shutdown Thread/INFO] [minecraft/MinecraftServer]: Stopping server
 [2025-06-29 18:28:36] [SERVER] [18:28:36] [Server Shutdown Thread/INFO] [minecraft/MinecraftServer]: Saving players
+[2025-06-29 20:27:28] ⚠️ Сервер не запущен или stdin недоступен.
