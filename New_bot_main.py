@@ -220,6 +220,8 @@ async def handle_main_menu(message: types.Message, state: FSMContext):
         await message.answer(
             "Команды для майнкрафт консоли : <a href='https://timeweb.com/ru/community/articles/komandy-dlya-servera-minecraft'>ТЫК</a>\n"
             "Вводите команды:",
+            parse_mode='HTML',
+            disable_web_page_preview=True,
             reply_markup=get_console_keyboard()
         )
         await state.set_state(Form.console_mode)

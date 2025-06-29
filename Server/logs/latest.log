@@ -1,96 +1,139 @@
-[04:51:52] [main/INFO] [LaunchWrapper]: Loading tweak class name net.minecraftforge.fml.common.launcher.FMLServerTweaker
-[04:51:52] [main/INFO] [LaunchWrapper]: Using primary tweak class name net.minecraftforge.fml.common.launcher.FMLServerTweaker
-[04:51:52] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLServerTweaker
-[04:51:52] [main/INFO] [FML]: Forge Mod Loader version 14.23.5.2859 for Minecraft 1.12.2 loading
-[04:51:52] [main/INFO] [FML]: Java is Java HotSpot(TM) 64-Bit Server VM, version 1.8.0_441, running on Windows 11:amd64:10.0, installed at C:\Program Files\Java\jre1.8.0_441
-[04:51:52] [main/INFO] [FML]: Searching C:\Users\user\Documents\GitHub\tg_mine_server_bot\Server\.\mods for mods
-[04:51:52] [main/INFO] [LaunchWrapper]: Loading tweak class name net.minecraftforge.fml.common.launcher.FMLInjectionAndSortingTweaker
-[04:51:52] [main/INFO] [LaunchWrapper]: Loading tweak class name net.minecraftforge.fml.common.launcher.FMLDeobfTweaker
-[04:51:52] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLInjectionAndSortingTweaker
-[04:51:52] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLInjectionAndSortingTweaker
-[04:51:52] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper
-[04:51:53] [main/INFO] [FML]: Found valid fingerprint for Minecraft Forge. Certificate fingerprint e3c3d50c7c986df74c645c0ac54639741c90a557
-[04:51:53] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper
-[04:51:53] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLDeobfTweaker
-[04:51:53] [main/INFO] [LaunchWrapper]: Loading tweak class name net.minecraftforge.fml.common.launcher.TerminalTweaker
-[04:51:53] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.common.launcher.TerminalTweaker
-[04:51:54] [main/INFO] [LaunchWrapper]: Launching wrapped minecraft {net.minecraft.server.MinecraftServer}
-[04:51:56] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Starting minecraft server version 1.12.2
-[04:51:56] [Server thread/INFO] [FML]: MinecraftForge v14.23.5.2859 Initialized
-[04:51:56] [Server thread/INFO] [FML]: Starts to replace vanilla recipe ingredients with ore ingredients.
-[04:51:56] [Server thread/INFO] [FML]: Invalid recipe found with multiple oredict ingredients in the same ingredient...
-[04:51:56] [Server thread/INFO] [FML]: Replaced 1227 ore ingredients
-[04:51:56] [Server thread/INFO] [FML]: Searching C:\Users\user\Documents\GitHub\tg_mine_server_bot\Server\.\mods for mods
-[04:51:56] [Server thread/INFO] [FML]: Forge Mod Loader has identified 4 mods to load
-[04:51:56] [Server thread/WARN] [FML]: Missing English translation for FML: assets/fml/lang/en_us.lang
-[04:51:56] [Server thread/INFO] [FML]: Attempting connection with missing mods [minecraft, mcp, FML, forge] at CLIENT
-[04:51:56] [Server thread/INFO] [FML]: Attempting connection with missing mods [minecraft, mcp, FML, forge] at SERVER
-[04:51:56] [Server thread/INFO] [FML]: Processing ObjectHolder annotations
-[04:51:56] [Server thread/INFO] [FML]: Found 1168 ObjectHolder annotations
-[04:51:56] [Server thread/INFO] [FML]: Identifying ItemStackHolder annotations
-[04:51:56] [Server thread/INFO] [FML]: Found 0 ItemStackHolder annotations
-[04:51:56] [Server thread/INFO] [FML]: Configured a dormant chunk cache size of 0
-[04:51:57] [Forge Version Check/INFO] [forge.VersionCheck]: [forge] Starting version check at http://files.minecraftforge.net/maven/net/minecraftforge/forge/promotions_slim.json
-[04:51:57] [Server thread/INFO] [FML]: Applying holder lookups
-[04:51:57] [Server thread/INFO] [FML]: Holder lookups applied
-[04:51:57] [Server thread/INFO] [FML]: Applying holder lookups
-[04:51:57] [Server thread/INFO] [FML]: Holder lookups applied
-[04:51:57] [Server thread/INFO] [FML]: Applying holder lookups
-[04:51:57] [Server thread/INFO] [FML]: Holder lookups applied
-[04:51:57] [Server thread/INFO] [FML]: Applying holder lookups
-[04:51:57] [Server thread/INFO] [FML]: Holder lookups applied
-[04:51:57] [Server thread/INFO] [FML]: Injecting itemstacks
-[04:51:57] [Server thread/INFO] [FML]: Itemstack injection complete
-[04:51:57] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Loading properties
-[04:51:57] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Default game type: SURVIVAL
-[04:51:57] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Generating keypair
-[04:51:57] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Starting Minecraft server on 0.0.0.0:25565
-[04:51:57] [Server thread/INFO] [net.minecraft.network.NetworkSystem]: Using default channel type
-[04:51:57] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer]: **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!
-[04:51:57] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer]: The server will make no attempt to authenticate usernames. Beware.
-[04:51:57] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer]: While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.
-[04:51:57] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer]: To change this, set "online-mode" to "true" in the server.properties file.
-[04:51:57] [Server thread/INFO] [FML]: Applying holder lookups
-[04:51:57] [Server thread/INFO] [FML]: Holder lookups applied
-[04:51:57] [Server thread/INFO] [FML]: Injecting itemstacks
-[04:51:57] [Server thread/INFO] [FML]: Itemstack injection complete
-[04:51:57] [Server thread/INFO] [FML]: Forge Mod Loader has successfully loaded 4 mods
-[04:51:57] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Preparing level "world"
-[04:51:57] [Server thread/INFO] [FML]: Injecting existing registry data into this server instance
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:charger
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:road
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:decor
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision6
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision7
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision8
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision9
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision0
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision1
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision2
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision3
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision4
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision5
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:signalcontroller
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:beacon
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:fluidloader
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:fuelpump
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:itemloader
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision10
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision12
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision11
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision14
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision13
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision15
-[04:51:57] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:pole
-[04:51:57] [Server thread/INFO] [FML]: Applying holder lookups
-[04:51:57] [Server thread/INFO] [FML]: Holder lookups applied
-[04:51:57] [Server thread/INFO] [FML]: Loading dimension 0 (world) (net.minecraft.server.dedicated.DedicatedServer@dc85fb4)
-[04:51:57] [Server thread/INFO] [net.minecraft.advancements.AdvancementList]: Loaded 488 advancements
-[04:51:58] [Server thread/INFO] [FML]: Loading dimension -1 (world) (net.minecraft.server.dedicated.DedicatedServer@dc85fb4)
-[04:51:58] [Server thread/INFO] [FML]: Loading dimension 1 (world) (net.minecraft.server.dedicated.DedicatedServer@dc85fb4)
-[04:51:58] [Server thread/INFO] [net.minecraft.server.MinecraftServer]: Preparing start region for level 0
-[04:51:58] [Forge Version Check/INFO] [forge.VersionCheck]: [forge] Found status: UP_TO_DATE Target: null
-[04:51:58] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Done (1,181s)! For help, type "help" or "?"
-[04:51:58] [Server thread/INFO] [FML]: Unloading dimension -1
-[04:51:58] [Server thread/INFO] [FML]: Unloading dimension 1
-[04:52:02] [Server Shutdown Thread/INFO] [net.minecraft.server.MinecraftServer]: Stopping server
+[04:54:51] [main/INFO] [LaunchWrapper]: Loading tweak class name net.minecraftforge.fml.common.launcher.FMLServerTweaker
+[04:54:51] [main/INFO] [LaunchWrapper]: Using primary tweak class name net.minecraftforge.fml.common.launcher.FMLServerTweaker
+[04:54:51] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLServerTweaker
+[04:54:51] [main/INFO] [FML]: Forge Mod Loader version 14.23.5.2859 for Minecraft 1.12.2 loading
+[04:54:51] [main/INFO] [FML]: Java is Java HotSpot(TM) 64-Bit Server VM, version 1.8.0_441, running on Windows 11:amd64:10.0, installed at C:\Program Files\Java\jre1.8.0_441
+[04:54:51] [main/INFO] [FML]: Searching C:\Users\user\Documents\GitHub\tg_mine_server_bot\Server\.\mods for mods
+[04:54:51] [main/INFO] [LaunchWrapper]: Loading tweak class name net.minecraftforge.fml.common.launcher.FMLInjectionAndSortingTweaker
+[04:54:51] [main/INFO] [LaunchWrapper]: Loading tweak class name net.minecraftforge.fml.common.launcher.FMLDeobfTweaker
+[04:54:51] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLInjectionAndSortingTweaker
+[04:54:51] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLInjectionAndSortingTweaker
+[04:54:51] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper
+[04:54:52] [main/INFO] [FML]: Found valid fingerprint for Minecraft Forge. Certificate fingerprint e3c3d50c7c986df74c645c0ac54639741c90a557
+[04:54:52] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper
+[04:54:52] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLDeobfTweaker
+[04:54:53] [main/INFO] [LaunchWrapper]: Loading tweak class name net.minecraftforge.fml.common.launcher.TerminalTweaker
+[04:54:53] [main/INFO] [LaunchWrapper]: Calling tweak class net.minecraftforge.fml.common.launcher.TerminalTweaker
+[04:54:53] [main/INFO] [LaunchWrapper]: Launching wrapped minecraft {net.minecraft.server.MinecraftServer}
+[04:54:55] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Starting minecraft server version 1.12.2
+[04:54:55] [Server thread/INFO] [FML]: MinecraftForge v14.23.5.2859 Initialized
+[04:54:55] [Server thread/INFO] [FML]: Starts to replace vanilla recipe ingredients with ore ingredients.
+[04:54:55] [Server thread/INFO] [FML]: Invalid recipe found with multiple oredict ingredients in the same ingredient...
+[04:54:55] [Server thread/INFO] [FML]: Replaced 1227 ore ingredients
+[04:54:55] [Server thread/INFO] [FML]: Searching C:\Users\user\Documents\GitHub\tg_mine_server_bot\Server\.\mods for mods
+[04:54:55] [Server thread/INFO] [FML]: Forge Mod Loader has identified 4 mods to load
+[04:54:55] [Server thread/WARN] [FML]: Missing English translation for FML: assets/fml/lang/en_us.lang
+[04:54:55] [Server thread/INFO] [FML]: Attempting connection with missing mods [minecraft, mcp, FML, forge] at CLIENT
+[04:54:55] [Server thread/INFO] [FML]: Attempting connection with missing mods [minecraft, mcp, FML, forge] at SERVER
+[04:54:56] [Server thread/INFO] [FML]: Processing ObjectHolder annotations
+[04:54:56] [Server thread/INFO] [FML]: Found 1168 ObjectHolder annotations
+[04:54:56] [Server thread/INFO] [FML]: Identifying ItemStackHolder annotations
+[04:54:56] [Server thread/INFO] [FML]: Found 0 ItemStackHolder annotations
+[04:54:56] [Server thread/INFO] [FML]: Configured a dormant chunk cache size of 0
+[04:54:56] [Forge Version Check/INFO] [forge.VersionCheck]: [forge] Starting version check at http://files.minecraftforge.net/maven/net/minecraftforge/forge/promotions_slim.json
+[04:54:56] [Server thread/INFO] [FML]: Applying holder lookups
+[04:54:56] [Server thread/INFO] [FML]: Holder lookups applied
+[04:54:56] [Server thread/INFO] [FML]: Applying holder lookups
+[04:54:56] [Server thread/INFO] [FML]: Holder lookups applied
+[04:54:56] [Server thread/INFO] [FML]: Applying holder lookups
+[04:54:56] [Server thread/INFO] [FML]: Holder lookups applied
+[04:54:56] [Server thread/INFO] [FML]: Applying holder lookups
+[04:54:56] [Server thread/INFO] [FML]: Holder lookups applied
+[04:54:56] [Server thread/INFO] [FML]: Injecting itemstacks
+[04:54:56] [Server thread/INFO] [FML]: Itemstack injection complete
+[04:54:56] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Loading properties
+[04:54:56] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Default game type: SURVIVAL
+[04:54:56] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Generating keypair
+[04:54:56] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Starting Minecraft server on 0.0.0.0:25565
+[04:54:56] [Server thread/INFO] [net.minecraft.network.NetworkSystem]: Using default channel type
+[04:54:56] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer]: **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!
+[04:54:56] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer]: The server will make no attempt to authenticate usernames. Beware.
+[04:54:56] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer]: While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.
+[04:54:56] [Server thread/WARN] [net.minecraft.server.dedicated.DedicatedServer]: To change this, set "online-mode" to "true" in the server.properties file.
+[04:54:56] [Server thread/INFO] [FML]: Applying holder lookups
+[04:54:56] [Server thread/INFO] [FML]: Holder lookups applied
+[04:54:56] [Server thread/INFO] [FML]: Injecting itemstacks
+[04:54:56] [Server thread/INFO] [FML]: Itemstack injection complete
+[04:54:56] [Server thread/INFO] [FML]: Forge Mod Loader has successfully loaded 4 mods
+[04:54:56] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Preparing level "world"
+[04:54:56] [Server thread/INFO] [FML]: Injecting existing registry data into this server instance
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:charger
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:road
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:decor
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision6
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision7
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision8
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision9
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision0
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision1
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision2
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision3
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision4
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision5
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:signalcontroller
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:beacon
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:fluidloader
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:fuelpump
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:itemloader
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision10
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision12
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision11
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision14
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision13
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:collision15
+[04:54:56] [Server thread/INFO] [FML]: Registry Block: Found a missing id from the world mts:pole
+[04:54:56] [Server thread/INFO] [FML]: Applying holder lookups
+[04:54:56] [Server thread/INFO] [FML]: Holder lookups applied
+[04:54:56] [Server thread/INFO] [FML]: Loading dimension 0 (world) (net.minecraft.server.dedicated.DedicatedServer@283143a9)
+[04:54:57] [Server thread/INFO] [net.minecraft.advancements.AdvancementList]: Loaded 488 advancements
+[04:54:57] [Server thread/INFO] [FML]: Loading dimension -1 (world) (net.minecraft.server.dedicated.DedicatedServer@283143a9)
+[04:54:57] [Server thread/INFO] [FML]: Loading dimension 1 (world) (net.minecraft.server.dedicated.DedicatedServer@283143a9)
+[04:54:57] [Server thread/INFO] [net.minecraft.server.MinecraftServer]: Preparing start region for level 0
+[04:54:57] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Done (1,154s)! For help, type "help" or "?"
+[04:54:57] [Forge Version Check/INFO] [forge.VersionCheck]: [forge] Found status: UP_TO_DATE Target: null
+[04:54:58] [Server thread/INFO] [FML]: Unloading dimension -1
+[04:54:58] [Server thread/INFO] [FML]: Unloading dimension 1
+[04:55:01] [Netty Server IO #1/INFO] [FML]: Client protocol version 2
+[04:55:01] [Netty Server IO #1/INFO] [FML]: Client attempting to join with 5 mods : minecraft@1.12.2,tlauncher_custom_cape_skin@1.4,FML@8.0.99.99,forge@14.23.5.2860,mcp@9.42
+[04:55:01] [Server thread/INFO] [FML]: [Server thread] Server side modded connection established
+[04:55:01] [Server thread/INFO] [net.minecraft.server.management.PlayerList]: Ultra_PRO3000[/172.25.181.64:62269] logged in with entity id 398 at (72.6568757003631, 69.0, 185.2270246362527)
+[04:55:01] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Ultra_PRO3000 joined the game
+[04:55:12] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: [Ultra_PRO3000: Set own game mode to Survival Mode]
+[07:02:30] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Ultra_PRO3000 was slain by Spider
+[12:30:33] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Ultra_PRO3000 fell out of the world
+[12:30:33] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Killed Ultra_PRO3000
+[12:35:31] [Netty Server IO #1/ERROR] [FML]: NetworkDispatcher exception
+java.io.IOException: Удаленный хост принудительно разорвал существующее подключение
+	at sun.nio.ch.SocketDispatcher.read0(Native Method) ~[?:1.8.0_441]
+	at sun.nio.ch.SocketDispatcher.read(Unknown Source) ~[?:1.8.0_441]
+	at sun.nio.ch.IOUtil.readIntoNativeBuffer(Unknown Source) ~[?:1.8.0_441]
+	at sun.nio.ch.IOUtil.read(Unknown Source) ~[?:1.8.0_441]
+	at sun.nio.ch.SocketChannelImpl.read(Unknown Source) ~[?:1.8.0_441]
+	at io.netty.buffer.PooledUnsafeDirectByteBuf.setBytes(PooledUnsafeDirectByteBuf.java:288) ~[PooledUnsafeDirectByteBuf.class:?]
+	at io.netty.buffer.AbstractByteBuf.writeBytes(AbstractByteBuf.java:1100) ~[AbstractByteBuf.class:?]
+	at io.netty.channel.socket.nio.NioSocketChannel.doReadBytes(NioSocketChannel.java:372) ~[NioSocketChannel.class:?]
+	at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:123) [AbstractNioByteChannel$NioByteUnsafe.class:?]
+	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:624) [NioEventLoop.class:?]
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:559) [NioEventLoop.class:?]
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:476) [NioEventLoop.class:?]
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:438) [NioEventLoop.class:?]
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858) [SingleThreadEventExecutor$5.class:?]
+	at java.lang.Thread.run(Unknown Source) [?:1.8.0_441]
+[12:35:31] [Server thread/INFO] [net.minecraft.network.NetHandlerPlayServer]: Ultra_PRO3000 lost connection: Internal Exception: java.io.IOException: Удаленный хост принудительно разорвал существующее подключение
+[12:35:31] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Ultra_PRO3000 left the game
+[15:27:44] [Netty Server IO #2/INFO] [FML]: Client protocol version 2
+[15:27:44] [Netty Server IO #2/INFO] [FML]: Client attempting to join with 5 mods : minecraft@1.12.2,tlauncher_custom_cape_skin@1.4,FML@8.0.99.99,forge@14.23.5.2860,mcp@9.42
+[15:27:44] [Server thread/INFO] [FML]: [Server thread] Server side modded connection established
+[15:27:44] [Server thread/INFO] [net.minecraft.server.management.PlayerList]: Ultra_PRO3000[/172.25.181.64:56857] logged in with entity id 602693 at (-134.5, 80.0, 245.5)
+[15:27:44] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Ultra_PRO3000 joined the game
+[15:27:57] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: [Ultra_PRO3000: Set own game mode to Creative Mode]
+[16:05:56] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: [Server] qwe
+[16:06:14] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Set the time to 1000
+[16:06:22] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: There are 1/20 players online:
+[16:06:22] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Ultra_PRO3000
+[16:06:23] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: [Server] Кто-то чекнул онлан )
+[16:07:07] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Ultra_PRO3000 fell out of the world
+[16:07:07] [Server thread/INFO] [net.minecraft.server.dedicated.DedicatedServer]: Killed Ultra_PRO3000
+[18:16:33] [Server thread/WARN] [net.minecraft.entity.EntityTrackerEntry]: Fetching addPacket for removed entity
+[18:28:36] [Server Shutdown Thread/INFO] [net.minecraft.server.MinecraftServer]: Stopping server
+[18:28:36] [Server Shutdown Thread/INFO] [net.minecraft.server.MinecraftServer]: Saving players
