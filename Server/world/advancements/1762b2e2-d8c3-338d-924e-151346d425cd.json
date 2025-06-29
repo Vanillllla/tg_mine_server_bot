@@ -220,5 +220,11 @@
       "has_leather": "2025-04-27 16:10:13 +0300"
     },
     "done": true
+  },
+  "minecraft:husbandry/tame_an_animal": {
+    "criteria": {
+      "tamed_animal": "2025-06-29 04:11:09 +0300"
+    },
+    "done": true
   }
 }
