@@ -1,7 +1,6 @@
 import asyncio
 import sqlite3
 import os
-from ipaddress import ip_address
 
 import psutil
 import pynvml
@@ -10,7 +9,6 @@ from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from pymysql import connect
 
 from SERV_work import ServerManager
 
@@ -24,7 +22,6 @@ dp = Dispatcher()
 
 # Инициализация сервера
 server = ServerManager("forge-1.12.2-14.23.5.2859.jar", cwd="Server")
-
 
 # Состояния бота
 class Form(StatesGroup):
@@ -78,7 +75,9 @@ def add_user(user_id):
 
 
 def check_password(input_password: str) -> bool:
+    load_dotenv('.env', override=True)
     correct_password = os.getenv('REGISTRATION_PASSWORD')
+    print(123123)
     return input_password == correct_password
 
 
@@ -293,6 +292,7 @@ async def handle_main_menu(message: types.Message, state: FSMContext):
                 if i == 24:
                     ip_today = line.strip()[10::]
                     break
+        load_dotenv('.env', override=True)
         await message.answer(
             "Minecraft_version : forge-1.12.2-14.23.5.2859.jar\n"
             f"IP + порт : <code>{ip_today}:25565</code>\n\n"
