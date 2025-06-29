@@ -25,6 +25,7 @@ class Form(StatesGroup):
     main_menu = State()
     console_mode = State()
     registration = State()
+    more_mode = State()
 
 
 # --- Вспомогательные функции базы данных ---
@@ -62,6 +63,7 @@ def get_main_keyboard(is_server_running: bool):
                 KeyboardButton(text="/start", callback_data='0')
             ],
             [
+                KeyboardButton(text="TEST Больше функций"),
                 KeyboardButton(text="🧪 Режим консоли"),
                 KeyboardButton(text="📊 Показать статус"),
                 KeyboardButton(text="❓ Помощь")
@@ -73,6 +75,15 @@ def get_main_keyboard(is_server_running: bool):
 
 
 def get_console_keyboard():
+    markup = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="🔙 Назад"), KeyboardButton(text="/start")]
+        ],
+        resize_keyboard=True
+    )
+    return markup
+
+def get_more_keyboard():
     markup = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="🔙 Назад"), KeyboardButton(text="/start")]
@@ -146,6 +157,13 @@ async def handle_main_menu(message: types.Message, state: FSMContext):
         )
         await state.set_state(Form.console_mode)
 
+    elif message.text == "TEST Больше функций":
+        await message.answer(
+            "Ура! Ты открыл новые функции:",
+            reply_markup=get_more_keyboard()
+        )
+        await state.set_state(Form.more_mode)
+
     elif message.text == "📊 Показать статус":
         await send_server_status(message)
 
@@ -166,12 +184,21 @@ async def handle_main_menu(message: types.Message, state: FSMContext):
     else:
         await message.answer("Не понял 🤔")
 
+@dp.message(Form.more_mode)
+async def handle_more_mode(message: types.Message, state: FSMContext):
+    if message.text == "🔙 Назад":
+        current_state = await state.get_state()
+        await show_main_menu(message, state)
+    else:
+        await message.answer("неВОРКАЕТ!!!")
+
 
 @dp.message(Form.console_mode)
 async def handle_console_mode(message: types.Message, state: FSMContext):
     if message.text == "🔙 Назад":
         await show_main_menu(message, state)
     else:
+        await message.answer("ВОРКАЕТ!!!")
         response = await asyncio.to_thread(server.send_command, message.text)
         await message.answer(f"📨 Ответ сервера: \n{response}")
 
