@@ -63,7 +63,7 @@ async def update_notification():
             await bot.send_message(chat_id=user_ids[i], text=f"Бот обновлён до версии: {os.getenv('PROGRAM_VERSION')}\n\n"
                                                              "Если бот не запускается, введите /start", parse_mode='HTML')
     except:
-        print("Error start message!")
+        print("⚠️ Error start message!")
 
 
 def add_user(user_id):
@@ -236,7 +236,7 @@ async def handle_main_menu(message: types.Message, state: FSMContext):
         await show_main_menu(message, state)
 
     elif message.text == "⚙️ Запустить сервер" and is_running:
-        await message.answer("ERROR - Вы отстали от всех, консоль обновлена!")
+        await message.answer("⚠️ ERROR - Вы отстали от всех, консоль обновлена!")
         await show_main_menu(message, state)
 
     elif message.text == "⚙️ Остановить сервер" and is_running:
@@ -246,7 +246,7 @@ async def handle_main_menu(message: types.Message, state: FSMContext):
         await show_main_menu(message, state)
 
     elif message.text == "⚙️ Остановить сервер" and not is_running:
-        await message.answer("ERROR - Вы отстали от всех, консоль обновлена!")
+        await message.answer("⚠️ ERROR - Вы отстали от всех, консоль обновлена!")
         await show_main_menu(message, state)
 
     elif message.text == "🧪 Режим консоли":
@@ -314,7 +314,7 @@ async def handle_more_mode(message: types.Message, state: FSMContext):
     elif message.text == "Получить администратора":
         result = have_name(message)
         if result[0] == None:
-            await message.answer("ERROR - Не указан никнейм в игре, посетите меню настройки!")
+            await message.answer("⚠️ ERROR - Не указан игровой никнейм, посетите меню настройки!")
         else:
             response = await asyncio.to_thread(server.send_command, f"/op {result[0]}")
             await message.answer(f"📨 Ответ сервера: \n{response}")
@@ -335,7 +335,7 @@ async def handle_more_mode(message: types.Message, state: FSMContext):
     elif message.text == "Харакири":
         result = have_name(message)
         if result[0] == None:
-            await message.answer("ERROR - Не указан никнейм в игре, посетите меню настройки!")
+            await message.answer("⚠️ ERROR - Не указан игровой никнейм, посетите меню настройки!")
         else:
             response = await asyncio.to_thread(server.send_command, f"/kill {result[0]}")
             await message.answer(f"📨 Ответ сервера: \n{response}")
@@ -365,7 +365,7 @@ async def handle_settings_mode(message: types.Message, state: FSMContext):
             subscript = False
             await message.answer("Уведомления отключены",reply_markup = get_setings_keyboard(subscript))
         except:
-            print("ERROR - Ошибка при обращении к БД")
+            await message.answer("⚠️ ERROR - Ошибка при обращении к БД")
 
     elif message.text == "🔴 Уведомления о обновлении":
         try:
@@ -378,7 +378,7 @@ async def handle_settings_mode(message: types.Message, state: FSMContext):
             await message.answer("Уведомления включены",reply_markup = get_setings_keyboard(subscript))
 
         except:
-            print("ERROR - Ошибка при обращении к БД")
+            await message.answer("⚠️ ERROR - Ошибка при обращении к БД")
 
     elif message.text == "👨🏻‍💻 Прикрепить игровой никнейм":
         await message.answer("Введите игровой никнейм, если никнейм уже привязан, то он будет заменён:")
@@ -399,7 +399,7 @@ async def handle_settings_nane_mode(message: types.Message, state: FSMContext):
             connection.close()
             await message.answer("Новый никнейм сохранён")
         except:
-            await message.answer("ERROR - Ошибка при обращении к БД")
+            await message.answer("⚠️ ERROR - Ошибка при обращении к БД")
         finally:
             await state.set_state(Form.settings_mode)
 
