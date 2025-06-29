@@ -134,14 +134,17 @@ def get_more_keyboard():
     )
     return markup
 
-def get_setings_keyboard():
+def get_setings_keyboard(subscript: bool):
     markup = ReplyKeyboardMarkup(
         keyboard=[
             [
-                KeyboardButton(text="🔙 Назад"), KeyboardButton(text="📊 Показать статус")
+                KeyboardButton(text="🔙 Назад")
             ],
             [
-                KeyboardButton(text="/start")
+                KeyboardButton(text="📊 Показать статус"),KeyboardButton(text="🔴 Уведомления о обновлении" if subscript else "🟢 Уведомления о обновлении")
+            ],
+            [
+                KeyboardButton(text="👨🏻‍💻 Прикрепить игровой никнейм"),
             ]
         ],
         resize_keyboard=True
@@ -151,7 +154,7 @@ def get_setings_keyboard():
 def get_console_keyboard():
     markup = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="🔙 Назад"), KeyboardButton(text="/start")]
+            [KeyboardButton(text="🔙 Назад")]
         ],
         resize_keyboard=True
     )
@@ -258,21 +261,29 @@ async def handle_main_menu(message: types.Message, state: FSMContext):
 
     elif message.text == "🚀 Быстрые команды":
         await message.answer(
-            "Ура! Ты открыл новые функции:",
+            "Ура! Ты открыл быстрые команды:",
             reply_markup=get_more_keyboard()
         )
         await state.set_state(Form.more_mode)
 
     elif message.text == "🛠️ Настройки":
+        connection = sqlite3.connect('my_database.db')
+        cursor = connection.cursor()
+        cursor.execute('SELECT UpDate_flag FROM Users WHERE users_tg_id = ?', (message.from_user.id,))
+        results = cursor.fetchall()
+        if results:
+            connection.close()
+            subscript = True
+        else:
+            connection.close()
+            subscript = False
+
         await message.answer(
-            "Ура! Ты открыл новые функции:",
-            reply_markup=get_setings_keyboard()
+            "Ура! Ты открыл настройки:",
+            reply_markup=get_setings_keyboard(subscript)
         )
         await state.set_state(Form.settings_mode)
 
-
-    # elif message.text == "📊 Показать статус":
-    #     await send_server_status(message)
 
     elif message.text == "❓ Помощь":
         with open('Server/server.properties', 'r') as file:
@@ -339,11 +350,14 @@ async def handle_settings_mode(message: types.Message, state: FSMContext):
     if message.text == "🔙 Назад":
         await show_main_menu(message, state)
 
+    elif message.text == "📊 Показать статус":
+        await send_server_status(message)
+
     # elif message.text == "🟢 Уведомления о обновлении":
 
 #     elif message.text == "🔴 Уведомления о обновлении":
 
-    elif message.text == "Прикрепить игровой никнейм":
+    elif message.text == "👨🏻‍💻 Прикрепить игровой никнейм":
         await message.answer("Введите игровой никнейм, если никнейм уже привязан, то он будет заменён:")
         await state.set_state(Form.settings_nane_mode)
         # result = have_name(message)
@@ -354,12 +368,17 @@ async def handle_settings_nane_mode(message: types.Message, state: FSMContext):
     if message.text == "qqq":
         await state.set_state(Form.settings_mode)
     else:
-        connection = sqlite3.connect('my_database.db')
-        cursor = connection.cursor()
-        cursor.execute('UPDATE Users SET Game_name = ? WHERE users_tg_id = ?', (str(message.text), str(message.user_id)))
-        connection.commit()
-        connection.close()
-        await state.set_state(Form.settings_mode)
+        try:
+            connection = sqlite3.connect('my_database.db')
+            cursor = connection.cursor()
+            cursor.execute('UPDATE Users SET Game_name = ? WHERE users_tg_id = ?', (str(message.text), str(message.from_user.id)))
+            connection.commit()
+            connection.close()
+            await message.answer("Новый никнейм сохранён")
+        except:
+            await message.answer("ERROR - Ошибка при обращении к БД")
+        finally:
+            await state.set_state(Form.settings_mode)
 
 @dp.message(Form.console_mode)
 async def handle_console_mode(message: types.Message, state: FSMContext):
