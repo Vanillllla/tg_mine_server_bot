@@ -21,7 +21,11 @@ bot = Bot(token=os.getenv('BOT_TOKEN'))
 dp = Dispatcher()
 
 # Инициализация сервера
-server = ServerManager("forge-1.12.2-14.23.5.2859.jar", cwd="Server")
+# forge-1.12.2-14.23.5.2859.jar
+# Magma-1.12.2-b4c01d2-server.jar
+server = ServerManager("Magma-1.12.2-b4c01d2-server.jar", cwd="Server")
+mods_folder = "Server/mods"
+
 
 # Состояния бота
 class Form(StatesGroup):
@@ -31,6 +35,7 @@ class Form(StatesGroup):
     more_mode = State()
     settings_mode = State()
     settings_nane_mode = State()
+
 
 # --- Вспомогательные функции базы данных ---
 def in_bd(user_id):
@@ -77,7 +82,7 @@ def add_user(user_id):
 def check_password(input_password: str) -> bool:
     load_dotenv('.env', override=True)
     correct_password = os.getenv('REGISTRATION_PASSWORD')
-    print(123123)
+    # print(123123)
     return input_password == correct_password
 
 
@@ -203,6 +208,43 @@ async def set_password(message: types.Message):
 
     await message.answer("✅ Пароль успешно изменен!")
 
+@dp.message(Command("mods"))
+async def mods_list(message: types.Message):
+    try:
+        # Получаем список модов
+        out_put = os.listdir(mods_folder)
+
+        # Формируем строку с перечислением модов
+        exclude_list = ["1.12.2", "memory_repo"]
+        exclude_set = set(exclude_list)
+
+        mods_text = "\n".join(
+            f"{i + 1}. {mod}"
+            for i, mod in enumerate(mod for mod in out_put if mod not in exclude_set)
+        )
+
+        # Отправляем сообщение пользователю
+        await message.answer(f"<b>Список модов:</b>\n{mods_text}", parse_mode='HTML')
+
+        # # Выводим в консоль для отладки
+        # print("Список модов:")
+        # for i, mod in enumerate(out_put):
+        #     print(f"{i + 1}. {mod}")
+
+    except FileNotFoundError:
+        error_msg = f"Ошибка: папка {mods_folder} не найдена"
+        print(error_msg)
+        await message.answer(error_msg)
+    except PermissionError:
+        error_msg = f"Ошибка: нет доступа к папке {mods_folder}"
+        print(error_msg)
+        await message.answer(error_msg)
+    except Exception as e:
+        error_msg = f"Произошла ошибка: {e}"
+        print(error_msg)
+        await message.answer(error_msg)
+
+        await show_main_menu(message)
 
 @dp.message(Form.registration)
 async def process_registration(message: types.Message, state: FSMContext):
@@ -296,6 +338,8 @@ async def handle_main_menu(message: types.Message, state: FSMContext):
         await message.answer(
             "Minecraft_version : forge-1.12.2-14.23.5.2859.jar\n"
             f"IP + порт : <code>{ip_today}:25565</code>\n\n"
+            f"Скачать сборку: <a href='https://bin.com'>ТЫК</a>\n"
+            f"Посмотреть список модов /mods\n\n"
             "Сеть <a href='https://www.radmin-vpn.com/ru/'>RadminVPN</a> : \n"
             "  login: <code>12345678900000000000</code>\n"
             "  password: <code>123456</code>\n\n"
@@ -316,20 +360,20 @@ async def handle_more_mode(message: types.Message, state: FSMContext):
         if result[0] == None:
             await message.answer("⚠️ ERROR - Не указан игровой никнейм, посетите меню настройки!")
         else:
-            response = await asyncio.to_thread(server.send_command, f"/op {result[0]}")
+            response = await asyncio.to_thread(server.send_command, f"op {result[0]}")
             await message.answer(f"📨 Ответ сервера: \n{response}")
 
     elif message.text == "Установить день":
-        response = await asyncio.to_thread(server.send_command, f"/time set day")
+        response = await asyncio.to_thread(server.send_command, f"time set day")
         await message.answer(f"📨 Ответ сервера: \n{response}")
 
     elif message.text == "Ясная погода":
-        response = await asyncio.to_thread(server.send_command, f"/time set day")
+        response = await asyncio.to_thread(server.send_command, f"weather clear")
         await message.answer(f"📨 Ответ сервера: \n{response}")
 
     elif message.text == "Узнать онлайн":
-        response = await asyncio.to_thread(server.send_command, f"/list")
-        await asyncio.to_thread(server.send_command, f"/say Кто-то чекнул онлан )")
+        response = await asyncio.to_thread(server.send_command, f"list")
+        await asyncio.to_thread(server.send_command, f"say Кто-то чекнул онлан )")
         await message.answer(f"📨 Ответ сервера: \n{response}")
 
     elif message.text == "Харакири":
@@ -337,11 +381,11 @@ async def handle_more_mode(message: types.Message, state: FSMContext):
         if result[0] == None:
             await message.answer("⚠️ ERROR - Не указан игровой никнейм, посетите меню настройки!")
         else:
-            response = await asyncio.to_thread(server.send_command, f"/kill {result[0]}")
+            response = await asyncio.to_thread(server.send_command, f"kill {result[0]}")
             await message.answer(f"📨 Ответ сервера: \n{response}")
 
     elif message.text == "Очистить мир":
-        response = await asyncio.to_thread(server.send_command, f"/kill @e[type=item]")
+        response = await asyncio.to_thread(server.send_command, f"kill @e[type=item]")
         await message.answer(f"📨 Ответ сервера: \n{response}")
 
     else:

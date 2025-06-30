@@ -4,5 +4,11 @@
     "name": "Ultra_PRO3000",
     "level": 4,
     "bypassesPlayerLimit": false
+  },
+  {
+    "uuid": "af0dba72-0d5c-3cc2-a019-523cfb916216",
+    "name": "vamspa",
+    "level": 4,
+    "bypassesPlayerLimit": false
   }
 ]

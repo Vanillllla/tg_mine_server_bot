@@ -5,12 +5,13 @@ import os
 from datetime import datetime
 
 class ServerManager:
-    def __init__(self, jar_file, cwd, xmx="22G", xms="4G", log_dir="logs"):
+    def __init__(self, jar_file, cwd, xmx="8G", xms="4G", log_dir="logs"):
         self.jar_file = jar_file
         self.cwd = cwd
         self.xmx = xmx
         self.xms = xms
         self.process = None
+        self.ssh_p = None
         self._output_buffer = []
         self._lock = threading.Lock()
         self._reader_thread = None
@@ -44,6 +45,25 @@ class ServerManager:
             self._log("⚠️ Сервер уже запущен.")
             return "⚠️ Сервер уже запущен."
 
+        command = [
+            "ssh",
+            "-N",  # Не выполнять удалённые команды
+            "-R", "25564:localhost:25565",  # Проброс порта
+            "root@xazux.ru",
+            "-i", "../id_ed25519_xazuxru",  # SSH-ключ
+            "-o", "ServerAliveInterval=60"  # Keepalive
+        ]
+
+        self.ssh_p = subprocess.Popen(
+            command,  # Передаём готовую команду
+            cwd=self.cwd,  # Рабочая директория
+            encoding="utf-8",  # Кодировка
+            bufsize=1,  # Буферизация строк
+            # Дополнительно можно перенаправить потоки при необходимости:
+            # stdout=subprocess.PIPE,
+            # stderr=subprocess.PIPE,
+            stdin=subprocess.DEVNULL  # Игнорируем ввод
+        )
         self.process = subprocess.Popen(
             ["java", "-Dfile.encoding=UTF-8", f"-Xmx{self.xmx}", f"-Xms{self.xms}", "-jar", self.jar_file, "nogui"],
             cwd=self.cwd,
@@ -117,7 +137,10 @@ class ServerManager:
             self.process = None
             return "⚠️ Сервер не запущен."
 
+
         try:
+            self.ssh_p.terminate()
+
             self._log("💾 Сохраняем миры...")
             self.send_command("save-all")
 
@@ -126,13 +149,17 @@ class ServerManager:
 
             self.process.wait(timeout=30)
             self._log("✅ Сервер корректно остановлен.")
+
             return "✅ Сервер корректно остановлен."
 
         except subprocess.TimeoutExpired:
             self._log("❌ Сервер не остановился вовремя!")
+            self.process.kill()
             return "❌ Сервер не остановился вовремя!"
         except Exception as e:
             self._log(f"❌ Ошибка при остановке сервера: {e}")
+            self.process.terminate()
             return f"❌ Ошибка при остановке сервера: {e}"
         finally:
             self.process = None
+            self.ssh_p = None
