@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 
 class ServerManager:
-    def __init__(self, jar_file, cwd, xmx="8G", xms="4G", log_dir="logs"):
+    def __init__(self, jar_file, cwd, xmx="20G", xms="4G", log_dir="logs"):
         self.jar_file = jar_file
         self.cwd = cwd
         self.xmx = xmx
