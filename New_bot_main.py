@@ -341,7 +341,7 @@ async def handle_main_menu(message: types.Message, state: FSMContext):
             f"Скачать сборку: <a href='https://disk.yandex.ru/d/aaypyQB7Dt7yEg'>ТЫК</a>\n"
             f"Посмотреть список модов /mods\n\n"
             "Сеть <a href='https://www.radmin-vpn.com/ru/'>RadminVPN</a> : \n"
-            "  login: <code>12345678900000000000</code>\n"
+            "  login: <code>1234567890000000000</code>\n"
             "  password: <code>123456</code>\n\n"
             f"Пароль для регистрации в боте: <code>{os.getenv('REGISTRATION_PASSWORD')}</code>",
             parse_mode='HTML',
