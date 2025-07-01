@@ -1,0 +1,39 @@
+---- EpicWorldGenerator Crash Report ----
+Time: Tue Jul 01 01:18:39 MSK 2025
+Description: Could not download structure files
+
+System details:
+<> Spigot version = 1.12.2-b4c01d2 (MC: 1.12.2)
+<> Plugin version = 7.2.28
+<> Java Version = 1.8.0_441
+
+
+Plugin details:
+<> EpicWorldGenerator - 7.2.28 - []
+<> PandoPing - 2.9 - [Antyss77]
+<> BkrReload - 1.2 - [BeYkeRYkt]
+<> WorldSelector - 1.1.0 - [AndurilUnlogic]
+<> Multiverse-Core - 2.5.0-b727 - [Rigby, fernferret, lithium3141, main--, dumptruckman]
+
+Error info:
+<> Error message: Could not download structure files
+<> Stack trace: 
+java.lang.Exception: Could not download structure files
+	at com.minelazz.epicworldgenerator.structures.EpicStructureManager.<clinit>(EpicStructureManager.java:63)
+	at com.minelazz.epicworldgenerator.EpicWorldGenerator.onLoad(EpicWorldGenerator.java:69)
+	at org.bukkit.craftbukkit.v1_12_R1.CraftServer.loadPlugins(CraftServer.java:327)
+	at net.minecraft.server.MinecraftServer.func_71247_a(MinecraftServer.java:326)
+	at net.minecraft.server.dedicated.DedicatedServer.func_71197_b(DedicatedServer.java:321)
+	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:598)
+	at java.lang.Thread.run(Unknown Source)
+
+
+
+
+------------------------------------------------------------
+If this is not a configuration fault, report the issue here;
+ >> https://bitbucket.org/DynamicBytes/epicworldgenerator/issues
+
+Upload this crash report to hastebin.com or pastebin.com
+and put the link in your issue report.
+------------------------------------------------------------

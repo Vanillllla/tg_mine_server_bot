@@ -9,6 +9,7 @@ from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from SERV_work import ServerManager
 
@@ -25,7 +26,7 @@ dp = Dispatcher()
 # Magma-1.12.2-b4c01d2-server.jar
 server = ServerManager("Magma-1.12.2-b4c01d2-server.jar", cwd="Server")
 mods_folder = "Server/mods"
-
+plugins_folder = "Server/plugins"
 
 # Состояния бота
 class Form(StatesGroup):
@@ -37,7 +38,6 @@ class Form(StatesGroup):
     settings_nane_mode = State()
 
 
-# --- Вспомогательные функции базы данных ---
 def in_bd(user_id):
     connection = sqlite3.connect('my_database.db')
     cursor = connection.cursor()
@@ -95,7 +95,6 @@ def have_name(message):
     return result
 
 
-# --- Клавиатуры ---
 def get_main_keyboard(is_server_running: bool):
     markup = ReplyKeyboardMarkup(
         keyboard=[
@@ -138,6 +137,7 @@ def get_more_keyboard():
     )
     return markup
 
+
 def get_setings_keyboard(subscript):
     # print(subscript)
     markup = ReplyKeyboardMarkup(
@@ -156,6 +156,7 @@ def get_setings_keyboard(subscript):
     )
     return markup
 
+
 def get_console_keyboard():
     markup = ReplyKeyboardMarkup(
         keyboard=[
@@ -166,7 +167,6 @@ def get_console_keyboard():
     return markup
 
 
-# --- Обработчики команд ---
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
     if in_bd(message.from_user.id):
@@ -208,43 +208,6 @@ async def set_password(message: types.Message):
 
     await message.answer("✅ Пароль успешно изменен!")
 
-@dp.message(Command("mods"))
-async def mods_list(message: types.Message):
-    try:
-        # Получаем список модов
-        out_put = os.listdir(mods_folder)
-
-        # Формируем строку с перечислением модов
-        exclude_list = ["1.12.2", "memory_repo"]
-        exclude_set = set(exclude_list)
-
-        mods_text = "\n".join(
-            f"{i + 1}. {mod}"
-            for i, mod in enumerate(mod for mod in out_put if mod not in exclude_set)
-        )
-
-        # Отправляем сообщение пользователю
-        await message.answer(f"<b>Список модов:</b>\n{mods_text}", parse_mode='HTML')
-
-        # # Выводим в консоль для отладки
-        # print("Список модов:")
-        # for i, mod in enumerate(out_put):
-        #     print(f"{i + 1}. {mod}")
-
-    except FileNotFoundError:
-        error_msg = f"Ошибка: папка {mods_folder} не найдена"
-        print(error_msg)
-        await message.answer(error_msg)
-    except PermissionError:
-        error_msg = f"Ошибка: нет доступа к папке {mods_folder}"
-        print(error_msg)
-        await message.answer(error_msg)
-    except Exception as e:
-        error_msg = f"Произошла ошибка: {e}"
-        print(error_msg)
-        await message.answer(error_msg)
-
-        await show_main_menu(message)
 
 @dp.message(Form.registration)
 async def process_registration(message: types.Message, state: FSMContext):
@@ -257,7 +220,6 @@ async def process_registration(message: types.Message, state: FSMContext):
         await state.clear()
 
 
-# --- Основные обработчики ---
 async def show_main_menu(message: types.Message, state: FSMContext):
     is_running = server.process and server.process.poll() is None
     await message.answer(
@@ -329,26 +291,94 @@ async def handle_main_menu(message: types.Message, state: FSMContext):
 
 
     elif message.text == "❓ Помощь":
-        with open('Server/server.properties', 'r') as file:
-            for i, line in enumerate(file, 1):
-                if i == 24:
-                    ip_today = line.strip()[10::]
-                    break
         load_dotenv('.env', override=True)
+
+        # with open('Server/server.properties', 'r') as file:
+        #     for i, line in enumerate(file, 1):
+        #         if i == 24:
+        #             ip_today = line.strip()[10::]
+        #             break
+
+        keyboard_help = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="Моды", callback_data="btn1"),
+                InlineKeyboardButton(text="Плагины", callback_data="btn2")]
+            ])
+
+
         await message.answer(
             "Minecraft_version : forge-1.12.2-14.23.5.2859.jar\n"
-            f"IP + порт : <code>{ip_today}:25565</code>\n\n"
+            f"IP + порт : <code>{os.getenv('IP_TODAY')}</code>\n\n"
             f"Скачать сборку: <a href='https://disk.yandex.ru/d/aaypyQB7Dt7yEg'>ТЫК</a>\n"
-            f"Посмотреть список модов /mods\n\n"
-            "Сеть <a href='https://www.radmin-vpn.com/ru/'>RadminVPN</a> : \n"
-            "  login: <code>1234567890000000000</code>\n"
-            "  password: <code>123456</code>\n\n"
+            # f"Посмотреть список модов /mods\n\n"
+            # "Сеть <a href='https://www.radmin-vpn.com/ru/'>RadminVPN</a> : \n"
+            # "  login: <code>1234567890000000000</code>\n"
+            # "  password: <code>123456</code>\n\n"
             f"Пароль для регистрации в боте: <code>{os.getenv('REGISTRATION_PASSWORD')}</code>",
             parse_mode='HTML',
-            disable_web_page_preview=True
+            disable_web_page_preview=True,
+            reply_markup=keyboard_help
         )
     else:
         await message.answer("Не понял 🤔")
+
+@dp.callback_query(Form.main_menu)
+async def buttons_help(callback: types.CallbackQuery):
+    if callback.data == "btn1":
+        try:
+
+            out_put = os.listdir(mods_folder)
+
+            exclude_list = ["1.12.2", "memory_repo"]
+            exclude_set = set(exclude_list)
+
+            mods_text = "\n".join(
+                f"{i + 1}. {mod}"
+                for i, mod in enumerate(mod for mod in out_put if mod not in exclude_set)
+            )
+            print(mods_text)
+            await callback.message.answer(f"<b>Список модов:</b>\n{mods_text}", parse_mode='HTML')
+
+        except FileNotFoundError:
+            error_msg = f"Ошибка: папка {mods_folder} не найдена"
+            print(error_msg)
+            await callback.message.answer(error_msg)
+        except PermissionError:
+            error_msg = f"Ошибка: нет доступа к папке {mods_folder}"
+            print(error_msg)
+            await callback.message.answer(error_msg)
+        except Exception as e:
+            error_msg = f"Произошла ошибка: {e}"
+            print(error_msg)
+            await callback.message.answer(error_msg)
+    elif callback.data == "btn2":
+        try:
+
+            out_put = [f for f in os.listdir(plugins_folder) if os.path.isfile(os.path.join(plugins_folder, f))]
+
+            exclude_list = []
+            exclude_set = set(exclude_list)
+
+            mods_text = "\n".join(
+                f"{i + 1}. {mod}"
+                for i, mod in enumerate(mod for mod in out_put if mod not in exclude_set)
+            )
+
+            await callback.message.answer(f"<b>Список плагинов:</b>\n{mods_text}", parse_mode='HTML')
+
+        except FileNotFoundError:
+            error_msg = f"Ошибка: папка {plugins_folder} не найдена"
+            print(error_msg)
+            await callback.message.answer(error_msg)
+        except PermissionError:
+            error_msg = f"Ошибка: нет доступа к папке {plugins_folder}"
+            print(error_msg)
+            await callback.message.answer(error_msg)
+        except Exception as e:
+            error_msg = f"Произошла ошибка: {e}"
+            print(error_msg)
+            await callback.message.answer(error_msg)
+    await callback.answer()  # Закрыть "часики"
+
 
 @dp.message(Form.more_mode)
 async def handle_more_mode(message: types.Message, state: FSMContext):
@@ -391,6 +421,7 @@ async def handle_more_mode(message: types.Message, state: FSMContext):
     else:
         await message.answer("неВОРКАЕТ!!!")
 
+
 @dp.message(Form.settings_mode)
 async def handle_settings_mode(message: types.Message, state: FSMContext):
     if message.text == "🔙 Назад":
@@ -425,14 +456,16 @@ async def handle_settings_mode(message: types.Message, state: FSMContext):
             await message.answer("⚠️ ERROR - Ошибка при обращении к БД")
 
     elif message.text == "👨🏻‍💻 Прикрепить игровой никнейм":
-        await message.answer("Введите игровой никнейм, если никнейм уже привязан, то он будет заменён:")
+        await message.answer("Введите игровой никнейм, если никнейм уже привязан, то он будет заменён:\n"
+                             "Для отмены напиши: '.' ")
         await state.set_state(Form.settings_nane_mode)
         # result = have_name(message)
         # if result[0] == None:
 
+
 @dp.message(Form.settings_nane_mode)
 async def handle_settings_nane_mode(message: types.Message, state: FSMContext):
-    if message.text == "qqq":
+    if message.text == ".":
         await state.set_state(Form.settings_mode)
     else:
         try:
@@ -447,6 +480,7 @@ async def handle_settings_nane_mode(message: types.Message, state: FSMContext):
         finally:
             await state.set_state(Form.settings_mode)
 
+
 @dp.message(Form.console_mode)
 async def handle_console_mode(message: types.Message, state: FSMContext):
     if message.text == "🔙 Назад":
@@ -457,7 +491,6 @@ async def handle_console_mode(message: types.Message, state: FSMContext):
         await message.answer(f"📨 Ответ сервера: \n{response}")
 
 
-# --- Функция статуса сервера ---
 async def send_server_status(message: types.Message):
     # Статус сервера
     if server.process and server.process.poll() is None:
