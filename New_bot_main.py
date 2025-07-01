@@ -2,6 +2,8 @@ import asyncio
 import sqlite3
 import os
 
+import requests
+
 import psutil
 import pynvml
 from aiogram import Bot, Dispatcher, types
@@ -27,6 +29,9 @@ dp = Dispatcher()
 server = ServerManager("Magma-1.12.2-b4c01d2-server.jar", cwd="Server")
 mods_folder = "Server/mods"
 plugins_folder = "Server/plugins"
+owner = "Vanillllla"       # Владелец репозитория
+repo = "tg_mine_server_bot"
+branch = "master"
 
 # Состояния бота
 class Form(StatesGroup):
@@ -51,8 +56,29 @@ def in_bd(user_id):
         return False
 
 
+def get_latest_release():
+    url = f"https://api.github.com/repos/{owner}/{repo}/commits/{branch}"
+    headers = {}
+    if "GITHUB_TOKEN" in os.environ:
+        headers["Authorization"] = f"token {os.getenv('GITHUB_TOKEN')}"
+        # print(headers)
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()  # Проверяем на ошибки HTTP
+
+        commit_data = response.json()
+        # print(commit_data,"\n\n",commit_data['commit']['message'])
+        return commit_data['commit']['message']
+
+    except requests.exceptions.RequestException as e:
+        # print(f"Ошибка при получении коммита: {e}")
+        return os.getenv('PROGRAM_VERSION')
+
+
 async def update_notification():
     user_ids = []
+    version = get_latest_release()
+
     try:
         conn = sqlite3.connect('my_database.db')
         cursor = conn.cursor()
@@ -65,7 +91,7 @@ async def update_notification():
 
     try:
         for i in range(len(user_ids)):
-            await bot.send_message(chat_id=user_ids[i], text=f"Бот обновлён до версии: {os.getenv('PROGRAM_VERSION')}\n\n"
+            await bot.send_message(chat_id=user_ids[i], text=f"Бот обновлён до версии: {version}\n\n"
                                                              "Если бот не запускается, введите /start", parse_mode='HTML')
     except:
         print("⚠️ Error start message!")
