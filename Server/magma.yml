@@ -83,13 +83,13 @@ magma:
     fastbench-fix: true
     override-name: false
     server-type: FML
-  auto-update: true
+  auto-update: false
   messages:
     fml:
       server-still-starting: '&cServer is still starting! Please wait before reconnecting.'
       fml-required: '&cThis Server is running Magma. Forge and additional mods are
         required in order to connect to this server.'
-      missing-mods: '&cYou are missing the following mods:'
+      missing-mods: '&cСлышь дура, моды скачай через помошь в боте!!!'
 bukkit:
   max-potion-effect-amount: 1024
   enable-reload: false

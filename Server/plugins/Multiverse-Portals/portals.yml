@@ -1,1 +1,23 @@
-portals: {}
+portals:
+  to_surv:
+    entryfee:
+      currency: -1
+      amount: 0.0
+    safeteleport: true
+    teleportnonplayers: false
+    handlerscript: ''
+    owner: Ultra_PRO3000
+    location: 129.0,97.0,220.0:133.0,101.0,220.0
+    world: creative
+    destination: world
+  to_create:
+    entryfee:
+      currency: -1
+      amount: 0.0
+    safeteleport: true
+    teleportnonplayers: false
+    handlerscript: ''
+    owner: Ultra_PRO3000
+    location: 36.0,74.0,236.0:40.0,77.0,236.0
+    world: world
+    destination: creative

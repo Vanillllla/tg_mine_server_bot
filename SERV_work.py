@@ -4,6 +4,7 @@ import time
 import os
 from datetime import datetime
 
+
 class ServerManager:
     def __init__(self, jar_file, cwd, xmx="20G", xms="4G", log_dir="logs"):
         self.jar_file = jar_file
@@ -98,12 +99,22 @@ class ServerManager:
 
             time.sleep(1)
 
+
     def send_command(self, command):
         """Отправка команды серверу и вывод ответа."""
         if not self.process or self.process.poll() is not None or not self.process.stdin:
             self._log("⚠️ Сервер не запущен или stdin недоступен.")
             return "⚠️ Сервер не запущен или stdin недоступен."
 
+        def clean_log(log_line):
+            separator = "]: "
+            idx = log_line.find(separator)
+            if idx != -1:
+                message = log_line[idx + len(separator):]
+            else:
+                message = log_line
+            cleaned_message = message.replace("§r", "").lstrip()
+            return cleaned_message
         try:
             with self._lock:
                 old_log_len = len(self._output_buffer)
@@ -112,16 +123,14 @@ class ServerManager:
             self.process.stdin.flush()
             self._log(f"✅ Команда отправлена: '{command}'")
 
-            time.sleep(1.5)  # Дать серверу время на ответ
+            time.sleep(1.5)
 
             with self._lock:
                 new_logs = self._output_buffer[old_log_len:]
 
             if new_logs:
                 self._log("📨 Ответ сервера:")
-                for line in new_logs:
-                    self._log(line)
-                return "\n".join(new_logs)
+                return "\n".join(clean_log(line) for line in new_logs)
             else:
                 self._log("🔇 Сервер не вернул новых строк.")
                 return "🔇 Сервер не вернул новых строк."

@@ -335,7 +335,7 @@ async def handle_main_menu(message: types.Message, state: FSMContext):
             "Minecraft_version : forge-1.12.2-14.23.5.2859.jar\n"
             f"IP + порт : <code>{os.getenv('IP_TODAY')}</code>\n\n"
             f"Скачать сборку: <a href='https://disk.yandex.ru/d/aaypyQB7Dt7yEg'>ТЫК</a>\n"
-            # f"Посмотреть список модов /mods\n\n"
+            f"Скачать ресурспак: <a href='https://www.dropbox.com/scl/fi/e2emccm0twy10w8klhm1m/MVP-IR-1.8-mc1.12.2-by-FrozeRain.zip?rlkey=hjtqqmz6nfn49avkccecl4360&e=5&st=dmp20ru9&dl=1'>ТЫК</a>\n\n"
             # "Сеть <a href='https://www.radmin-vpn.com/ru/'>RadminVPN</a> : \n"
             # "  login: <code>1234567890000000000</code>\n"
             # "  password: <code>123456</code>\n\n"
