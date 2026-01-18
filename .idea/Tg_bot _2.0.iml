@@ -7,7 +7,7 @@
       <excludeFolder url="file://$MODULE_DIR$/Server/world/data/advancements" />
       <excludeFolder url="file://$MODULE_DIR$/Server/world/data/functions" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.13" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.13 (tg_mine_server_bot)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>
