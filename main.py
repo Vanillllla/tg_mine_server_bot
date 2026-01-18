@@ -29,7 +29,7 @@ dp = Dispatcher()
 server = ServerManager("Magma-1.12.2-b4c01d2-server.jar", cwd="Server")
 mods_folder = "Server/mods"
 plugins_folder = "Server/plugins"
-
+PROGRAM_VERSION="2.4.13"
 
 # Состояния бота
 class Form(StatesGroup):
@@ -87,7 +87,7 @@ async def update_notification():
     try:
         for i in range(len(user_ids)):
             await bot.send_message(chat_id=user_ids[i], text=f"Последняя версия бота: {version}\n"
-                                                             f"Текущая версия бота: {os.getenv("VERSION_NOW")}\n\n"
+                                                             f"Текущая версия бота: {PROGRAM_VERSION}\n\n"
                                                               "Если бот не запускается, введите /start", parse_mode='HTML')
     except:
         print("⚠️ Error start message!")
