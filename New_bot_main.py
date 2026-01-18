@@ -29,9 +29,7 @@ dp = Dispatcher()
 server = ServerManager("Magma-1.12.2-b4c01d2-server.jar", cwd="Server")
 mods_folder = "Server/mods"
 plugins_folder = "Server/plugins"
-owner = "Vanillllla"       # Владелец репозитория
-repo = "tg_mine_server_bot"
-branch = "master"
+
 
 # Состояния бота
 class Form(StatesGroup):
@@ -57,11 +55,8 @@ def in_bd(user_id):
 
 
 def get_latest_release():
-    url = f"https://api.github.com/repos/{owner}/{repo}/commits/{branch}"
+    url = f"https://api.github.com/repos/Vanillllla/tg_mine_server_bot/commits/master"
     headers = {}
-    if "GITHUB_TOKEN" in os.environ:
-        headers["Authorization"] = f"token {os.getenv('GITHUB_TOKEN')}"
-        # print(headers)
     try:
         response = requests.get(url, headers=headers)
         response.raise_for_status()  # Проверяем на ошибки HTTP
@@ -91,8 +86,9 @@ async def update_notification():
 
     try:
         for i in range(len(user_ids)):
-            await bot.send_message(chat_id=user_ids[i], text=f"Бот обновлён до версии: {version}\n\n"
-                                                             "Если бот не запускается, введите /start", parse_mode='HTML')
+            await bot.send_message(chat_id=user_ids[i], text=f"Последняя версия бота: {version}\n"
+                                                             f"Текущая версия бота: {os.getenv("VERSION_NOW")}\n\n"
+                                                              "Если бот не запускается, введите /start", parse_mode='HTML')
     except:
         print("⚠️ Error start message!")
 
@@ -336,9 +332,9 @@ async def handle_main_menu(message: types.Message, state: FSMContext):
             f"IP + порт : <code>{os.getenv('IP_TODAY')}</code>\n\n"
             f"Скачать сборку: <a href='https://disk.yandex.ru/d/aaypyQB7Dt7yEg'>ТЫК</a>\n"
             f"Скачать ресурспак: <a href='https://www.dropbox.com/scl/fi/e2emccm0twy10w8klhm1m/MVP-IR-1.8-mc1.12.2-by-FrozeRain.zip?rlkey=hjtqqmz6nfn49avkccecl4360&e=5&st=dmp20ru9&dl=1'>ТЫК</a>\n\n"
-            # "Сеть <a href='https://www.radmin-vpn.com/ru/'>RadminVPN</a> : \n"
-            # "  login: <code>1234567890000000000</code>\n"
-            # "  password: <code>123456</code>\n\n"
+            "Сеть <a href='https://www.radmin-vpn.com/ru/'>RadminVPN</a> : \n"
+            "  login: <code>1234567890000000000</code>\n"
+            "  password: <code>123456</code>\n\n"
             f"Пароль для регистрации в боте: <code>{os.getenv('REGISTRATION_PASSWORD')}</code>",
             parse_mode='HTML',
             disable_web_page_preview=True,

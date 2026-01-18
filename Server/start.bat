@@ -1,1 +1,0 @@
-"C:\Program Files\Java\jre1.8.0_441\bin\java.exe"  -Xmx12G -Xms4G -jar Magma-1.12.2-b4c01d2-server.jar
