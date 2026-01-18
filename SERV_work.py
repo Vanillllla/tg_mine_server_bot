@@ -46,25 +46,27 @@ class ServerManager:
             self._log("⚠️ Сервер уже запущен.")
             return "⚠️ Сервер уже запущен."
 
-        command = [
-            "ssh",
-            "-N",  # Не выполнять удалённые команды
-            "-R", "25564:localhost:25565",  # Проброс порта
-            "root@xazux.ru",
-            "-i", "../id_ed25519_xazuxru",  # SSH-ключ
-            "-o", "ServerAliveInterval=60"  # Keepalive
-        ]
+        # command = [
+        #     "ssh",
+        #     "-N",  # Не выполнять удалённые команды
+        #     "-R", "25564:localhost:25565",  # Проброс порта
+        #     "root@xazux.ru",
+        #     "-i", "../id_ed25519_xazuxru",  # SSH-ключ
+        #     "-o", "ServerAliveInterval=60"  # Keepalive
+        # ]
+        #
+        # self.ssh_p = subprocess.Popen(
+        #     command,  # Передаём готовую команду
+        #     cwd=self.cwd,  # Рабочая директория
+        #     encoding="utf-8",  # Кодировка
+        #     bufsize=1,  # Буферизация строк
+        #     # Дополнительно можно перенаправить потоки при необходимости:
+        #     # stdout=subprocess.PIPE,
+        #     # stderr=subprocess.PIPE,
+        #     stdin=subprocess.DEVNULL  # Игнорируем ввод
+        # )
 
-        self.ssh_p = subprocess.Popen(
-            command,  # Передаём готовую команду
-            cwd=self.cwd,  # Рабочая директория
-            encoding="utf-8",  # Кодировка
-            bufsize=1,  # Буферизация строк
-            # Дополнительно можно перенаправить потоки при необходимости:
-            # stdout=subprocess.PIPE,
-            # stderr=subprocess.PIPE,
-            stdin=subprocess.DEVNULL  # Игнорируем ввод
-        )
+
         self.process = subprocess.Popen(
             ["java", "-Dfile.encoding=UTF-8", f"-Xmx{self.xmx}", f"-Xms{self.xms}", "-jar", self.jar_file, "nogui"],
             cwd=self.cwd,
