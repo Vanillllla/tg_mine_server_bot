@@ -1,4 +1,4 @@
-[![Release](https://img.shields.io/badge/Release-0000-blue)](https://github.com/Vanillllla/tg_mine_server_bot/releases/tag/magma-core)
+[![Release](https://img.shields.io/badge/Release-2.4.13-blue)](https://github.com/Vanillllla/tg_mine_server_bot/releases/tag/magma-core)
 [![Python](https://img.shields.io/badge/Python-3.13%2B-gree)](https://www.python.org/downloads/)
 # 🎮 Minecraft Server Telegram Bot
 
