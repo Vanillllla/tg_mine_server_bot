@@ -17,17 +17,17 @@
    <string>Главная</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QScrollBar" name="verticalScrollBar">
+   <widget class="QPushButton" name="printsettingsbutton">
     <property name="geometry">
      <rect>
-      <x>870</x>
-      <y>0</y>
-      <width>16</width>
-      <height>491</height>
+      <x>640</x>
+      <y>10</y>
+      <width>221</width>
+      <height>91</height>
      </rect>
     </property>
-    <property name="orientation">
-     <enum>Qt::Vertical</enum>
+    <property name="text">
+     <string>Print settings</string>
     </property>
    </widget>
   </widget>
@@ -38,8 +38,13 @@
      <x>0</x>
      <y>0</y>
      <width>885</width>
-     <height>21</height>
+     <height>23</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
    </property>
    <widget class="QMenu" name="menu">
     <property name="title">

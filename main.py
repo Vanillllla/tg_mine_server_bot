@@ -2,7 +2,7 @@
 import os
 import subprocess
 import sys
-
+import json
 
 
 from PyQt5 import uic
@@ -12,16 +12,21 @@ from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, QAction
 from PyQt5.QtGui import QIcon
 
 from upload_window import UploadWindow
-
+from settings_window import SettingsWindow
 
 class MyApp(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.upload_window = None
+        self.settings_window = None
         uic.loadUi('main_ui.ui', self)
         self.setWindowTitle("Servers Telegram controller")
         self.setWindowIcon(QIcon('icon.ico'))
 
+        with open('program_settings.json', 'r', encoding='utf-8') as f:
+            self.settings = json.load(f)
 
+        # Монтируем трей
         self.tray_icon = QSystemTrayIcon(self)
         self.tray_icon.setIcon(QIcon("icon_tray.ico"))  # или QIcon.fromTheme()
         traymenu = QMenu()
@@ -30,10 +35,15 @@ class MyApp(QMainWindow):
         self.tray_icon.setContextMenu(traymenu)
 
 
+        ############################################################################### далее обработчики
+
+
         self.upload_core_action.triggered.connect(self.open_upload_cores_window)
 
-
         self.open_setings_action.triggered.connect(self.open_settings_window)
+
+
+        self.printsettingsbutton.clicked.connect(self.printsettings)
 
 
         self.exit_action.triggered.connect(self.close_program)
@@ -47,19 +57,35 @@ class MyApp(QMainWindow):
     def initUI(self):
         self.show()
 
+    def printsettings(self):
+        print(self.settings)
+
+
+
+
+
+
+
     def open_upload_cores_window(self ):
         """Открываем окно загрузки файлов"""
         self.upload_window = UploadWindow(self, "downloads_cores")  # self как родитель
         self.upload_window.show()
 
     def open_settings_window(self):
-        print("open_settings_window")
+        self.settings_window = SettingsWindow(self)  # self как родитель
+        # self.settings_window.settingsChanged.connect(self.load_settings)
+        self.settings_window.settingsChanged.connect(self.load_settings)
+        self.settings_window.exec_()
+
+
+    def load_settings(self):
+        with open('program_settings.json', 'r', encoding='utf-8') as f:
+            self.settings = json.load(f)
+
 
     def restart_program(self):
         """Полный перезапуск приложения"""
-        QMessageBox.warning(self, "Перезапуск", "Приложение будет перезапущено")
         QApplication.quit()
-
         os.execl(sys.executable, sys.executable, *sys.argv)
 
     def to_trey_program(self):
@@ -76,11 +102,14 @@ class MyApp(QMainWindow):
             QApplication.quit()   # Закрыть
 
     def closeEvent(self, event):
-        # Здесь можно сохранить настройки, спросить подтверждение
 
         self.hide()  # Скрываем окно
         self.tray_icon.show()  # Показываем иконку в трее
         event.ignore()  # Не закрываем программу
+        # QApplication.quit()  # Закрыть
+
+
+
 
 
 
