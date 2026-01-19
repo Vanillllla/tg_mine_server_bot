@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="SqlDialectMappings">
-    <file url="file://$PROJECT_DIR$/New_bot_main.py" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/Arhive_V2/main.py" dialect="GenericSQL" />
   </component>
 </project>

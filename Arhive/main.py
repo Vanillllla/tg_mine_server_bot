@@ -3,7 +3,7 @@ import telebot
 from telebot import types
 
 from BD_wock import add_user, in_bd
-from SERV_work import ServerManager
+from Arhive_V2.SERV_work import ServerManager
 import psutil
 import pynvml
 

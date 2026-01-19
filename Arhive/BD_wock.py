@@ -1,7 +1,7 @@
 import sqlite3
 
 def in_bd(user_id):
-    connection = sqlite3.connect('../my_database.db')
+    connection = sqlite3.connect('../Arhive_V2/my_database.db')
     cursor = connection.cursor()
     cursor.execute('SELECT users_tg_id FROM Users WHERE users_tg_id = ?', (user_id,))
     results = cursor.fetchall()
@@ -15,7 +15,7 @@ def in_bd(user_id):
         return False
 
 def add_user(user_id):
-    connection = sqlite3.connect('../my_database.db')
+    connection = sqlite3.connect('../Arhive_V2/my_database.db')
     cursor = connection.cursor()
     cursor.execute('INSERT INTO Users (users_tg_id) VALUES (?)', (str(user_id),))
     connection.commit()
