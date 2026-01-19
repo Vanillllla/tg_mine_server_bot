@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>885</width>
+    <height>533</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <property name="accessibleName">
+   <string>Главная</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QScrollBar" name="verticalScrollBar">
+    <property name="geometry">
+     <rect>
+      <x>870</x>
+      <y>0</y>
+      <width>16</width>
+      <height>491</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Vertical</enum>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>885</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>Файл</string>
+    </property>
+    <addaction name="upload_core_action"/>
+    <addaction name="auto_start_last_core_action"/>
+    <addaction name="core_select_action"/>
+    <addaction name="separator"/>
+    <addaction name="open_setings_action"/>
+    <addaction name="separator"/>
+    <addaction name="restart_action"/>
+    <addaction name="to_trey_action"/>
+    <addaction name="exit_action"/>
+   </widget>
+   <widget class="QMenu" name="menu_2">
+    <property name="title">
+     <string>Помощь</string>
+    </property>
+    <addaction name="action_5"/>
+    <addaction name="action_GitHub"/>
+   </widget>
+   <addaction name="menu"/>
+   <addaction name="menu_2"/>
+  </widget>
+  <action name="action">
+   <property name="text">
+    <string>Закрыть</string>
+   </property>
+  </action>
+  <action name="action_2">
+   <property name="text">
+    <string>Свернуть в трей</string>
+   </property>
+  </action>
+  <action name="action_4">
+   <property name="text">
+    <string>Выйти</string>
+   </property>
+  </action>
+  <action name="action_5">
+   <property name="text">
+    <string>Справка</string>
+   </property>
+  </action>
+  <action name="action_GitHub">
+   <property name="text">
+    <string>Репозиторий GitHub</string>
+   </property>
+  </action>
+  <action name="upload_core_action">
+   <property name="text">
+    <string>Добавить ядро</string>
+   </property>
+  </action>
+  <action name="action_7">
+   <property name="text">
+    <string>Запутить ядро(выбрать)</string>
+   </property>
+  </action>
+  <action name="auto_start_last_core_action">
+   <property name="text">
+    <string>Запустить последнее ядро</string>
+   </property>
+  </action>
+  <action name="core_select_action">
+   <property name="text">
+    <string>Запутить ядро(выбрать)</string>
+   </property>
+  </action>
+  <action name="open_setings_action">
+   <property name="text">
+    <string>Настройки</string>
+   </property>
+  </action>
+  <action name="action_13">
+   <property name="text">
+    <string>Свернуть в трей</string>
+   </property>
+  </action>
+  <action name="action_14">
+   <property name="text">
+    <string>Закрыть программу</string>
+   </property>
+  </action>
+  <action name="restart_action">
+   <property name="text">
+    <string>Перезапустить программу</string>
+   </property>
+  </action>
+  <action name="action_16">
+   <property name="text">
+    <string>Закрыть программу</string>
+   </property>
+  </action>
+  <action name="to_trey_action">
+   <property name="text">
+    <string>Свернуть в трей</string>
+   </property>
+  </action>
+  <action name="exit_action">
+   <property name="text">
+    <string>Закрыть программу</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
