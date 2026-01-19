@@ -101,6 +101,9 @@
    </property>
   </action>
   <action name="auto_start_last_core_action">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Запустить последнее ядро</string>
    </property>

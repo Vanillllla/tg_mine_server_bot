@@ -1,6 +1,6 @@
 # Способ 1: Динамическая загрузка
 from PyQt5 import uic
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QMessageBox
 
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel
@@ -21,7 +21,7 @@ class MyApp(QMainWindow):
         self.open_setings_action.triggered.connect(self.open_settings_window)
 
 
-        self.exit_action.triggered.connect(self.close_program)
+        self.exit_action.triggered.connect(self.close)
         self.to_trey_action.triggered.connect(self.to_trey_program)
         self.restart_action.triggered.connect(self.restart_program)
 
@@ -51,6 +51,19 @@ class MyApp(QMainWindow):
 
     def close_program(self):
         self.close()
+
+    def closeEvent(self, event):
+        # Здесь можно сохранить настройки, спросить подтверждение
+        reply = QMessageBox.question(
+            self, 'Подтверждение',
+            'Вы уверены, что хотите выйти?',
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        if reply == QMessageBox.Yes:
+            event.accept()  # Закрыть
+        else:
+            event.ignore()  # Не закрывать
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
