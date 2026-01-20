@@ -170,7 +170,7 @@
     <string>Запускать телеграмм бота при старте программы</string>
    </property>
   </widget>
-  <widget class="QLineEdit" name="telegrantokenInput">
+  <widget class="QLineEdit" name="telegram_bot_token">
    <property name="geometry">
     <rect>
      <x>170</x>
@@ -246,7 +246,7 @@
     <string>Адрес подключения:</string>
    </property>
   </widget>
-  <widget class="QLineEdit" name="serve_hos_name">
+  <widget class="QLineEdit" name="serve_host_name">
    <property name="geometry">
     <rect>
      <x>170</x>
