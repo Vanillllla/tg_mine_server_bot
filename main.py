@@ -13,6 +13,8 @@ from PyQt5.QtGui import QIcon
 
 from upload_window import UploadWindow
 from settings_window import SettingsWindow
+from thems_my import Themes
+
 
 class MyApp(QMainWindow):
     def __init__(self):
@@ -25,6 +27,8 @@ class MyApp(QMainWindow):
 
         with open('program_settings.json', 'r', encoding='utf-8') as f:
             self.settings = json.load(f)
+
+        self.apply_theme()
 
         # Монтируем трей
         self.tray_icon = QSystemTrayIcon(self)
@@ -60,11 +64,17 @@ class MyApp(QMainWindow):
     def printsettings(self):
         print(self.settings)
 
+    def apply_theme(self):
+        """Применяет текущую тему ко всему приложению"""
+        theme_name = self.settings.get("theme", "light")
+        stylesheet = Themes.get_theme(theme_name)
 
+        # Применяем ко всему приложению
+        # app = QtWidgets.QApplication.instance()
+        # MyApp.setStyleSheet(stylesheet)
 
-
-
-
+        # Или только к этому окну:
+        self.setStyleSheet(stylesheet)
 
     def open_upload_cores_window(self ):
         """Открываем окно загрузки файлов"""
@@ -117,3 +127,12 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = MyApp()
     sys.exit(app.exec_())
+
+
+
+'''
+
+создай темы для моего приложения : светлую, тёмную и с акцентом на зелёный?
+я прикрепил тебе код моего приложения, практически не меняя написанного мною кода, встрой туда три этих темы, их выбор будет зависеть от того какая из них выбрана в settings["stile"]
+
+'''
