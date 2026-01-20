@@ -25,10 +25,25 @@ class SettingsWindow(QDialog):
         with open(self.settings_path, 'r', encoding='utf-8') as f:
             self.settings = json.load(f)
 
-        if self.settings["autostart"] == True :
+        if self.settings["autostart"]:
             self.autostart_checkBox.setChecked(True)
         else:
             self.autostart_checkBox.setChecked(False)
+
+        if self.settings["autostart_bot"]:
+            self.telegramBot_autostart_checkBox.setChecked(True)
+        else:
+            self.telegramBot_autostart_checkBox.setChecked(False)
+
+        if self.settings["telegram_bot_token"] == "" :
+            self.telegram_bot_token.setPlaceholderText("Your_bot_token")
+        else:
+            self.telegram_bot_token.setText(self.settings["telegram_bot_token"])
+
+        if self.settings["serve_host_name"] == "" :
+            self.serve_host_name.setPlaceholderText("Your_host_name/ip")
+        else:
+            self.serve_host_name.setText(self.settings["serve_host_name"])
 
         current_theme = parent.settings.get("theme", "light")
         theme_index = {
@@ -40,7 +55,7 @@ class SettingsWindow(QDialog):
 
 
         self.autostart_checkBox.stateChanged.connect(self.autostart_checkbox_changed)
-
+        self.telegramBot_autostart_checkBox.stateChanged.connect(self.telegramBot_autostart_checkbox_changed)
         self.saveOut.clicked.connect(self.save)
         self.saveOut_2.clicked.connect(self.close)
 
@@ -50,15 +65,23 @@ class SettingsWindow(QDialog):
         else:
             self.settings["autostart"] = False
 
+    def telegramBot_autostart_checkbox_changed(self):
+        if self.telegramBot_autostart_checkBox.isChecked() :
+            self.settings["autostart_bot"] = True
+        else:
+            self.settings["autostart_bot"] = False
+
     def save(self):
         """Сохранить настройки в файл"""
         theme_map = {
-            0: "system",  # "Как в системе"
+            0: "system",
             1: "dark",
             2: "light",
             3: "green"
         }
         selected_theme = theme_map.get(self.comboBox.currentIndex(), "light")
+        self.settings["serve_host_name"] = self.serve_host_name.text()
+        self.settings["telegram_bot_token"] = self.telegram_bot_token.text()
 
         # Если выбрано "Как в системе", определи системную тему
         if selected_theme == "system":
