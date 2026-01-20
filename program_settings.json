@@ -1,3 +1,4 @@
 {
-  "autostart": false
+  "autostart": true,
+  "theme": "green"
 }

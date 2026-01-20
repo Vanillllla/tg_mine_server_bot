@@ -1,8 +1,11 @@
+import json
+import os
+import shutil
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-import os
-import shutil
+from PyQt5 import uic
+
 
 
 class UploadWindow(QDialog):
@@ -13,9 +16,11 @@ class UploadWindow(QDialog):
         super().__init__(parent)
 
         # Загружаем интерфейс из .ui файла
-        from PyQt5 import uic
+
         uic.loadUi('upload_window.ui', self)
 
+        with open(self.settings_path, 'r', encoding='utf-8') as f:
+            self.settings = json.load(f)
         # Настраиваем drag-and-drop
         self.setAcceptDrops(True)
 

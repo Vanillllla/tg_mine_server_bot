@@ -5,7 +5,7 @@ from PyQt5.QtCore import *
 from PyQt5 import uic
 from PyQt5.QtGui import QIcon
 
-
+from thems_my import Themes
 
 class SettingsWindow(QDialog):
 
@@ -30,6 +30,15 @@ class SettingsWindow(QDialog):
         else:
             self.autostart_checkBox.setChecked(False)
 
+        current_theme = parent.settings.get("theme", "light")
+        theme_index = {
+            "light": 2,
+            "dark": 1,
+            "green": 3
+        }.get(current_theme, 0)
+        self.comboBox.setCurrentIndex(theme_index)
+
+
         self.autostart_checkBox.stateChanged.connect(self.autostart_checkbox_changed)
 
         self.saveOut.clicked.connect(self.save)
@@ -46,6 +55,14 @@ class SettingsWindow(QDialog):
 
     def save(self):
         """Сохранить настройки в файл"""
+        theme_map = {
+            0: "system",  # "Как в системе" - обработайте отдельно
+            1: "dark",
+            2: "light",
+            3: "green"
+        }
+        selected_theme = theme_map.get(self.comboBox.currentIndex(), "light")
+        self.settings["theme"] = selected_theme
         with open(self.settings_path, 'w', encoding='utf-8') as f:
             json.dump(self.settings, f, indent=2, ensure_ascii=False)
         self.settingsChanged.emit()
