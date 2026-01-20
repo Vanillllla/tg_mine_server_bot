@@ -3,5 +3,6 @@
   "theme": "green",
   "autostart_bot": false,
   "serve_host_name": "",
-  "telegram_bot_token": ""
+  "telegram_bot_token": "",
+  "use_modern_style": true
 }
