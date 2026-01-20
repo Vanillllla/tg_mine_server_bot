@@ -69,17 +69,16 @@ class MyApp(QMainWindow):
         theme_name = self.settings.get("theme", "light")
         stylesheet = Themes.get_theme(theme_name)
 
-        # Применяем ко всему приложению
-        # app = QtWidgets.QApplication.instance()
-        # MyApp.setStyleSheet(stylesheet)
-
-        # Или только к этому окну:
-        self.setStyleSheet(stylesheet)
+        # ЗАМЕНИ эту строку:
+        # self.setStyleSheet(stylesheet)
+        # НА ЭТУ:
+        app = QApplication.instance()
+        app.setStyleSheet(stylesheet)
 
     def open_upload_cores_window(self ):
         """Открываем окно загрузки файлов"""
         self.upload_window = UploadWindow(self, "downloads_cores")  # self как родитель
-        self.upload_window.show()
+        self.settings_window.exec_()
 
     def open_settings_window(self):
         self.settings_window = SettingsWindow(self)  # self как родитель

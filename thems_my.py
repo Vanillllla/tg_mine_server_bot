@@ -236,3 +236,23 @@ class Themes:
                 border-radius: 4px;
             }
         """
+
+    @staticmethod
+    def get_theme(name):
+        if name == "system":
+            # Автоматическое определение системной темы
+            from PyQt5.QtWidgets import QApplication
+            app = QApplication.instance()
+            if app:
+                bg_color = app.palette().window().color()
+                if bg_color.lightness() > 128:
+                    return Themes.light_theme()
+                else:
+                    return Themes.dark_theme()
+            return Themes.light_theme()  # По умолчанию
+        elif name == "dark":
+            return Themes.dark_theme()
+        elif name == "green":
+            return Themes.green_theme()
+        else:  # "light" or default
+            return Themes.light_theme()

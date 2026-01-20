@@ -50,18 +50,26 @@ class SettingsWindow(QDialog):
         else:
             self.settings["autostart"] = False
 
-
-
-
     def save(self):
         """Сохранить настройки в файл"""
         theme_map = {
-            0: "system",  # "Как в системе" - обработайте отдельно
+            0: "system",  # "Как в системе"
             1: "dark",
             2: "light",
             3: "green"
         }
         selected_theme = theme_map.get(self.comboBox.currentIndex(), "light")
+
+        # Если выбрано "Как в системе", определи системную тему
+        if selected_theme == "system":
+            # Простая проверка - если светлый фон, то светлая тема
+            app = QApplication.instance()
+            bg_color = app.palette().window().color()
+            if bg_color.lightness() > 128:
+                selected_theme = "light"
+            else:
+                selected_theme = "dark"
+
         self.settings["theme"] = selected_theme
         with open(self.settings_path, 'w', encoding='utf-8') as f:
             json.dump(self.settings, f, indent=2, ensure_ascii=False)
