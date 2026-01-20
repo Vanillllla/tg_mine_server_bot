@@ -1,4 +1,3 @@
-# Способ 1: Динамическая загрузка
 import os
 import subprocess
 import sys
@@ -9,6 +8,8 @@ from PyQt5 import uic
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QMessageBox
 from PyQt5.QtWidgets import QMainWindow, QLabel
 from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, QAction
+from PyQt5.QtGui import QDesktopServices
+from PyQt5.QtCore import QUrl
 from PyQt5.QtGui import QIcon
 
 from upload_window import UploadWindow
@@ -54,6 +55,8 @@ class MyApp(QMainWindow):
         self.to_trey_action.triggered.connect(self.close)
         self.restart_action.triggered.connect(self.restart_program)
 
+        self.action_GitHub.triggered.connect(self.open_github)
+
         self.initUI()
 
 
@@ -68,17 +71,14 @@ class MyApp(QMainWindow):
         """Применяет текущую тему ко всему приложению"""
         theme_name = self.settings.get("theme", "light")
         stylesheet = Themes.get_theme(theme_name)
-
-        # ЗАМЕНИ эту строку:
-        # self.setStyleSheet(stylesheet)
-        # НА ЭТУ:
         app = QApplication.instance()
         app.setStyleSheet(stylesheet)
 
     def open_upload_cores_window(self ):
         """Открываем окно загрузки файлов"""
         self.upload_window = UploadWindow(self, "downloads_cores")  # self как родитель
-        self.settings_window.exec_()
+        self.upload_window.exec_()
+        self.apply_theme()
 
     def open_settings_window(self):
         self.settings_window = SettingsWindow(self)  # self как родитель
@@ -91,6 +91,9 @@ class MyApp(QMainWindow):
         with open('program_settings.json', 'r', encoding='utf-8') as f:
             self.settings = json.load(f)
 
+    def open_github(self):
+        """Открыть репозиторий GitHub"""
+        QDesktopServices.openUrl(QUrl("https://github.com/Vanillllla/tg_mine_server_bot"))
 
     def restart_program(self):
         """Полный перезапуск приложения"""
@@ -108,14 +111,14 @@ class MyApp(QMainWindow):
         #     QMessageBox.No
         # )
         # if reply == QMessageBox.Yes:
-            QApplication.quit()   # Закрыть
+        QApplication.quit()   # Закрыть
 
     def closeEvent(self, event):
 
         self.hide()  # Скрываем окно
         self.tray_icon.show()  # Показываем иконку в трее
         event.ignore()  # Не закрываем программу
-        # QApplication.quit()  # Закрыть
+        QApplication.quit()  # Закрыть
 
 
 
@@ -128,10 +131,3 @@ if __name__ == '__main__':
     sys.exit(app.exec_())
 
 
-
-'''
-
-создай темы для моего приложения : светлую, тёмную и с акцентом на зелёный?
-я прикрепил тебе код моего приложения, практически не меняя написанного мною кода, встрой туда три этих темы, их выбор будет зависеть от того какая из них выбрана в settings["stile"]
-
-'''
