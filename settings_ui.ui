@@ -10,6 +10,12 @@
     <height>300</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
   <property name="minimumSize">
    <size>
     <width>570</width>
@@ -18,8 +24,14 @@
   </property>
   <property name="maximumSize">
    <size>
-    <width>570</width>
-    <height>300</height>
+    <width>855</width>
+    <height>450</height>
+   </size>
+  </property>
+  <property name="sizeIncrement">
+   <size>
+    <width>10</width>
+    <height>100</height>
    </size>
   </property>
   <property name="font">
