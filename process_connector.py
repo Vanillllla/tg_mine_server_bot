@@ -15,7 +15,7 @@ class ProcessConnector():
     def bot_start(self):
         # Запускаем бота с двусторонними каналами
         self.process = subprocess.Popen(
-            [sys.executable, "bot_test.py"],
+            [sys.executable, "bot.py"],
             stdin=subprocess.PIPE,  # ← для отправки данных БОТУ
             stdout=subprocess.PIPE,  # ← для получения данных ОТ бота
             stderr=subprocess.PIPE,
