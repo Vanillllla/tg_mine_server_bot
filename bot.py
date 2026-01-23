@@ -81,9 +81,10 @@ class Bott:
         await message.answer("Выберите действие:", reply_markup=keyboard)
 
     async def server_switch(self, message: Message, state: FSMContext):
-        await message.answer("ОТПРАВЛЕНА ТЕСТОВАЯ КОМАНДА")
+        msg = {"to_process": "server", "command": "switch", "data": None}
+        await message.answer(f"ОТПРАВЛЕНА ТЕСТОВАЯ КОМАНДА: {msg}")
         print(message.from_user.id)
-        self.pipe_send({"command": "server", "data": "switch"})
+        self.pipe_send(msg)
 
     async def run(self):
         print("run() начал выполнение")

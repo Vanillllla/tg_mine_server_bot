@@ -159,7 +159,7 @@ class MyApp(QMainWindow):
         self.hide()  # Скрываем окно
         self.tray_icon.show()  # Показываем иконку в трее
         event.ignore()  # Не закрываем программу
-        # QApplication.quit()  # Закрыть
+        QApplication.quit()  # Закрыть
 
 
 
