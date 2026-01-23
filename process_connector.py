@@ -2,74 +2,70 @@ from multiprocessing import Process, Pipe
 import time
 import threading
 import sys
+from PyQt5.QtWidgets import QApplication
 
 class ProcessConnector:
     def __init__(self):
         self.bot_process = None
         self.server_process = None
-        thread = threading.Thread(target=self.pipe_read, args=(self.conn))
-        thread.start()
+        self.ui_process = None
+        self.bot_parent_conn = None
+        self.ui_parent_conn = None
+        self.server_parent_conn = None
+        self.bot_prefix = "[ BOT ]"
+        self.ui_prefix = "[ UI ]"
 
-    def pipe_read(self, conn: Connection):
-        pass
+    def bot_start(self):
+        if not self.bot_process:
+            self.ui_parent_conn, ui_child_conn = Pipe()
+            from bot import run_bot
+            self.bot_process = Process(
+                target=run_bot,
+                args=(ui_child_conn,),
+                daemon=True
+            )
+            self.bot_process.start()
+            threading.Thread(
+                target=self._read_from_bot,
+                daemon=True
+                ).start()
+        else:
+            print(self.bot_prefix ,"Бот уже запущен!")
 
-    def start_bot(self):
-        """Запуск бота в отдельном процессе"""
-        parent_conn, child_conn = Pipe()
-        p = Process(target=self.run_bot_process, args=(child_conn,))
-        p.start()
-        return p, parent_conn
+    def ui_start(self):
+        if self.ui_process is None:
+
+            from main_ui import MyApp
+            app = QApplication(sys.argv)
+            ex = MyApp()
+            sys.exit(app.exec_())
+        else:
+            print(self.ui_prefix, "UI Уже запущено!")
+
+    def _read_from_bot(self):
+        """Блокирующее чтение - поток ждет сообщения"""
+        while True:
+            try:
+                # recv() блокируется, пока не придет сообщение
+                msg = self.bot_parent_conn.recv()
+                print(self.bot_prefix ,"Получено сообщение от бота:", msg)
+                # Здесь можно обработать сообщение
+                # self._handle_bot_message(msg)
+            except EOFError:
+                print(self.bot_prefix ,"Канал закрыт, завершаем чтение")
+                break
+            except Exception as e:
+                print(self.bot_prefix ,f"Ошибка чтения из канала: {e}")
+                break
 
 
-    def run_bot_process(self, conn):
-        """Запускает файл bot.py в дочернем процессе"""
-        sys.path.insert(0, '.')
-        from bot import run_bot
-        run_bot(conn)
-
-    def start_server(self):
-        pass
-
-    def start_server_process(self, conn):
-        pass
+    def bot_get_state(self):
+        return True if self.bot_process else False
 
 
 if __name__ == '__main__':
-    # Запуск бота
-    pc = ProcessConnector()
-    print("Starting bot...")
-    bot_process, bot_conn = pc.start_bot()
-
-    # Ждем немного
-    time.sleep(3)
-
-    # Отправляем команду боту
-    print("Sending command to bot...")
-    bot_conn.send(("command", "update_settings"))
-
-    # Ждем еще
-    time.sleep(2)
-
-    # Останавливаем бота
-    print("Stopping bot...")
-    bot_conn.send("stop")
-
-    # Ждем завершения
-    bot_process.join(timeout=5)
-    if bot_process.is_alive():
-        bot_process.terminate()
-        bot_process.join()
-
-    print("Bot stopped")
-    bot_conn.close()
-
-
-    time.sleep(3)
-
-
-
-
-
+    connector = ProcessConnector()
+    connector.ui_start()
 
 
 
