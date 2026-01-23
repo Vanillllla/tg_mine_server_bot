@@ -1,44 +1,27 @@
 from multiprocessing import Process, Pipe
 import time
-import threading
 import sys
 
-class ProcessConnector:
-    def __init__(self):
-        self.bot_process = None
-        self.server_process = None
-        thread = threading.Thread(target=self.pipe_read, args=(self.conn))
-        thread.start()
 
-    def pipe_read(self, conn: Connection):
-        pass
-
-    def start_bot(self):
-        """Запуск бота в отдельном процессе"""
-        parent_conn, child_conn = Pipe()
-        p = Process(target=self.run_bot_process, args=(child_conn,))
-        p.start()
-        return p, parent_conn
+def start_bot():
+    """Запуск бота в отдельном процессе"""
+    parent_conn, child_conn = Pipe()
+    p = Process(target=run_bot_process, args=(child_conn,))
+    p.start()
+    return p, parent_conn
 
 
-    def run_bot_process(self, conn):
-        """Запускает файл bot.py в дочернем процессе"""
-        sys.path.insert(0, '.')
-        from bot import run_bot
-        run_bot(conn)
-
-    def start_server(self):
-        pass
-
-    def start_server_process(self, conn):
-        pass
+def run_bot_process(conn):
+    """Запускает файл bot.py в дочернем процессе"""
+    sys.path.insert(0, '.')
+    from bot import run_bot
+    run_bot(conn)
 
 
 if __name__ == '__main__':
     # Запуск бота
-    pc = ProcessConnector()
     print("Starting bot...")
-    bot_process, bot_conn = pc.start_bot()
+    bot_process, bot_conn = start_bot()
 
     # Ждем немного
     time.sleep(3)
@@ -63,8 +46,6 @@ if __name__ == '__main__':
     print("Bot stopped")
     bot_conn.close()
 
-
-    time.sleep(3)
 
 
 
