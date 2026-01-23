@@ -86,7 +86,7 @@
     <property name="frameShadow">
      <enum>QFrame::Raised</enum>
     </property>
-    <widget class="QPushButton" name="pushButton">
+    <widget class="QPushButton" name="bot_control_button">
      <property name="geometry">
       <rect>
        <x>240</x>
@@ -97,6 +97,19 @@
      </property>
      <property name="text">
       <string>Запустить телеграмм бота</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="botStatusLabel">
+     <property name="geometry">
+      <rect>
+       <x>30</x>
+       <y>30</y>
+       <width>47</width>
+       <height>14</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>botStatusLabel</string>
      </property>
     </widget>
    </widget>
