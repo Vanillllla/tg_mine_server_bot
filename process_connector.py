@@ -15,6 +15,9 @@ class ProcessConnector:
         self.bot_prefix = "[ BOT ]"
         self.ui_prefix = "[ UI ]"
 
+
+
+
     def bot_start(self):
         if not self.bot_process:
             self.ui_parent_conn, ui_child_conn = Pipe()
@@ -33,14 +36,11 @@ class ProcessConnector:
             print(self.bot_prefix ,"Бот уже запущен!")
 
     def ui_start(self):
-        if self.ui_process is None:
-
-            from main_ui import MyApp
-            app = QApplication(sys.argv)
-            ex = MyApp()
-            sys.exit(app.exec_())
-        else:
-            print(self.ui_prefix, "UI Уже запущено!")
+        print(self.ui_process)
+        from main_ui import MyApp
+        app = QApplication(sys.argv)
+        ex = MyApp()
+        sys.exit(app.exec_())
 
     def _read_from_bot(self):
         """Блокирующее чтение - поток ждет сообщения"""
@@ -49,8 +49,13 @@ class ProcessConnector:
                 # recv() блокируется, пока не придет сообщение
                 msg = self.bot_parent_conn.recv()
                 print(self.bot_prefix ,"Получено сообщение от бота:", msg)
-                # Здесь можно обработать сообщение
-                # self._handle_bot_message(msg)
+                if msg["to_process"] == "server":
+                    if msg["command"] == "switch":
+                        # self.server_process = threading.Thread(
+                        #     target=,
+                        #     daemon=True
+                        # )
+                        pass
             except EOFError:
                 print(self.bot_prefix ,"Канал закрыт, завершаем чтение")
                 break
@@ -65,13 +70,15 @@ class ProcessConnector:
 
 if __name__ == '__main__':
     connector = ProcessConnector()
+
+
+    # def run():
+    #     print(1111111)
+    #     threading.Thread(target=connector.ui_start, daemon=True).start()
+    #     print(2222222)
+    # run()
+
     connector.ui_start()
-
-
-
-
-
-
 
 
 
