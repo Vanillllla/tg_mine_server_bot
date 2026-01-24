@@ -166,8 +166,7 @@ class MyApp(QMainWindow):
 
 
 
-
-# if __name__ = "__main__":
-#     app = QApplication(sys.argv)
-#     ex = MyApp()
-#     sys.exit(app.exec_())
+def run():
+    app = QApplication(sys.argv)
+    ex = MyApp()
+    sys.exit(app.exec_())

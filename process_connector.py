@@ -21,11 +21,11 @@ class ProcessConnector:
 
     def bot_start(self):
         if not self.bot_process:
-            self.ui_parent_conn, ui_child_conn = Pipe()
+            self.bot_parent_conn, bot_child_conn = Pipe()
             from bot import run_bot
             self.bot_process = Process(
                 target=run_bot,
-                args=(ui_child_conn,),
+                args=(bot_child_conn,),
                 daemon=True
             )
             self.bot_process.start()
@@ -38,10 +38,17 @@ class ProcessConnector:
 
     def ui_start(self):
         print(self.ui_process)
-        from main_ui import MyApp
-        app = QApplication(sys.argv)
-        ex = MyApp()
-        sys.exit(app.exec_())
+        if self.ui_process is None:
+            from main_ui import run
+            # print(self.ui_process)
+            self.ui_process = Process(
+                target=run
+            )
+            self.ui_process.start()
+            # print(self.ui_process)
+        # app = QApplication(sys.argv)
+        # ex = MyApp()
+        # sys.exit(app.exec_())
 
     def _read_from_bot(self):
         """Блокирующее чтение - поток ждет сообщения"""
@@ -82,7 +89,8 @@ if __name__ == '__main__':
     connector.run()
 
 
-
+    while True:
+        time.sleep(1)
 
 
 
