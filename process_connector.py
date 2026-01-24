@@ -16,7 +16,8 @@ class ProcessConnector:
         self.ui_prefix = "[ UI ]"
 
 
-
+    def run(self):
+        self.ui_start()
 
     def bot_start(self):
         if not self.bot_process:
@@ -78,7 +79,7 @@ if __name__ == '__main__':
     #     print(2222222)
     # run()
 
-    connector.ui_start()
+    connector.run()
 
 
 
