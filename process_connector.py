@@ -11,10 +11,11 @@ class ProcessConnector:
         self.ui_process = None
         self.bot_parent_conn = None
         self.ui_parent_conn = None
-        self.server_parent_conn = None
         self.bot_prefix = "[ BOT ]"
         self.ui_prefix = "[ UI ]"
-
+        self.server_prefix = "[ SERVER ]"
+        self.main_prefix = "[ MAIN ]"
+        self.main_parent_conn, self.main_child_conn = Pipe()
 
     def run(self):
         self.ui_start()
@@ -39,16 +40,33 @@ class ProcessConnector:
     def ui_start(self):
         print(self.ui_process)
         if self.ui_process is None:
+            self.ui_parent_conn, ui_child_conn = Pipe()
             from main_ui import run
-            # print(self.ui_process)
             self.ui_process = Process(
-                target=run
+                target=run,
+                args=(ui_child_conn,),
+                daemon=True
             )
             self.ui_process.start()
-            # print(self.ui_process)
-        # app = QApplication(sys.argv)
-        # ex = MyApp()
-        # sys.exit(app.exec_())
+            threading.Thread(
+                target=self._read_from_ui,
+                daemon=True
+            ).start()
+        else:
+            print("UI уже запущен!")
+
+    def _read_from_ui(self):
+        while True:
+            try:
+                msg = self.ui_parent_conn.recv()
+                print(self.ui_prefix, msg)
+
+            except EOFError:
+                print(self.bot_prefix ,"Канал закрыт, завершаем чтение")
+                break
+            except Exception as e:
+                print(self.bot_prefix ,f"Ошибка чтения из канала: {e}")
+                break
 
     def _read_from_bot(self):
         """Блокирующее чтение - поток ждет сообщения"""
@@ -64,11 +82,27 @@ class ProcessConnector:
                         #     daemon=True
                         # )
                         pass
+
             except EOFError:
-                print(self.bot_prefix ,"Канал закрыт, завершаем чтение")
+                print(self.ui_prefix ,"Канал закрыт, завершаем чтение")
                 break
             except Exception as e:
-                print(self.bot_prefix ,f"Ошибка чтения из канала: {e}")
+                print(self.ui_prefix ,f"Ошибка чтения из канала: {e}")
+                break
+
+    def main_piling(self):
+        while True:
+            try:
+                msg = self.main_parent_conn.recv()
+                if msg["command"] == "start_bot":
+                    self.bot_start()
+                elif msg["command"] == "stop_bot":
+                    print("Остановка бота...")
+            except EOFError:
+                print(self.main_prefix ,"Канал закрыт, завершаем чтение")
+                break
+            except Exception as e:
+                print(self.main_prefix ,f"Ошибка чтения из канала: {e}")
                 break
 
 
@@ -90,7 +124,7 @@ if __name__ == '__main__':
 
 
     while True:
-        time.sleep(1)
+        time.sleep(5)
 
 
 

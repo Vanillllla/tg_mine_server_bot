@@ -3,7 +3,7 @@ import subprocess
 import sys
 import json
 
-
+import requests
 from PyQt5 import uic
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QMessageBox
 from PyQt5.QtWidgets import QMainWindow, QLabel
@@ -17,10 +17,11 @@ from thems_my import Themes
 from process_connector import ProcessConnector
 
 class MyApp(QMainWindow):
-    def __init__(self):
+    def __init__(self, conn):
         super().__init__()
         self.upload_window = None
         self.settings_window = None
+        self.conn = conn
         uic.loadUi('main_ui.ui', self)
         self.setWindowTitle("Servers Telegram controller")
         self.setWindowIcon(QIcon('icon.ico'))
@@ -111,9 +112,12 @@ class MyApp(QMainWindow):
         app.setStyleSheet(stylesheet)
 
     def start_bot(self):
-        self.pc.bot_start()
-        # self.pc.ui_start()
-        # pass
+        request = {"to_process": "connector", "command": "start_bot", "data": None}
+        self.pipe_send(request)
+
+    def pipe_send(self, msg: dict):
+        if self.conn:
+            self.conn.send(msg)
 
     def open_upload_cores_window(self ):
         """Открываем окно загрузки файлов"""
@@ -166,7 +170,7 @@ class MyApp(QMainWindow):
 
 
 
-def run():
+def run(conn):
     app = QApplication(sys.argv)
-    ex = MyApp()
+    ex = MyApp(conn)
     sys.exit(app.exec_())
