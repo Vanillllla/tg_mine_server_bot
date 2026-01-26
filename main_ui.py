@@ -54,10 +54,6 @@ class MyApp(QMainWindow):
 
         self.open_setings_action.triggered.connect(self.open_settings_window)
 
-
-        # self.printsettingsbutton.clicked.connect(self.printsettings)
-
-
         self.exit_action.triggered.connect(self.close_program)
         self.to_trey_action.triggered.connect(self.close)
         self.restart_action.triggered.connect(self.restart_program)
@@ -156,6 +152,8 @@ class MyApp(QMainWindow):
             QMessageBox.No
         )
         if reply == QMessageBox.Yes:
+            request = {"to_process": "connector", "command": "exit", "data": None}
+            self.pipe_send(request)
             QApplication.quit()   # Закрыть
 
     def closeEvent(self, event):
@@ -163,8 +161,11 @@ class MyApp(QMainWindow):
         self.hide()  # Скрываем окно
         self.tray_icon.show()  # Показываем иконку в трее
         event.ignore()  # Не закрываем программу
-        QApplication.quit()  # Закрыть
 
+        ### ЗАКОМЕНТИТЬ ТО ЧТО НИЖЕ В ЭТОЙ ФУНКЦИИ
+        QApplication.quit()  # Закрыть
+        request = {"to_process": "connector", "command": "exit", "data": None}
+        self.pipe_send(request)
 
 
 

@@ -11,6 +11,7 @@ class ProcessConnector:
         self.ui_process = None
         self.bot_parent_conn = None
         self.ui_parent_conn = None
+        # self.bot_process_alive = False
         self.bot_prefix = "[ BOT ]"
         self.ui_prefix = "[ UI ]"
         self.server_prefix = "[ SERVER ]"
@@ -19,6 +20,7 @@ class ProcessConnector:
 
     def run(self):
         self.ui_start()
+        self.main_poling()
 
     def bot_start(self):
         if not self.bot_process:
@@ -34,6 +36,7 @@ class ProcessConnector:
                 target=self._read_from_bot,
                 daemon=True
                 ).start()
+            # self.bot_process_alive = True
         else:
             print(self.bot_prefix ,"Бот уже запущен!")
 
@@ -60,12 +63,14 @@ class ProcessConnector:
             try:
                 msg = self.ui_parent_conn.recv()
                 print(self.ui_prefix, msg)
+                if msg["to_process"] == "connector":
+                    self.main_child_conn.send(msg)
 
             except EOFError:
-                print(self.bot_prefix ,"Канал закрыт, завершаем чтение")
+                print(self.ui_prefix ,"Канал закрыт, завершаем чтение")
                 break
             except Exception as e:
-                print(self.bot_prefix ,f"Ошибка чтения из канала: {e}")
+                print(self.ui_prefix ,f"Ошибка чтения из канала: {e}")
                 break
 
     def _read_from_bot(self):
@@ -77,10 +82,7 @@ class ProcessConnector:
                 print(self.bot_prefix ,"Получено сообщение от бота:", msg)
                 if msg["to_process"] == "server":
                     if msg["command"] == "switch":
-                        # self.server_process = threading.Thread(
-                        #     target=,
-                        #     daemon=True
-                        # )
+
                         pass
 
             except EOFError:
@@ -90,7 +92,7 @@ class ProcessConnector:
                 print(self.ui_prefix ,f"Ошибка чтения из канала: {e}")
                 break
 
-    def main_piling(self):
+    def main_poling(self):
         while True:
             try:
                 msg = self.main_parent_conn.recv()
@@ -98,6 +100,12 @@ class ProcessConnector:
                     self.bot_start()
                 elif msg["command"] == "stop_bot":
                     print("Остановка бота...")
+                elif msg["command"] == "exit":
+                    sys.exit()
+                elif msg["command"] == "get_state":
+                    threading.Thread(
+                        target=self.bot_get_state,
+                    )
             except EOFError:
                 print(self.main_prefix ,"Канал закрыт, завершаем чтение")
                 break
@@ -107,8 +115,8 @@ class ProcessConnector:
 
 
     def bot_get_state(self):
-        return True if self.bot_process else False
-
+        print(self.bot_process.is_alive())
+        return False
 
 if __name__ == '__main__':
     connector = ProcessConnector()
@@ -123,8 +131,8 @@ if __name__ == '__main__':
     connector.run()
 
 
-    while True:
-        time.sleep(5)
+    # while True:
+    #     time.sleep(5)
 
 
 

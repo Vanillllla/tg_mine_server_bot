@@ -33,20 +33,16 @@ class Bott:
         self.conn = conn
         self.dp = Dispatcher()
         self._register_handlers()
-        self.pipe_read()
         self.vanilla = 1007806948
+
+        threading.Thread(
+            target=self.pipe_read,
+            daemon=True
+        ).start()
 
         print("Bot successfully started...")
 
-
-    # def init_pipes(self, conn: Connection):
-    #     # thread= threading.Thread(target=self.pipe_write, args=(self.conn))
-    #     # thread.start()
-    #     thread = threading.Thread(target=self.pipe_read, args=(conn))
-    #     thread.start()
-
     def pipe_read(self):
-        print("pipe read")
         while True:
             try:
                 msg = self.conn.recv()
@@ -71,6 +67,8 @@ class Bott:
 
         self.dp.message.register(self.server_switch, F.text == "переключить_сервер")
 
+        self.dp.message.register(self.nonmess)
+
     async def start(self, message: Message, state: FSMContext):
         # Создаем кнопки
         kb = [
@@ -85,6 +83,9 @@ class Bott:
         await message.answer(f"ОТПРАВЛЕНА ТЕСТОВАЯ КОМАНДА: {msg}")
         print(message.from_user.id)
         self.pipe_send(msg)
+
+    async def nonmess(self, message: Message, state: FSMContext):
+        print(message.text)
 
     async def run(self):
         print("run() начал выполнение")
