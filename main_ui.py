@@ -142,7 +142,7 @@ class MyApp(QMainWindow):
                 pass
             cores_data['active_core']['name'] = selected_core.replace('.jar', '')
             cores_data['active_core']['core_name'] = selected_core
-
+#
             with open('cores.json', 'w', encoding='utf-8') as f:
                 json.dump(cores_data, f, indent=2, ensure_ascii=False)
 
