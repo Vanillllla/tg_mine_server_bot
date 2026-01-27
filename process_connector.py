@@ -134,11 +134,11 @@ class ProcessConnector:
                         self.ui_parent_conn.send({"to_process": "ui", "command": "set_bot_status", "data": False})
                 elif msg["command"] == "server_switch":
                     if (self.server_process is None) or (not self.server_process.is_alive()) :
-                        self.bot_start()
+                        self.server_start()
                         self.ui_parent_conn.send({"to_process": "ui", "command": "set_server_status", "data": True})
+                        self.server_parent_conn.send({"to_process": "server", "command": "start", "data": None})
                     else:
-                        self.bot_process.terminate()
-                        self.th_botRead.join(timeout=1)
+
                         self.ui_parent_conn.send({"to_process": "ui", "command": "set_server_status", "data": False})
 
                 if msg["command"] == "exit":

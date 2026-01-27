@@ -7,7 +7,7 @@
   {
     "name": "",
     "Xms": 256,
-    "-Xmx": 1024,
+    "Xmx": 1024,
     "core_name": "",
     "eula_accept": false,
     "jave_version": "",
