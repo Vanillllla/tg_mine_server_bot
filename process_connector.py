@@ -2,8 +2,7 @@ from multiprocessing import Process, Pipe
 import time
 import threading
 import sys
-# import os
-# os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+import os
 
 class ProcessConnector:
     def __init__(self):
@@ -141,7 +140,9 @@ class ProcessConnector:
 
                         self.ui_parent_conn.send({"to_process": "ui", "command": "set_server_status", "data": False})
 
-                if msg["command"] == "exit":
+                elif msg["command"] == "restart":
+                    pass
+                elif msg["command"] == "exit":
                     sys.exit()
             except EOFError:
                 print(self.main_prefix ,"Канал закрыт, завершаем чтение")

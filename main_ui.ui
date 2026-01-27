@@ -414,7 +414,7 @@
      <x>0</x>
      <y>0</y>
      <width>960</width>
-     <height>24</height>
+     <height>23</height>
     </rect>
    </property>
    <property name="font">
@@ -486,7 +486,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Запустить последнее ядро</string>
+    <string>Запомнить последний профиль</string>
    </property>
   </action>
   <action name="core_select_action">
