@@ -140,7 +140,6 @@ class MyApp(QMainWindow):
             core_nane = selected_core.replace('.jar', '')
             if core_nane in cores_data["cores_list"]:
                 pass
-            # Обновляем активное ядро
             cores_data['active_core']['name'] = selected_core.replace('.jar', '')
             cores_data['active_core']['core_name'] = selected_core
 
