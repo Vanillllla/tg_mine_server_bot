@@ -2,10 +2,10 @@ from multiprocessing import Process, Pipe
 import time
 import threading
 import sys
-from PyQt5.QtWidgets import QApplication
 
 class ProcessConnector:
     def __init__(self):
+        self.th_botRead = None
         self.bot_process = None
         self.server_process = None
         self.ui_process = None
@@ -29,14 +29,15 @@ class ProcessConnector:
             self.bot_process = Process(
                 target=run_bot,
                 args=(bot_child_conn,),
+                name="bot_process",
                 daemon=True
             )
             self.bot_process.start()
-            threading.Thread(
+            self.th_botRead = threading.Thread(
                 target=self._read_from_bot,
                 daemon=True
-                ).start()
-            # self.bot_process_alive = True
+                )
+            self.th_botRead.start()
         else:
             print(self.bot_prefix ,"Бот уже запущен!")
 
@@ -48,6 +49,7 @@ class ProcessConnector:
             self.ui_process = Process(
                 target=run,
                 args=(ui_child_conn,),
+                name="ui_process",
                 daemon=True
             )
             self.ui_process.start()
@@ -64,7 +66,12 @@ class ProcessConnector:
                 msg = self.ui_parent_conn.recv()
                 print(self.ui_prefix, msg)
                 if msg["to_process"] == "connector":
-                    self.main_child_conn.send(msg)
+                    if msg["command"] == "bot_switch":
+                        if self.bot_process:
+                            msg["command"] = "stop_bot"
+                        else:
+                            msg["command"] = "start_bot"
+                        self.main_child_conn.send(msg)
 
             except EOFError:
                 print(self.ui_prefix ,"Канал закрыт, завершаем чтение")
@@ -98,8 +105,11 @@ class ProcessConnector:
                 msg = self.main_parent_conn.recv()
                 if msg["command"] == "start_bot":
                     self.bot_start()
+                    self.ui_parent_conn.send({"to_process": "ui", "command": "set_bot_status", "data": True})
                 elif msg["command"] == "stop_bot":
-                    print("Остановка бота...")
+                    self.bot_process.terminate()
+                    self.th_botRead.stop()
+                    self.ui_parent_conn.send({"to_process": "ui", "command": "set_bot_status", "data": False})
                 elif msg["command"] == "exit":
                     sys.exit()
                 elif msg["command"] == "get_state":
