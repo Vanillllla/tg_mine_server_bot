@@ -11,7 +11,6 @@ class ProcessConnector:
         self.ui_process = None
         self.bot_parent_conn = None
         self.ui_parent_conn = None
-        # self.bot_process_alive = False
         self.bot_prefix = "[ BOT ]"
         self.ui_prefix = "[ UI ]"
         self.server_prefix = "[ SERVER ]"
