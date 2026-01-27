@@ -1,0 +1,17 @@
+{
+  "cores_list":
+  {
+
+  },
+  "active_core":
+  {
+    "name": "",
+    "Xms": 256,
+    "-Xmx": 1024,
+    "core_name": "",
+    "eula_accept": false,
+    "jave_version": "",
+    "java_path": ""
+  }
+
+}

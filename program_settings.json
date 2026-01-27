@@ -1,6 +1,6 @@
 {
   "autostart": true,
-  "theme": "dark",
+  "theme": "green",
   "autostart_bot": false,
   "serve_host_name": "",
   "telegram_bot_token": "",

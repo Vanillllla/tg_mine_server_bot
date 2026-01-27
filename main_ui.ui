@@ -61,8 +61,11 @@
       <x>10</x>
       <y>10</y>
       <width>431</width>
-      <height>91</height>
+      <height>71</height>
      </rect>
+    </property>
+    <property name="autoFillBackground">
+     <bool>false</bool>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -76,8 +79,8 @@
      <rect>
       <x>460</x>
       <y>10</y>
-      <width>411</width>
-      <height>61</height>
+      <width>491</width>
+      <height>71</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -89,10 +92,10 @@
     <widget class="QPushButton" name="bot_control_button">
      <property name="geometry">
       <rect>
-       <x>210</x>
+       <x>280</x>
        <y>10</y>
        <width>191</width>
-       <height>41</height>
+       <height>51</height>
       </rect>
      </property>
      <property name="font">
@@ -110,7 +113,7 @@
        <x>20</x>
        <y>20</y>
        <width>31</width>
-       <height>21</height>
+       <height>31</height>
       </rect>
      </property>
      <property name="font">
@@ -130,10 +133,10 @@
      </property>
      <property name="geometry">
       <rect>
-       <x>70</x>
+       <x>120</x>
        <y>20</y>
        <width>91</width>
-       <height>21</height>
+       <height>31</height>
       </rect>
      </property>
      <property name="font">
@@ -156,6 +159,32 @@
      </property>
     </widget>
    </widget>
+   <widget class="Line" name="line_2">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>120</y>
+      <width>451</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="QGroupBox" name="groupBox">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>140</y>
+      <width>431</width>
+      <height>91</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Server</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QMenuBar" name="menuBar">
@@ -164,7 +193,7 @@
      <x>0</x>
      <y>0</y>
      <width>960</width>
-     <height>23</height>
+     <height>24</height>
     </rect>
    </property>
    <property name="font">

@@ -56,11 +56,6 @@ class Bott:
         if self.conn:
             self.conn.send(msg)
 
-    def pipe_request(self, msg: dict):
-        if self.conn:
-            self.conn.send(msg)
-
-
     def _register_handlers(self):
         # Стартовая команда
         self.dp.message.register(self.start, Command("start"))
@@ -81,7 +76,6 @@ class Bott:
     async def server_switch(self, message: Message, state: FSMContext):
         msg = {"to_process": "server", "command": "switch", "data": None}
         await message.answer(f"ОТПРАВЛЕНА ТЕСТОВАЯ КОМАНДА: {msg}")
-        print(message.from_user.id)
         self.pipe_send(msg)
 
     async def nonmess(self, message: Message, state: FSMContext):
