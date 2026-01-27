@@ -1,8 +1,9 @@
 {
   "autostart": true,
-  "theme": "green",
+  "theme": "dark",
   "autostart_bot": false,
   "serve_host_name": "",
   "telegram_bot_token": "",
-  "use_modern_style": true
+  "use_modern_style": true,
+  "cores_path": "downloads_cores"
 }

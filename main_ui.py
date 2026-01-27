@@ -47,6 +47,12 @@ class MyApp(QMainWindow):
 
         ############################################################################### далее обработчики
 
+        self.coreSelectBox.currentIndexChanged.connect(self.on_core_selected)
+        self.load_cores_to_combobox()
+
+        # # Кнопки сервера:
+        # self.pushButton.clicked.connect(self.start_server)
+        # self.pushButton_2.clicked.connect(self.stop_server)
 
         self.upload_core_action.triggered.connect(self.open_upload_cores_window)
 
@@ -73,6 +79,9 @@ class MyApp(QMainWindow):
             if msg["command"] == "set_bot_status":
                 self.bot_indicator(msg["data"])
 
+    def initUI(self):
+        self.tray_icon.show()
+        self.show()
 
     def bot_indicator(self, is_active):
         if is_active:
@@ -82,9 +91,64 @@ class MyApp(QMainWindow):
             self.botStatusLabel_ind.setText("         OFF")
             self.botStatusLabel_ind.setStyleSheet("background-color: rgba(255, 0, 0, 0.2);color: rgba(255, 0, 0, 0.9);")
 
-    def initUI(self):
-        self.tray_icon.show()
-        self.show()
+    def load_cores_to_combobox(self):
+        """Загружает список ядер из папки downloads_cores в комбобокс"""
+        cores_path = self.settings.get("cores_path", "downloads_cores")
+        if not os.path.exists(cores_path):
+            os.makedirs(cores_path)
+        self.coreSelectBox.clear()
+        self.coreSelectBox.addItem("Выберите ядро")
+        jar_files = []
+        try:
+            for file in os.listdir(cores_path):
+                if file.endswith('.jar'):
+                    jar_files.append(file)
+        except Exception as e:
+            print(f"Ошибка чтения папки с ядрами: {e}")
+        for jar in sorted(jar_files):
+            self.coreSelectBox.addItem(jar)
+        # Если есть активное ядро в cores.json, выбираем его
+        try:
+            with open('cores.json', 'r', encoding='utf-8') as f:
+                cores_data = json.load(f)
+                active_core = cores_data.get('active_core', {}).get('core_name', '')
+                if active_core:
+                    index = self.coreSelectBox.findText(active_core)
+                    if index >= 0:
+                        self.coreSelectBox.setCurrentIndex(index)
+        except Exception as e:
+            print(f"Ошибка чтения cores.json: {e}")
+
+    def on_core_selected(self, index):
+        """Обработчик выбора ядра из комбобокса"""
+        if index > 0:  # Пропускаем первый элемент "Выберите ядро"
+            selected_core = self.coreSelectBox.currentText()
+            print(f"Выбрано ядро: {selected_core}")
+
+            self.coreLabel.setText(selected_core)
+            self.versionLabel.setText("1.0.0")  # Здесь можно парсить версию из имени
+
+            # Сохраняем в cores.json
+            self.save_selected_core(selected_core)
+
+
+    def save_selected_core(self, selected_core):
+        """Сохраняет выбранное ядро в cores.json"""
+        try:
+            with open('cores.json', 'r', encoding='utf-8') as f:
+                cores_data = json.load(f)
+            core_nane = selected_core.replace('.jar', '')
+            if core_nane in cores_data["cores_list"]:
+                pass
+            # Обновляем активное ядро
+            cores_data['active_core']['name'] = selected_core.replace('.jar', '')
+            cores_data['active_core']['core_name'] = selected_core
+
+            with open('cores.json', 'w', encoding='utf-8') as f:
+                json.dump(cores_data, f, indent=2, ensure_ascii=False)
+
+        except Exception as e:
+            print(f"Ошибка сохранения ядра: {e}")
 
     def printsettings(self):
         print(self.settings)
@@ -109,6 +173,7 @@ class MyApp(QMainWindow):
         self.upload_window = UploadWindow(self, "downloads_cores")  # self как родитель
         self.upload_window.exec_()
         self.apply_theme()
+        self.load_cores_to_combobox()
 
     def open_settings_window(self):
         self.settings_window = SettingsWindow(self)  # self как родитель
