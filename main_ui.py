@@ -1,10 +1,9 @@
 import os
-import subprocess
-import sys
 import json
 import threading
+import sys
+os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 
-import requests
 from PyQt5 import uic
 from PyQt5.QtWidgets import QApplication, QVBoxLayout, QPushButton, QMessageBox
 from PyQt5.QtWidgets import QMainWindow, QLabel
@@ -31,12 +30,12 @@ class MyApp(QMainWindow):
 
         self.apply_theme()
 
-        # Монтируем трей
+        ############################################################################### далее монтируем трей
         self.tray_icon = QSystemTrayIcon(self)
         self.tray_icon.setIcon(QIcon("icon_tray.ico"))  # или QIcon.fromTheme()
         traymenu = QMenu()
-        traymenu.addAction("Открыть").triggered.connect(self.show)
-        traymenu.addAction("Выход").triggered.connect(self.close_program)
+        traymenu.addAction("Open").triggered.connect(self.show)
+        traymenu.addAction("Exit").triggered.connect(self.close_program)
         self.tray_icon.setContextMenu(traymenu)
         ############################################################################### далее таймеры опросов
 
@@ -77,10 +76,10 @@ class MyApp(QMainWindow):
 
     def bot_indicator(self, is_active):
         if is_active:
-            self.botStatusLabel_ind.setText("ON")
+            self.botStatusLabel_ind.setText("         ON")
             self.botStatusLabel_ind.setStyleSheet("background-color: rgba(0, 255, 0, 0.2); color: rgba(0, 255, 0, 0.9);")
         else:
-            self.botStatusLabel_ind.setText("OFF")
+            self.botStatusLabel_ind.setText("         OFF")
             self.botStatusLabel_ind.setStyleSheet("background-color: rgba(255, 0, 0, 0.2);color: rgba(255, 0, 0, 0.9);")
 
     def initUI(self):
@@ -130,9 +129,6 @@ class MyApp(QMainWindow):
         """Полный перезапуск приложения"""
         QApplication.quit()
         os.execl(sys.executable, sys.executable, *sys.argv)
-
-    def to_trey_program(self):
-        print("to_trey_program")
 
     def close_program(self):
         reply = QMessageBox.question(
