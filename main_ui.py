@@ -29,6 +29,8 @@ class MyApp(QMainWindow):
             self.settings = json.load(f)
 
         self.apply_theme()
+        self.auto_start_last_core_action.setChecked(self.settings['use_last_active_core'])
+        self.auto_start_last_core_action.triggered.connect(self.auto_start_last_core)
 
         ############################################################################### далее монтируем трей
         self.tray_icon = QSystemTrayIcon(self)
@@ -83,6 +85,12 @@ class MyApp(QMainWindow):
         self.tray_icon.show()
         self.show()
 
+    def auto_start_last_core(self):
+        self.settings["auto_start_last_core"] = self.auto_start_last_core_action.isChecked()
+        print("Тут проблема, ее нужно решить!!!")
+        # with open('program_settings.json', 'w', encoding='utf-8') as f:
+        #     json.dump(self.settings, f, indent=2, ensure_ascii=False)
+
     def bot_indicator(self, is_active):
         if is_active:
             self.botStatusLabel_ind.setText("         ON")
@@ -108,16 +116,19 @@ class MyApp(QMainWindow):
         for jar in sorted(jar_files):
             self.coreSelectBox.addItem(jar)
         # Если есть активное ядро в cores.json, выбираем его
-        try:
-            with open('cores.json', 'r', encoding='utf-8') as f:
-                cores_data = json.load(f)
-                active_core = cores_data.get('active_core', {}).get('core_name', '')
-                if active_core:
-                    index = self.coreSelectBox.findText(active_core)
-                    if index >= 0:
-                        self.coreSelectBox.setCurrentIndex(index)
-        except Exception as e:
-            print(f"Ошибка чтения cores.json: {e}")
+        with open('program_settings.json', 'r', encoding='utf-8') as f:
+            settings = json.load(f)
+        if settings["use_last_active_core"] == True:
+            try:
+                with open('cores.json', 'r', encoding='utf-8') as f:
+                    cores_data = json.load(f)
+                    active_core = cores_data.get('active_core', {}).get('core_name', '')
+                    if active_core:
+                        index = self.coreSelectBox.findText(active_core)
+                        if index >= 0:
+                            self.coreSelectBox.setCurrentIndex(index)
+            except Exception as e:
+                print(f"Ошибка чтения cores.json: {e}")
 
     def on_core_selected(self, index):
         """Обработчик выбора ядра из комбобокса"""
@@ -126,28 +137,9 @@ class MyApp(QMainWindow):
             print(f"Выбрано ядро: {selected_core}")
 
             self.coreLabel.setText(selected_core)
-            self.versionLabel.setText("1.0.0")  # Здесь можно парсить версию из имени
-
-            # Сохраняем в cores.json
-            self.save_selected_core(selected_core)
+            self.versionLabel.setText("Появится позже :3")  # Здесь можно парсить версию из имени
 
 
-    def save_selected_core(self, selected_core):
-        """Сохраняет выбранное ядро в cores.json"""
-        try:
-            with open('cores.json', 'r', encoding='utf-8') as f:
-                cores_data = json.load(f)
-            core_nane = selected_core.replace('.jar', '')
-            if core_nane in cores_data["cores_list"]:
-                pass
-            cores_data['active_core']['name'] = selected_core.replace('.jar', '')
-            cores_data['active_core']['core_name'] = selected_core
-
-            with open('cores.json', 'w', encoding='utf-8') as f:
-                json.dump(cores_data, f, indent=2, ensure_ascii=False)
-
-        except Exception as e:
-            print(f"Ошибка сохранения ядра: {e}")
 
     def printsettings(self):
         print(self.settings)
@@ -191,8 +183,15 @@ class MyApp(QMainWindow):
 
     def restart_program(self):
         """Полный перезапуск приложения"""
-        QApplication.quit()
-        os.execl(sys.executable, sys.executable, *sys.argv)
+        # QApplication.quit()
+        # self.pipe_send({"to_process": "connector", "command": "restart", "data": None})
+        # os.execl(sys.executable, sys.executable, *sys.argv)
+        QMessageBox.warning(
+            self,"Перезагрузка",
+            "Приложение очень хотело перезагрузиться само, но у него лапки! :3 \n"
+            "Перезапустите его сами!"
+        )
+
 
     def close_program(self):
         reply = QMessageBox.question(
@@ -207,6 +206,8 @@ class MyApp(QMainWindow):
             QApplication.quit()   # Закрыть
 
     def closeEvent(self, event):
+
+
 
         self.hide()  # Скрываем окно
         self.tray_icon.show()  # Показываем иконку в трее
