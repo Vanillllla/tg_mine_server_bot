@@ -77,7 +77,7 @@
       <x>460</x>
       <y>10</y>
       <width>411</width>
-      <height>71</height>
+      <height>61</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -89,11 +89,16 @@
     <widget class="QPushButton" name="bot_control_button">
      <property name="geometry">
       <rect>
-       <x>240</x>
+       <x>210</x>
        <y>10</y>
-       <width>161</width>
-       <height>51</height>
+       <width>191</width>
+       <height>41</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+      </font>
      </property>
      <property name="text">
       <string>Запустить телеграмм бота</string>
@@ -102,14 +107,52 @@
     <widget class="QLabel" name="botStatusLabel">
      <property name="geometry">
       <rect>
-       <x>30</x>
-       <y>30</y>
-       <width>47</width>
-       <height>14</height>
+       <x>20</x>
+       <y>20</y>
+       <width>31</width>
+       <height>21</height>
       </rect>
      </property>
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
      <property name="text">
-      <string>botStatusLabel</string>
+      <string>БОТ:</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="botStatusLabel_ind">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>70</x>
+       <y>20</y>
+       <width>91</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
+       <underline>false</underline>
+       <strikeout>false</strikeout>
+      </font>
+     </property>
+     <property name="autoFillBackground">
+      <bool>false</bool>
+     </property>
+     <property name="inputMethodHints">
+      <set>Qt::ImhNone</set>
+     </property>
+     <property name="text">
+      <string>Остановлен</string>
      </property>
     </widget>
    </widget>
@@ -121,7 +164,7 @@
      <x>0</x>
      <y>0</y>
      <width>960</width>
-     <height>24</height>
+     <height>23</height>
     </rect>
    </property>
    <property name="font">

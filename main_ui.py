@@ -2,10 +2,11 @@ import os
 import subprocess
 import sys
 import json
+import threading
 
 import requests
 from PyQt5 import uic
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QMessageBox
+from PyQt5.QtWidgets import QApplication, QVBoxLayout, QPushButton, QMessageBox
 from PyQt5.QtWidgets import QMainWindow, QLabel
 from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, QAction
 from PyQt5.QtGui import QDesktopServices, QIcon
@@ -14,7 +15,6 @@ from PyQt5.QtCore import QUrl, QTimer
 from upload_window import UploadWindow
 from settings_window import SettingsWindow
 from thems_my import Themes
-from process_connector import ProcessConnector
 
 class MyApp(QMainWindow):
     def __init__(self, conn):
@@ -25,7 +25,6 @@ class MyApp(QMainWindow):
         uic.loadUi('main_ui.ui', self)
         self.setWindowTitle("Servers Telegram controller")
         self.setWindowIcon(QIcon('icon.ico'))
-        self.pc = ProcessConnector()
 
         with open('program_settings.json', 'r', encoding='utf-8') as f:
             self.settings = json.load(f)
@@ -41,11 +40,11 @@ class MyApp(QMainWindow):
         self.tray_icon.setContextMenu(traymenu)
         ############################################################################### далее таймеры опросов
 
-        self.status_timer = QTimer()
-        self.status_timer.timeout.connect(self.update_status)
-
-        self.status_timer.start(2000)
-        self.update_status()
+        # self.status_timer = QTimer()
+        # self.status_timer.timeout.connect(self.update_status)
+        #
+        # self.status_timer.start(2000)
+        self.bot_indicator(False)
 
         ############################################################################### далее обработчики
 
@@ -62,36 +61,27 @@ class MyApp(QMainWindow):
 
         self.bot_control_button.clicked.connect(self.start_bot)
 
+        threading.Thread(
+            target=self.pipe_read,
+            daemon=True
+        ).start()
+
         self.initUI()
 
-    def update_status(self):
-        """Опрос внешней функции и обновление статуса"""
-        try:
-            # Вызов вашей внешней функции
-            is_active = self.pc.bot_get_state()  # Замените на вашу
+    def pipe_read(self):
+        while True:
+            msg = self.conn.recv()
+            if msg["command"] == "set_bot_status":
+                self.bot_indicator(msg["data"])
 
-            if is_active:
-                self.botStatusLabel.setText("🟢 Сервер подключен")
-                self.botStatusLabel.setStyleSheet("""
-                    color: #2ecc71;
-                    font-weight: bold;
-                    padding: 5px;
-                    background-color: rgba(46, 204, 113, 0.1);
-                    border-radius: 3px;
-                """)
-            else:
-                self.botStatusLabel.setText("🔴 Сервер недоступен")
-                self.botStatusLabel.setStyleSheet("""
-                    color: #e74c3c;
-                    font-weight: bold;
-                    padding: 5px;
-                    background-color: rgba(231, 76, 60, 0.1);
-                    border-radius: 3px;
-                """)
-        except Exception as e:
-            self.botStatusLabel.setText("⚪ Ошибка проверки")
-            print(f"Ошибка: {e}")
 
+    def bot_indicator(self, is_active):
+        if is_active:
+            self.botStatusLabel_ind.setText("ON")
+            self.botStatusLabel_ind.setStyleSheet("background-color: rgba(0, 255, 0, 0.2); color: rgba(0, 255, 0, 0.9);")
+        else:
+            self.botStatusLabel_ind.setText("OFF")
+            self.botStatusLabel_ind.setStyleSheet("background-color: rgba(255, 0, 0, 0.2);color: rgba(255, 0, 0, 0.9);")
 
     def initUI(self):
         self.tray_icon.show()
@@ -108,7 +98,7 @@ class MyApp(QMainWindow):
         app.setStyleSheet(stylesheet)
 
     def start_bot(self):
-        request = {"to_process": "connector", "command": "start_bot", "data": None}
+        request = {"to_process": "connector", "command": "bot_switch", "data": None}
         self.pipe_send(request)
 
     def pipe_send(self, msg: dict):
