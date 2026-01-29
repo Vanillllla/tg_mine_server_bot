@@ -1,9 +1,5 @@
 {
-  "cores_list": {
-
-  },
-  "active_core": {
-    "name": "",
+  "name": {
     "Xms": 0,
     "Xmx": 0,
     "core_name": "",

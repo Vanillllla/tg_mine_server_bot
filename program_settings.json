@@ -1,11 +1,11 @@
 {
-  "autostart": true,
-  "theme": "green",
-  "autostart_bot": false,
-  "serve_host_name": "",
-  "telegram_bot_token": "",
-  "use_modern_style": true,
-  "use_last_active_core": false,
-  "cores_path": "downloads_cores",
-  "auto_start_last_core": true
+    "autostart": true,
+    "theme": "dark",
+    "autostart_bot": false,
+    "serve_host_name": "",
+    "telegram_bot_token": "",
+    "use_modern_style": true,
+    "use_last_active_core": false,
+    "cores_path": "downloads_cores",
+    "active_core": "additionalenchantedminer-1.12.2-12.5.7.jar"
 }

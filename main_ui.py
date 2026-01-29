@@ -86,10 +86,11 @@ class MyApp(QMainWindow):
         self.show()
 
     def auto_start_last_core(self):
-        self.settings["auto_start_last_core"] = self.auto_start_last_core_action.isChecked()
-        print("Тут проблема, ее нужно решить!!!")
-        # with open('program_settings.json', 'w', encoding='utf-8') as f:
-        #     json.dump(self.settings, f, indent=2, ensure_ascii=False)
+        self.settings["use_last_active_core"] = bool(self.auto_start_last_core_action.isChecked())
+        self.show_server_status(True)
+        with open('program_settings.json', 'w', encoding='utf-8') as f:
+            json.dump(self.settings, f, indent=4)
+
 
     def bot_indicator(self, is_active):
         if is_active:
@@ -98,6 +99,13 @@ class MyApp(QMainWindow):
         else:
             self.botStatusLabel_ind.setText("         OFF")
             self.botStatusLabel_ind.setStyleSheet("background-color: rgba(255, 0, 0, 0.2);color: rgba(255, 0, 0, 0.9);")
+
+    def show_server_status(self, is_active):
+        if is_active:
+            self.serverGroupBox.setTitle("Online")
+        else:
+            self.serverGroupBox.setTitle("Offline")
+
 
     def load_cores_to_combobox(self):
         """Загружает список ядер из папки downloads_cores в комбобокс"""
@@ -115,18 +123,13 @@ class MyApp(QMainWindow):
             print(f"Ошибка чтения папки с ядрами: {e}")
         for jar in sorted(jar_files):
             self.coreSelectBox.addItem(jar)
-        # Если есть активное ядро в cores.json, выбираем его
-        with open('program_settings.json', 'r', encoding='utf-8') as f:
-            settings = json.load(f)
-        if settings["use_last_active_core"] == True:
+        if self.settings["use_last_active_core"]:
             try:
-                with open('cores.json', 'r', encoding='utf-8') as f:
-                    cores_data = json.load(f)
-                    active_core = cores_data.get('active_core', {}).get('core_name', '')
-                    if active_core:
-                        index = self.coreSelectBox.findText(active_core)
-                        if index >= 0:
-                            self.coreSelectBox.setCurrentIndex(index)
+                active_core = self.settings["active_core"]
+                if active_core:
+                    index = self.coreSelectBox.findText(active_core)
+                    if index >= 0:
+                        self.coreSelectBox.setCurrentIndex(index)
             except Exception as e:
                 print(f"Ошибка чтения cores.json: {e}")
 
@@ -138,7 +141,9 @@ class MyApp(QMainWindow):
 
             self.coreLabel.setText(selected_core)
             self.versionLabel.setText("Появится позже :3")  # Здесь можно парсить версию из имени
-
+            self.settings["active_core"] = selected_core
+            with open('program_settings.json', 'w', encoding='utf-8') as f:
+                json.dump(self.settings, f, indent=4)
 
 
     def printsettings(self):
