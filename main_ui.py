@@ -157,7 +157,7 @@ class MyApp(QMainWindow):
         app.setStyleSheet(stylesheet)
 
     def start_bot(self):
-        request = {"to_process": "connector", "command": "bot_switch", "data": None}
+        request = {"to_process": "connector", "from_process": "ui", "command": "bot_switch", "data": None}
         self.pipe_send(request)
 
     def pipe_send(self, msg: dict):
@@ -206,7 +206,7 @@ class MyApp(QMainWindow):
             QMessageBox.No
         )
         if reply == QMessageBox.Yes:
-            request = {"to_process": "connector", "command": "exit", "data": None}
+            request = {"to_process": "connector", "from_process": "ui", "command": "exit", "data": None}
             self.pipe_send(request)
             QApplication.quit()   # Закрыть
 
@@ -220,7 +220,7 @@ class MyApp(QMainWindow):
 
         ### ЗАКОМЕНТИТЬ ТО ЧТО НИЖЕ В ЭТОЙ ФУНКЦИИ
         QApplication.quit()  # Закрыть
-        request = {"to_process": "connector", "command": "exit", "data": None}
+        request = {"to_process": "connector", "from_process": "ui", "command": "exit", "data": None}
         self.pipe_send(request)
 
 

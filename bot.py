@@ -6,8 +6,8 @@ from multiprocessing.connection import Connection
 import json
 import threading
 import aiofiles
+import uuid
 import os
-import aiofiles
 from aiofiles import os as aio_os
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
@@ -34,56 +34,98 @@ class Bott:
         self.dp = Dispatcher()
         self._register_handlers()
         self.vanilla = 1007806948
-
-        threading.Thread(
-            target=self.pipe_read,
-            daemon=True
-        ).start()
+        self.pending = {}  # {request_id: future}
+        self._response_task = None  # Не создаем задачу здесь
 
         print("Bot successfully started...")
 
-    def pipe_read(self):
+    async def request(self, data: dict, timeout: float = 30.0) -> dict:
+        """Простой асинхронный запрос"""
+        # 1. Создаем ID и Future
+        req_id = str(uuid.uuid4())
+        future = asyncio.Future()
+        self.pending[req_id] = future
+
+        # 2. Отправляем с ID
+        self.conn.send({**data, "request_id": req_id})
+
+        # 3. Ждем ответ именно с этим ID
+        try:
+            return await asyncio.wait_for(future, timeout=timeout)
+        except asyncio.TimeoutError:
+            self.pending.pop(req_id, None)
+            raise
+
+    async def _response_listener(self):
+        """Фоновая задача для чтения ответов из pipe"""
+        loop = asyncio.get_event_loop()
+
         while True:
             try:
-                msg = self.conn.recv()
-                if msg:
-                    print("took massage : ", msg)
+                # Проверяем, есть ли данные для чтения
+                def check_pipe():
+                    if self.conn.poll(timeout=0.1):
+                        return self.conn.recv()
+                    return None
+
+                # Читаем ответ в отдельном потоке
+                response = await loop.run_in_executor(None, check_pipe)
+
+                if response:
+                    # print(f"📥 Получен ответ: {response}")
+                    self.process_response(response)
+
+                await asyncio.sleep(0.01)
+
+            except EOFError:
+                print("Канал закрыт")
+                break
             except Exception as e:
-                print("PIPE Error in bot : ", e)
-            time.sleep(1)
+                print(f"Ошибка в response_listener: {e}")
+                await asyncio.sleep(1)
+
+    def process_response(self, response: dict):
+        """Вызывается при получении ответа из pipe"""
+        req_id = response.get("request_id")
+        if req_id in self.pending:
+            self.pending.pop(req_id).set_result(response)
+
+    def pipe_request(self, msg: dict):
+        """Отправляет запрос через pipe и получает ответ"""
+        self.conn.send(msg)
+        ans = self.conn.recv()
+        print(f"Received from pipe: {ans}")
+        return ans
 
     def pipe_send(self, msg: dict):
+        """Отправляет сообщение через pipe без ожидания ответа"""
         if self.conn:
             self.conn.send(msg)
 
     def _register_handlers(self):
         # Стартовая команда
         self.dp.message.register(self.start, Command("start"))
-
         self.dp.message.register(self.server_switch, F.text == "переключить_сервер")
-
         self.dp.message.register(self.nonmess)
 
     async def start(self, message: Message, state: FSMContext):
-        # Создаем кнопки
+        # self.login()
         kb = [
-            [KeyboardButton(text="переключить_сервер")]
+            [KeyboardButton(text="Запустить сервер"), KeyboardButton(text="Остановить сервер")],
+            [KeyboardButton(text="Просто кнопка))) (причём широкая)")]
         ]
-        keyboard = ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
-
-        await message.answer("Выберите действие:", reply_markup=keyboard)
+        await message.answer("Выберите действие:", reply_markup=ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True))
 
     async def server_switch(self, message: Message, state: FSMContext):
-        msg = {"to_process": "server", "command": "switch", "data": None}
-        await message.answer(f"ОТПРАВЛЕНА ТЕСТОВАЯ КОМАНДА: {msg}")
-        self.pipe_send(msg)
+       pass
 
     async def nonmess(self, message: Message, state: FSMContext):
-        print(message.text)
+        await message.answer("Пиши па русски! Что ты хотел?!")
 
     async def run(self):
-        print("run() начал выполнение")
         try:
+            self._response_task = asyncio.create_task(self._response_listener())
+
             await self.bot.send_message(1007806948, "Bot successfully started...")
             await self.dp.start_polling(self.bot)
         except Exception as e:
@@ -91,13 +133,12 @@ class Bott:
             import traceback
             traceback.print_exc()
         finally:
+            # Отменяем фоновую задачу при завершении
+            if self._response_task:
+                self._response_task.cancel()
             await self.bot.session.close()
             print("Бот остановлен")
 
-
-def pipe_write(conn, msg: dict):
-    """Асинхронная отправка сообщений в канал"""
-    conn.send(msg)
 
 def run_bot(conn: Connection):
     """Точка входа для multiprocessing"""

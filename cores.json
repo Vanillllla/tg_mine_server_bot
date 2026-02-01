@@ -1,10 +1,11 @@
 {
-  "name": {
+  "1": {
+    "Nane": "",
     "Xms": 0,
     "Xmx": 0,
-    "core_name": "",
-    "eula_accept": false,
-    "jave_version": "",
-    "java_path": ""
+    "Core_name": "",
+    "Eula_accept": false,
+    "Jave_version": "",
+    "Java_path": ""
   }
 }

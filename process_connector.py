@@ -111,7 +111,12 @@ class ProcessConnector:
                 print(self.bot_prefix, msg)
                 if msg["to_process"] == "connector":
                     self.main_child_conn.send(msg)
-
+                elif msg["to_process"] == "server":
+                    # self.server_parent_conn.send(msg)
+                    time.sleep(1)
+                    ans = {"to_process": "bot", "from_process": "server", "command": "set_server_status", "data": False, "request_id": msg["request_id"]}
+                    print(ans)
+                    self.bot_parent_conn.send(ans)
             except EOFError:
                 print(self.bot_prefix, "Канал закрыт, завершаем чтение")
                 break
@@ -126,19 +131,21 @@ class ProcessConnector:
                 if msg["command"] == "bot_switch":
                     if (self.bot_process is None) or (not self.bot_process.is_alive()) :
                         self.bot_start()
-                        self.ui_parent_conn.send({"to_process": "ui", "command": "set_bot_status", "data": True})
+                        self.ui_parent_conn.send({"to_process": "ui","from_process": "connector", "command": "set_bot_status", "data": True})
                     else:
                         self.bot_process.terminate()
                         self.th_botRead.join(timeout=1)
-                        self.ui_parent_conn.send({"to_process": "ui", "command": "set_bot_status", "data": False})
+                        self.ui_parent_conn.send({"to_process": "ui", "from_process": "connector", "command": "set_bot_status", "data": False})
                 elif msg["command"] == "server_switch":
                     if (self.server_process is None) or (not self.server_process.is_alive()) :
                         self.server_start()
-                        self.ui_parent_conn.send({"to_process": "ui", "command": "set_server_status", "data": True})
-                        self.server_parent_conn.send({"to_process": "server", "command": "start", "data": None})
+                        self.ui_parent_conn.send({"to_process": "ui", "from_process": "connector", "command": "set_server_status", "data": True})
+                        self.server_parent_conn.send({"to_process": "server", "from_process": "connector", "command": "start", "data": None})
                     else:
 
-                        self.ui_parent_conn.send({"to_process": "ui", "command": "set_server_status", "data": False})
+                        self.ui_parent_conn.send({"to_process": "ui", "from_process": "connector", "command": "set_server_status", "data": False})
+                elif msg["command"] == "test":
+                        self.bot_parent_conn.send("fuck_you!!!")
 
                 elif msg["command"] == "restart":
                     pass
