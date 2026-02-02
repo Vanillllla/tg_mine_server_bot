@@ -6,6 +6,5 @@
     "telegram_bot_token": "",
     "use_modern_style": true,
     "use_last_active_core": false,
-    "cores_path": "downloads_cores",
-    "active_core": "additionalenchantedminer-1.12.2-12.5.7.jar"
+    "active_core": "1_AvorisPack-0.0.52.jar"
 }

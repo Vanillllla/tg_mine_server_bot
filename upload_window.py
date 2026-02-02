@@ -5,12 +5,13 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5 import uic
-
+from dirs_manager import DirsManager
 
 class UploadWindow(QDialog):
     def __init__(self, parent=None, to_path=None):
         super().__init__(parent)
         uic.loadUi('upload_window.ui', self)
+        self.manager = DirsManager()
 
         self.setAcceptDrops(True)
         self.upload_folder = to_path
@@ -50,6 +51,7 @@ class UploadWindow(QDialog):
             destination = os.path.join(self.upload_folder, filename)
             shutil.copy2(file_path, destination)
             self.label.setText(f"Файл '{filename}' загружен!")  # Изменено
+            self.manager.new_core_upload(filename)
             self.progressBar.setValue(100)
             QTimer.singleShot(2000, lambda: self.progressBar.setVisible(False))
         except Exception as e:

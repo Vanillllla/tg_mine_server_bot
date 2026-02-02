@@ -1,11 +1,29 @@
 {
-  "1": {
-    "Nane": "",
-    "Xms": 0,
-    "Xmx": 0,
-    "Core_name": "",
-    "Eula_accept": false,
-    "Jave_version": "",
-    "Java_path": ""
-  }
+    "1": {
+        "name": "AvorisPack-0.0.52.jar",
+        "xms": 256,
+        "xmx": 2048,
+        "core_name": "",
+        "eula_accept": false,
+        "jave_version": "",
+        "java_path": ""
+    },
+    "2": {
+        "name": "EnderCore-1.12.2-0.5.78.jar",
+        "xms": 256,
+        "xmx": 2048,
+        "core_name": "",
+        "eula_accept": false,
+        "jave_version": "",
+        "java_path": ""
+    },
+    "3": {
+        "name": "EnergyControl-1.12.2-0.3.2.jar",
+        "xms": 256,
+        "xmx": 2048,
+        "core_name": "",
+        "eula_accept": false,
+        "jave_version": "",
+        "java_path": ""
+    }
 }
