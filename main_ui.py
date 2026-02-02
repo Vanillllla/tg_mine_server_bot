@@ -14,12 +14,14 @@ from PyQt5.QtCore import QUrl, QTimer
 from upload_window import UploadWindow
 from settings_window import SettingsWindow
 from thems_my import Themes
+from dirs_manager import DirsManager
 
 class MyApp(QMainWindow):
     def __init__(self, conn):
         super().__init__()
         self.upload_window = None
         self.settings_window = None
+        self.manager = DirsManager()
         self.conn = conn
         uic.loadUi('main_ui.ui', self)
         self.setWindowTitle("Servers Telegram controller")
@@ -109,7 +111,7 @@ class MyApp(QMainWindow):
 
     def load_cores_to_combobox(self):
         """Загружает список ядер из папки downloads_cores в комбобокс"""
-        cores_path = self.settings.get("cores_path", "downloads_cores")
+        cores_path = "downloads_cores"
         if not os.path.exists(cores_path):
             os.makedirs(cores_path)
         self.coreSelectBox.clear()
@@ -138,7 +140,7 @@ class MyApp(QMainWindow):
         if index > 0:  # Пропускаем первый элемент "Выберите ядро"
             selected_core = self.coreSelectBox.currentText()
             print(f"Выбрано ядро: {selected_core}")
-
+            self.manager.core_available(selected_core)
             self.coreLabel.setText(selected_core)
             self.versionLabel.setText("Появится позже :3")  # Здесь можно парсить версию из имени
             self.settings["active_core"] = selected_core

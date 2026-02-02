@@ -21,15 +21,15 @@ def run(conn, core_name=None):
             # Например:
             # java -Xmx1024M -Xms256M -jar {core_path} nogui
 
-            print(f"Запускаю {core_path}")
+            # print(f"Запускаю {core_path}")
 
             # Пример запуска (раскомментируйте когда будете готовы):
-            # process = subprocess.Popen(
-            #     ['java', '-Xmx1024M', '-Xms256M', '-jar', core_path, 'nogui'],
-            #     stdout=subprocess.PIPE,
-            #     stderr=subprocess.PIPE,
-            #     text=True
-            # )
+            process = subprocess.Popen(
+                ['java', '-Xmx1024M', '-Xms256M', '-jar', core_path, 'nogui'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
 
             # Эмуляция работы сервера
             while True:
