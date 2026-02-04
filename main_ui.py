@@ -111,39 +111,28 @@ class MyApp(QMainWindow):
 
     def load_cores_to_combobox(self):
         """Загружает список ядер из папки downloads_cores в комбобокс"""
-        cores_path = "downloads_cores"
-        if not os.path.exists(cores_path):
-            os.makedirs(cores_path)
         self.coreSelectBox.clear()
         self.coreSelectBox.addItem("Выберите ядро")
-        jar_files = []
-        try:
-            for file in os.listdir(cores_path):
-                if file.endswith('.jar'):
-                    jar_files.append(file)
-        except Exception as e:
-            print(f"Ошибка чтения папки с ядрами: {e}")
-        for jar in sorted(jar_files):
-            self.coreSelectBox.addItem(jar)
-        if self.settings["use_last_active_core"]:
-            try:
-                active_core = self.settings["active_core"]
-                if active_core:
-                    index = self.coreSelectBox.findText(active_core)
-                    if index >= 0:
-                        self.coreSelectBox.setCurrentIndex(index)
-            except Exception as e:
-                print(f"Ошибка чтения cores.json: {e}")
+        with open("cores.json", "r", encoding='utf-8') as f:
+            core_list = json.load(f)
+        listik = {}
+        for i in core_list:
+            listik[i] = core_list[i]["name"]
+        for i in listik:
+            self.coreSelectBox.addItem(f"{i}_{listik[f"{i}"]}")
+
+
+
 
     def on_core_selected(self, index):
-        """Обработчик выбора ядра из комбобокса"""
+        """Обработчик выбора ядра из комбоБокса"""
         if index > 0:  # Пропускаем первый элемент "Выберите ядро"
             selected_core = self.coreSelectBox.currentText()
             print(f"Выбрано ядро: {selected_core}")
-            self.manager.core_available(selected_core)
+            core_id = self.manager.core_available(selected_core)
             self.coreLabel.setText(selected_core)
             self.versionLabel.setText("Появится позже :3")  # Здесь можно парсить версию из имени
-            self.settings["active_core"] = selected_core
+            self.settings["active_core"] = core_id
             with open('program_settings.json', 'w', encoding='utf-8') as f:
                 json.dump(self.settings, f, indent=4)
 
