@@ -34,6 +34,7 @@ class DirsManager:
             "xms": 256,
             "xmx": 2048,
             "core_name": "",
+            "core_folder": "",
             "eula_accept": False,
             "jave_version": "",
             "java_path": ""
@@ -43,19 +44,22 @@ class DirsManager:
 
 
     @staticmethod
-    def core_available(core_name):
+    def core_available(core_name: object) :
         try:
             with open('cores.json', 'r', encoding='utf-8') as f:
                 cores = json.load(f)
             core_id = core_name.split('_')[0]
-
+            print(core_id, core_name)
             if cores[str(core_id)]["core_folder"] == "":
+                Path(f"./Servers/{core_id}_server_{cores[f'{core_id}']['name'][:-4]}/").mkdir(parents=True, exist_ok=True)
                 shutil.move(f"./downloads_cores/{core_id}_{cores[f'{core_id}']['name']}", f"./Servers/{core_id}_server_{cores[f'{core_id}']['name'][:-4]}/{core_id}_{cores[f'{core_id}']['name']}" )
                 cores[str(core_id)]["core_folder"] = f"./Servers/{core_id}_server_{cores[f'{core_id}']['name'][:-4]}"
             with open('cores.json', 'w', encoding='utf-8') as f:
                 json.dump(cores, f, ensure_ascii=False, indent=4)
         except Exception as e:
-            # print(e)
-            pass
-if __name__ == '__main__':
-    manager = DirsManager()
+            print(e)
+        finally:
+            return core_id or e
+
+# if __name__ == '__main__':
+#     manager = DirsManager()
