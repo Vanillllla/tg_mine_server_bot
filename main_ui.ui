@@ -243,7 +243,7 @@
       <string>000</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="pushButton">
+    <widget class="QPushButton" name="startServerButton">
      <property name="geometry">
       <rect>
        <x>320</x>
@@ -261,7 +261,7 @@
       <string>Запустить</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="pushButton_2">
+    <widget class="QPushButton" name="stopServerButton">
      <property name="geometry">
       <rect>
        <x>320</x>
@@ -414,7 +414,7 @@
      <x>0</x>
      <y>0</y>
      <width>960</width>
-     <height>23</height>
+     <height>24</height>
     </rect>
    </property>
    <property name="font">
