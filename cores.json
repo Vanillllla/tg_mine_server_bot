@@ -1,22 +1,2 @@
 {
-    "1": {
-        "name": "1111111111.jar",
-        "xms": 256,
-        "xmx": 2048,
-        "core_name": "",
-        "core_folder": "./Servers/1_server_1111111111",
-        "eula_accept": false,
-        "jave_version": "",
-        "java_path": ""
-    },
-    "2": {
-        "name": "222222222222.jar",
-        "xms": 256,
-        "xmx": 2048,
-        "core_name": "",
-        "core_folder": "./Servers/2_server_222222222222",
-        "eula_accept": false,
-        "jave_version": "",
-        "java_path": ""
-    }
 }
