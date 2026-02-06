@@ -57,9 +57,9 @@ class MyApp(QMainWindow):
         # # Кнопки сервера:
         # self.pushButton.clicked.connect(self.start_server)
         # self.pushButton_2.clicked.connect(self.stop_server)
+        self.startServerButton.clicked.connect(self.start_server)
 
         self.upload_core_action.triggered.connect(self.open_upload_cores_window)
-
         self.open_setings_action.triggered.connect(self.open_settings_window)
 
         self.exit_action.triggered.connect(self.close_program)
@@ -108,6 +108,9 @@ class MyApp(QMainWindow):
         else:
             self.serverGroupBox.setTitle("Offline")
 
+    def start_server(self):
+        msg = {"to_process": "server", "from_process": "gui", "command": "set_server_status", "data": True}
+        self.conn.send(msg)
 
     def load_cores_to_combobox(self):
         """Загружает список ядер из папки downloads_cores в комбобокс"""

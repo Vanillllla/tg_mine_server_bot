@@ -6,6 +6,7 @@ import os
 
 class ProcessConnector:
     def __init__(self):
+        self.server_parent_conn = None
         self.th_botRead = None
         self.bot_process = None
         self.server_process = None
@@ -20,7 +21,9 @@ class ProcessConnector:
 
     def run(self):
         self.ui_start()
+        self.server_start()
         self.main_poling()
+
 
     def bot_start(self):
         if (self.bot_process is None) or (not self.bot_process.is_alive()):
@@ -95,7 +98,9 @@ class ProcessConnector:
                 msg = self.ui_parent_conn.recv()
                 print(self.ui_prefix, msg)
                 if msg["to_process"] == "connector":
-                        self.main_child_conn.send(msg)
+                    self.main_child_conn.send(msg)
+                elif msg["to_process"] == "server":
+                    self.server_parent_conn.send(msg)
 
             except EOFError:
                 print(self.ui_prefix ,"Канал закрыт, завершаем чтение")
@@ -112,11 +117,7 @@ class ProcessConnector:
                 if msg["to_process"] == "connector":
                     self.main_child_conn.send(msg)
                 elif msg["to_process"] == "server":
-                    # self.server_parent_conn.send(msg)
-                    time.sleep(1)
-                    ans = {"to_process": "bot", "from_process": "server", "command": "set_server_status", "data": False, "request_id": msg["request_id"]}
-                    print(ans)
-                    self.bot_parent_conn.send(ans)
+                    self.server_parent_conn.send(msg)
             except EOFError:
                 print(self.bot_prefix, "Канал закрыт, завершаем чтение")
                 break

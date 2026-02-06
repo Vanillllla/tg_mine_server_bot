@@ -13,6 +13,29 @@ class ServerSystem:
         self.process = None
         self.stdout_thread = None
         self.stderr_thread = None
+        threading.Thread(
+            target=self._read_from_connector,
+            daemon=True
+        ).start()
+
+    def _read_from_connector(self):
+        while True:
+            try:
+                msg = self.conn.recv()
+                print("print --> ", self.conn,msg)
+                # ans = {"to_process": "bot", "from_process": "server", "command": "set_server_status", "data": False,
+                #        "request_id": msg["request_id"]}
+                if msg["command"] == "set_server_status":
+                    if msg["data"] == True:
+                        self.start_server()
+                    elif msg["data"] == False:
+                        # self.stop_server()
+                        pass
+                elif msg["command"] == "server_input":
+                    print("didntwork")
+            except EOFError as e:
+                print(self.conn, e)
+
 
     def start_server(self):
         with open("program_settings.json", "r", encoding="utf-8") as f:
@@ -61,6 +84,8 @@ class ServerSystem:
         command_thread.daemon = True
         command_thread.start()
 
+
+
     def read_output(self, stream, name):
         """Чтение вывода из потока (stdout или stderr)"""
         for line in iter(stream.readline, ''):
@@ -84,12 +109,7 @@ class ServerSystem:
             process.stdin.flush()
             process.wait()
 
-
-ss = ServerSystem("")
-ss.start_server()
-# Основной поток просто ждет завершения
-while True:
-    time.sleep(1)
-    if ss.process and ss.process.poll() is not None:
-        print("Сервер завершил работу")
-        break
+def run(conn):
+    server = ServerSystem(conn)
+    while True:
+        time.sleep(1)
