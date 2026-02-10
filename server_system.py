@@ -13,26 +13,33 @@ class ServerSystem:
         self.process = None
         self.stdout_thread = None
         self.stderr_thread = None
-        threading.Thread(
-            target=self._read_from_connector,
-            daemon=True
-        ).start()
+
+    def run(self):
+        self._read_from_connector()
 
     def _read_from_connector(self):
         while True:
             try:
                 msg = self.conn.recv()
-                print("print --> ", self.conn,msg)
                 # ans = {"to_process": "bot", "from_process": "server", "command": "set_server_status", "data": False,
                 #        "request_id": msg["request_id"]}
                 if msg["command"] == "set_server_status":
-                    if msg["data"] == True:
+                    if self.process is None:
                         self.start_server()
-                    elif msg["data"] == False:
-                        # self.stop_server()
-                        pass
-                elif msg["command"] == "server_input":
-                    print("didntwork")
+                        ans = {"to_process": "gui", "from_process": "server", "command": "set_server_status",
+                           "data": True if self.process is not None else False}
+                    else:
+                        self.stop_server()
+                        ans = {"to_process": "gui", "from_process": "server", "command": "set_server_status",
+                           "data": True if self.process is not None else False}
+                    self.conn.send(ans)
+                elif msg["command"] == "server_command":
+                    print("print --> ", self.conn, msg)
+                    self.send_commansds(msg["data"])
+                elif msg["command"] == "get_server_status":
+                    print(123123123123123)
+                    ans = {"to_process": "gui", "from_process": "server", "command": "set_server_status", "data": True if self.process is not None else False}
+                    self.conn.send(ans)
             except EOFError as e:
                 print(self.conn, e)
 
@@ -76,15 +83,15 @@ class ServerSystem:
         self.stdout_thread.start()
         self.stderr_thread.start()
 
-        # Запускаем поток для отправки команд
-        command_thread = threading.Thread(
-            target=self.send_commands,
-            args=(self.process,)
-        )
-        command_thread.daemon = True
-        command_thread.start()
-
-
+    def stop_server(self):
+        self.send_commansds("stop")
+        time.sleep(5)
+        if self.process.poll() is None:
+            self.process.stdin.write('stop\n')
+            time.sleep(5)
+        if self.process.poll() is None:
+            self.process.terminate()
+            time.sleep(2)
 
     def read_output(self, stream, name):
         """Чтение вывода из потока (stdout или stderr)"""
@@ -92,24 +99,19 @@ class ServerSystem:
             print(f"[{name}] {line}", end='')
         stream.close()
 
-    def send_commands(self, process):
+
+    def send_commansds(self, command):
         """Отправка команд в процесс"""
-        try:
-            while process.poll() is None:  # пока процесс работает
-                try:
-                    # Читаем команду из консоли
-                    command = input() + '\n'
-                    process.stdin.write(command)
-                    process.stdin.flush()
-                except EOFError:
-                    break
-        except KeyboardInterrupt:
+
+        if self.process.poll() is None:
+            self.process.stdin.write(command)
+            self.process.stdin.flush()
+        else:
             print("\nОстановка сервера...")
-            process.stdin.write('stop\n')
-            process.stdin.flush()
-            process.wait()
+            self.process.stdin.write('stop\n')
+            self.process.stdin.flush()
+            self.process.wait()
 
 def run(conn):
     server = ServerSystem(conn)
-    while True:
-        time.sleep(1)
+    server.run()

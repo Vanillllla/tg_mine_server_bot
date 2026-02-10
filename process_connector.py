@@ -85,6 +85,8 @@ class ProcessConnector:
                 print(self.server_prefix,msg)
                 if msg["to_process"] == "connector":
                     self.main_child_conn.send(msg)
+                elif msg["to_process"] == "gui":
+                    self.ui_parent_conn.send(msg)
             except EOFError:
                 print(self.server_prefix,"Канал закрыт, завершаем чтение" )
                 break
@@ -137,7 +139,7 @@ class ProcessConnector:
                         self.bot_process.terminate()
                         self.th_botRead.join(timeout=1)
                         self.ui_parent_conn.send({"to_process": "ui", "from_process": "connector", "command": "set_bot_status", "data": False})
-                elif msg["command"] == "server_switch":
+                elif msg["command"] == "":
                     if (self.server_process is None) or (not self.server_process.is_alive()) :
                         self.server_start()
                         self.ui_parent_conn.send({"to_process": "ui", "from_process": "connector", "command": "set_server_status", "data": True})

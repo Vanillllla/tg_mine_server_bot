@@ -37,8 +37,6 @@ class Bott:
         self.pending = {}  # {request_id: future}
         self._response_task = None  # Не создаем задачу здесь
 
-        print("Bot successfully started...")
-
     async def request(self, data: dict, timeout: float = 30.0) -> dict:
         """Простой асинхронный запрос"""
         # 1. Создаем ID и Future
@@ -90,12 +88,12 @@ class Bott:
         if req_id in self.pending:
             self.pending.pop(req_id).set_result(response)
 
-    def pipe_request(self, msg: dict):
-        """Отправляет запрос через pipe и получает ответ"""
-        self.conn.send(msg)
-        ans = self.conn.recv()
-        print(f"Received from pipe: {ans}")
-        return ans
+    # def pipe_request(self, msg: dict):
+    #     """Отправляет запрос через pipe и получает ответ"""
+    #     self.conn.send(msg)
+    #     ans = self.conn.recv()
+    #     print(f"Received from pipe: {ans}")
+    #     return ans
 
     def pipe_send(self, msg: dict):
         """Отправляет сообщение через pipe без ожидания ответа"""
@@ -120,12 +118,15 @@ class Bott:
        pass
 
     async def nonmess(self, message: Message, state: FSMContext):
-        await message.answer("Пиши па русски! Что ты хотел?!")
+        # await message.answer("Пиши па русски! Что ты хотел?!")
+        await message.answer("Отправлена команда : " + message.text)
+        msg = {"to_process": "server", "from_process": "bot", "command": "server_command", "data": f"{message.text}"}
+        self.pipe_send(msg)
 
     async def run(self):
         try:
             self._response_task = asyncio.create_task(self._response_listener())
-
+            print("Bot successfully started...")
             await self.bot.send_message(1007806948, "Bot successfully started...")
             await self.dp.start_polling(self.bot)
         except Exception as e:
