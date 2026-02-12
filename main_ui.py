@@ -32,7 +32,7 @@ class MyApp(QMainWindow):
 
         self.apply_theme()
         self.auto_start_last_core_action.setChecked(self.settings['use_last_active_core'])
-        self.auto_start_last_core_action.triggered.connect(self.auto_start_last_core)
+        # self.auto_start_last_core_action.triggered.connect(self.auto_start_last_core)
 
         ############################################################################### далее монтируем трей
         self.tray_icon = QSystemTrayIcon(self)
@@ -89,10 +89,18 @@ class MyApp(QMainWindow):
                 self.bot_indicator(msg["data"])
             elif msg["command"] == "set_server_status":
                 self.show_server_status(msg["data"])
+            elif msg["command"] == "error_out":
+                self.error_output(msg)
 
     def initUI(self):
         self.tray_icon.show()
         self.show()
+
+    def error_output(self, msg):
+        QMessageBox.warning(
+            self, "Error!",
+            f"Error from {msg["from_process"]}; Error code : {msg['data']} "
+        )
 
     def auto_start_last_core(self):
         self.settings["use_last_active_core"] = bool(self.auto_start_last_core_action.isChecked())
@@ -138,10 +146,12 @@ class MyApp(QMainWindow):
             listik[i] = core_list[i]["name"]
         for i in listik:
             self.coreSelectBox.addItem(f"{i}_{listik[f"{i}"]}")
-            if self.settings["use_last_active_core"]:
-                self.coreSelectBox.setCurrentIndex(i)
+            if self.settings["use_last_active_core"] and str(i) == self.settings["active_core"]:
+                self.coreSelectBox.setCurrentIndex(int(i))
         if not self.settings["use_last_active_core"]:
             self.settings["active_core"] = ""
+        with open('program_settings.json', 'w', encoding='utf-8') as f:
+            json.dump(self.settings, f, indent=4)
 
     def on_core_selected(self, index):
         """Обработчик выбора ядра из комбоБокса"""

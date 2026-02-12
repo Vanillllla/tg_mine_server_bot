@@ -62,8 +62,7 @@ class ServerSystem:
         with open("cores.json", "r", encoding="utf-8") as f:
             core_list = json.load(f)
         if settings["active_core"] == "":
-            msg = {"to_process": "gui", "from_process": "server", "command": "error_out",
-                           "data": 1}
+            msg = {"to_process": "gui", "from_process": "server", "command": "error_out", "data": 1}
             self.conn.send(msg)
             return
         core = Path(core_list[settings["active_core"]]["core_folder"] + "/" + settings["active_core"] + "_" +
