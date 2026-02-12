@@ -49,6 +49,11 @@ class MyApp(QMainWindow):
         self.server_status_timer.start(10000)
         self.bot_indicator(False)
 
+        ############################################################################### Монтаж мелочей
+
+        self.startServerButton.setText("START")
+        self.startServerButton.setStyleSheet("color: #00CC00;")
+
         ############################################################################### далее обработчики
 
         self.coreSelectBox.currentIndexChanged.connect(self.on_core_selected)
@@ -95,7 +100,6 @@ class MyApp(QMainWindow):
         with open('program_settings.json', 'w', encoding='utf-8') as f:
             json.dump(self.settings, f, indent=4)
 
-
     def bot_indicator(self, is_active):
         if is_active:
             self.botStatusLabel_ind.setText("         ON")
@@ -110,9 +114,13 @@ class MyApp(QMainWindow):
 
     def show_server_status(self, is_active):
         if is_active:
-            self.serverGroupBox.setTitle("Online")
+            # self.serverGroupBox.setTitle("Online")
+            self.startServerButton.setText("STOP")
+            self.startServerButton.setStyleSheet("color: #CC0000;")
         else:
-            self.serverGroupBox.setTitle("Offline")
+            # self.serverGroupBox.setTitle("Offline")
+            self.startServerButton.setText("START")
+            self.startServerButton.setStyleSheet("color: #00CC00;")
 
     def start_server(self):
         msg = {"to_process": "server", "from_process": "gui", "command": "set_server_status", "data": True}
@@ -125,13 +133,15 @@ class MyApp(QMainWindow):
         with open("cores.json", "r", encoding='utf-8') as f:
             core_list = json.load(f)
         listik = {}
+
         for i in core_list:
             listik[i] = core_list[i]["name"]
         for i in listik:
             self.coreSelectBox.addItem(f"{i}_{listik[f"{i}"]}")
-
-
-
+            if self.settings["use_last_active_core"]:
+                self.coreSelectBox.setCurrentIndex(i)
+        if not self.settings["use_last_active_core"]:
+            self.settings["active_core"] = ""
 
     def on_core_selected(self, index):
         """Обработчик выбора ядра из комбоБокса"""
