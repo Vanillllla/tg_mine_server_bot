@@ -67,6 +67,8 @@ class MyApp(QMainWindow):
         self.upload_core_action.triggered.connect(self.open_upload_cores_window)
         self.open_setings_action.triggered.connect(self.open_settings_window)
 
+        self.auto_start_last_core_action.triggered.connect(self.auto_start_last_core)
+
         self.exit_action.triggered.connect(self.close_program)
         self.to_trey_action.triggered.connect(self.close)
         self.restart_action.triggered.connect(self.restart_program)
@@ -104,9 +106,12 @@ class MyApp(QMainWindow):
 
     def auto_start_last_core(self):
         self.settings["use_last_active_core"] = bool(self.auto_start_last_core_action.isChecked())
+        # print(self.settings["use_last_active_core"])
         self.show_server_status(True)
         with open('program_settings.json', 'w', encoding='utf-8') as f:
             json.dump(self.settings, f, indent=4)
+
+    # def auto_start_last_core(self):
 
     def bot_indicator(self, is_active):
         if is_active:
