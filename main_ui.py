@@ -43,10 +43,11 @@ class MyApp(QMainWindow):
         self.tray_icon.setContextMenu(traymenu)
         ############################################################################### далее таймеры опросов
 
-        self.server_status_timer = QTimer()
-        self.server_status_timer.timeout.connect(self.update_server_status)
+        self.status_timer = QTimer()
+        self.status_timer.timeout.connect(self.update_server_status)
+        self.status_timer.timeout.connect(self.update_bot_status)
 
-        self.server_status_timer.start(10000)
+        self.status_timer.start(5000)
         self.bot_indicator(False)
 
         ############################################################################### Монтаж мелочей
@@ -87,6 +88,7 @@ class MyApp(QMainWindow):
     def pipe_read(self):
         while True:
             msg = self.conn.recv()
+            print(msg)
             if msg["command"] == "set_bot_status":
                 self.bot_indicator(msg["data"])
             elif msg["command"] == "set_server_status":
@@ -123,6 +125,10 @@ class MyApp(QMainWindow):
 
     def update_server_status(self):
         msg = {"to_process": "server", "from_process": "gui", "command": "get_server_status", "data": ""}
+        self.conn.send(msg)
+
+    def update_bot_status(self):
+        msg = {"to_process": "connector", "from_process": "gui", "command": "get_bot_status", "data": ""}
         self.conn.send(msg)
 
     def show_server_status(self, is_active):

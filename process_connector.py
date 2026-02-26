@@ -2,7 +2,8 @@ from multiprocessing import Process, Pipe
 import time
 import threading
 import sys
-import os
+import json
+
 
 class ProcessConnector:
     def __init__(self):
@@ -17,11 +18,18 @@ class ProcessConnector:
         self.ui_prefix = "[ UI ]"
         self.server_prefix = "[ SERVER ]"
         self.main_prefix = "[ MAIN ]"
+        self.error_prefix = "[\033[31m ERROR \033[0m]"
+        with open("program_settings.json", "r") as f:
+            settings = json.load(f)
+        self.settings = settings
         self.main_parent_conn, self.main_child_conn = Pipe()
 
     def run(self):
         self.ui_start()
         self.server_start()
+        print(111)
+        if self.settings["autostart_bot"]:
+            self.bot_start()
         self.main_poling()
 
 
@@ -91,7 +99,7 @@ class ProcessConnector:
                 print(self.server_prefix,"Канал закрыт, завершаем чтение" )
                 break
             except Exception as e:
-                print(self.server_prefix,f"Ошибка чтения из канала: {e}")
+                print(self.error_prefix + self.server_prefix,f"Ошибка чтения из канала: {e}")
                 break
 
     def _read_from_ui(self):
@@ -124,7 +132,7 @@ class ProcessConnector:
                 print(self.bot_prefix, "Канал закрыт, завершаем чтение")
                 break
             except Exception as e:
-                print(self.bot_prefix ,f"Ошибка чтения из канала: {e}")
+                print(self.error_prefix + self.bot_prefix ,f"Ошибка чтения из канала: {e}")
                 break
 
     def main_poling(self):
@@ -139,17 +147,9 @@ class ProcessConnector:
                         self.bot_process.terminate()
                         self.th_botRead.join(timeout=1)
                         self.ui_parent_conn.send({"to_process": "ui", "from_process": "connector", "command": "set_bot_status", "data": False})
-                elif msg["command"] == "":
-                    if (self.server_process is None) or (not self.server_process.is_alive()) :
-                        self.server_start()
-                        self.ui_parent_conn.send({"to_process": "ui", "from_process": "connector", "command": "set_server_status", "data": True})
-                        self.server_parent_conn.send({"to_process": "server", "from_process": "connector", "command": "start", "data": None})
-                    else:
-
-                        self.ui_parent_conn.send({"to_process": "ui", "from_process": "connector", "command": "set_server_status", "data": False})
-                elif msg["command"] == "test":
-                        self.bot_parent_conn.send("fuck_you!!!")
-
+                elif msg["command"] == "get_bot_status":
+                    msg = {"to_process": "gui", "from_process": "connector", "command": "set_bot_status", "data": (self.bot_process.is_alive() if self.bot_process else False)}
+                    self.ui_parent_conn.send(msg)
                 elif msg["command"] == "restart":
                     pass
                 elif msg["command"] == "exit":
@@ -158,13 +158,9 @@ class ProcessConnector:
                 print(self.main_prefix ,"Канал закрыт, завершаем чтение")
                 break
             except Exception as e:
-                print(self.main_prefix ,f"Ошибка чтения из канала: {e}")
+                print(self.error_prefix + self.main_prefix ,f"Ошибка чтения из канала: {e}")
                 break
 
-
-    def bot_get_state(self):
-        print(self.bot_process.is_alive())
-        return False
 
 if __name__ == '__main__':
     connector = ProcessConnector()
