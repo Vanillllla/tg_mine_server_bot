@@ -120,6 +120,7 @@ class Bott:
     async def nonmess(self, message: Message, state: FSMContext):
         # await message.answer("Пиши па русски! Что ты хотел?!")
         await message.answer("Отправлена команда : " + message.text)
+
         msg = {"to_process": "server", "from_process": "bot", "command": "server_command", "data": f"{message.text}"}
         self.pipe_send(msg)
 
