@@ -1,0 +1,5 @@
+aiogram~=3.25.0
+PyQt5~=5.15.11
+Pyqt5-qt5~=5.15.2
+Pyqt5-sip~=12.18.0
+aiofiles~=25.1.0
