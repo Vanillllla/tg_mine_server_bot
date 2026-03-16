@@ -1,14 +1,8 @@
 import asyncio
-import signal
-import sys
-import time
 from multiprocessing.connection import Connection
 import json
-import threading
-import aiofiles
 import uuid
 import os
-from aiofiles import os as aio_os
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
