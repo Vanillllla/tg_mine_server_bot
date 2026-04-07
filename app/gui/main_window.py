@@ -6,9 +6,15 @@ import threading
 os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 
 from PyQt5 import uic
-from PyQt5.QtCore import QTimer, QUrl
+from PyQt5.QtCore import QTimer, QUrl, pyqtSignal
 from PyQt5.QtGui import QDesktopServices, QIcon
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QMessageBox, QSystemTrayIcon
+from PyQt5.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QMenu,
+    QMessageBox,
+    QSystemTrayIcon,
+)
 
 from app.core.dirs_manager import DirsManager
 from app.core.paths import config_path, icon_path, ui_path
@@ -18,6 +24,8 @@ from app.gui.upload_window import UploadWindow
 
 
 class MyApp(QMainWindow):
+    pipe_message = pyqtSignal(dict)
+
     def __init__(self, conn):
         super().__init__()
         self.upload_window = None
@@ -62,6 +70,11 @@ class MyApp(QMainWindow):
         self.restart_action.triggered.connect(self.restart_program)
         self.action_GitHub.triggered.connect(self.open_github)
         self.bot_control_button.clicked.connect(self.start_bot)
+        self.console_output.setMaximumBlockCount(3000)
+        self.apply_console_theme()
+        self.console_input.returnPressed.connect(self.send_server_command)
+        self.console_send_button.clicked.connect(self.send_server_command)
+        self.pipe_message.connect(self.handle_pipe_message)
 
         threading.Thread(target=self.pipe_read, daemon=True).start()
         self.tray_icon.show()
@@ -70,12 +83,82 @@ class MyApp(QMainWindow):
     def pipe_read(self):
         while True:
             msg = self.conn.recv()
-            if msg["command"] == "set_bot_status":
-                self.bot_indicator(msg["data"])
-            elif msg["command"] == "set_server_status":
-                self.show_server_status(msg["data"])
-            elif msg["command"] == "error_out":
-                self.error_output(msg)
+            self.pipe_message.emit(msg)
+
+    def handle_pipe_message(self, msg):
+        if msg["command"] == "set_bot_status":
+            self.bot_indicator(msg["data"])
+        elif msg["command"] == "set_server_status":
+            self.show_server_status(msg["data"])
+        elif msg["command"] == "error_out":
+            self.error_output(msg)
+        elif msg["command"] == "server_log":
+            self.append_server_log(msg)
+
+    def append_server_log(self, msg):
+        stream = msg.get("data", {}).get("stream", "LOG")
+        line = msg.get("data", {}).get("line", "")
+        self.console_output.appendPlainText(f"[{stream}] {line}")
+
+    def send_server_command(self):
+        command = self.console_input.text().strip()
+        if not command:
+            return
+        self.conn.send({"to_process": "server", "from_process": "gui", "command": "server_command", "data": command})
+        self.console_output.appendPlainText(f"> {command}")
+        self.console_input.clear()
+
+    def apply_console_theme(self):
+        theme = self.settings.get("theme", "light")
+        palette = {
+            "light": {
+                "output_bg": "#F8F8F8",
+                "input_bg": "#FFFFFF",
+                "text": "#151515",
+                "border": "#7A7A7A",
+                "button_bg": "#E2E2E2",
+                "button_text": "#121212",
+            },
+            "dark": {
+                "output_bg": "#141414",
+                "input_bg": "#1F1F1F",
+                "text": "#EAEAEA",
+                "border": "#7A7A7A",
+                "button_bg": "#3A3A3A",
+                "button_text": "#FFFFFF",
+            },
+            "green": {
+                "output_bg": "#101A10",
+                "input_bg": "#182418",
+                "text": "#E6F3E6",
+                "border": "#4D8A4D",
+                "button_bg": "#2D5D2D",
+                "button_text": "#FFFFFF",
+            },
+        }.get(theme, {
+            "output_bg": "#F8F8F8",
+            "input_bg": "#FFFFFF",
+            "text": "#151515",
+            "border": "#7A7A7A",
+            "button_bg": "#E2E2E2",
+            "button_text": "#121212",
+        })
+
+        self.console_output.setStyleSheet(
+            f"background-color: {palette['output_bg']}; color: {palette['text']};"
+            f" border: 1px solid {palette['border']}; padding: 6px;"
+        )
+        self.console_input.setStyleSheet(
+            f"background-color: {palette['input_bg']}; color: {palette['text']};"
+            f" border: 1px solid {palette['border']}; padding: 4px;"
+        )
+        self.console_send_button.setStyleSheet(
+            f"background-color: {palette['button_bg']}; color: {palette['button_text']};"
+            f" border: 1px solid {palette['border']}; padding: 4px 10px;"
+        )
+        self.consoleGroupBox.setStyleSheet(
+            f"QGroupBox#consoleGroupBox {{ border: 1px solid {palette['border']}; margin-top: 8px; }}"
+        )
 
     def error_output(self, msg):
         QMessageBox.warning(self, "Error!", f"Error from {msg['from_process']}; Error code : {msg['data']}")
@@ -168,6 +251,8 @@ class MyApp(QMainWindow):
     def load_settings(self):
         with self.settings_file.open("r", encoding="utf-8") as file:
             self.settings = json.load(file)
+        self.apply_theme()
+        self.apply_console_theme()
 
     def open_github(self):
         QDesktopServices.openUrl(QUrl("https://github.com/Vanillllla/tg_mine_server_bot"))

@@ -13,6 +13,11 @@ class ServerSystem:
         self.process = None
         self.stdout_thread = None
         self.stderr_thread = None
+        self.conn_send_lock = threading.Lock()
+
+    def _send(self, payload):
+        with self.conn_send_lock:
+            self.conn.send(payload)
 
     def run(self):
         self._read_from_connector()
@@ -30,7 +35,7 @@ class ServerSystem:
                         self.stop_server()
                         status = False
 
-                    self.conn.send(
+                    self._send(
                         {
                             "to_process": "gui",
                             "from_process": "server",
@@ -42,7 +47,7 @@ class ServerSystem:
                 elif msg["command"] == "server_command":
                     self.send_commands(msg["data"])
                 elif msg["command"] == "get_server_status":
-                    self.conn.send(
+                    self._send(
                         {
                             "to_process": "gui",
                             "from_process": "server",
@@ -69,7 +74,7 @@ class ServerSystem:
             core_list = json.load(file)
 
         if settings["active_core"] == "":
-            self.conn.send({"to_process": "gui", "from_process": "server", "command": "error_out", "data": 1})
+            self._send({"to_process": "gui", "from_process": "server", "command": "error_out", "data": 1})
             return
 
         core = Path(core_list[settings["active_core"]]["core_folder"]) / (
@@ -79,11 +84,13 @@ class ServerSystem:
         server_directory = full_core_path.parent
 
         self.process = subprocess.Popen(
-            ["java", "-Xmx1024M", "-Xms256M", "-jar", str(full_core_path), "nogui"],
+            ["java", "-Dfile.encoding=UTF-8", "-Xmx1024M", "-Xms256M", "-jar", str(full_core_path), "nogui"],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             bufsize=1,
             cwd=str(server_directory),
         )
@@ -126,15 +133,33 @@ class ServerSystem:
         try:
             for line in iter(stream.readline, ""):
                 print(f"[{name}] {line}", end="")
+                self._send(
+                    {
+                        "to_process": "gui",
+                        "from_process": "server",
+                        "command": "server_log",
+                        "data": {"line": line.rstrip("\n"), "stream": name},
+                    }
+                )
         finally:
             stream.close()
 
     def send_commands(self, command):
         if self.is_running():
-            if not command.endswith("\n"):
-                command += "\n"
-            self.process.stdin.write(command)
-            self.process.stdin.flush()
+            try:
+                if not command.endswith("\n"):
+                    command += "\n"
+                self.process.stdin.write(command)
+                self.process.stdin.flush()
+            except Exception as exc:
+                self._send(
+                    {
+                        "to_process": "gui",
+                        "from_process": "server",
+                        "command": "error_out",
+                        "data": f"send_command_failed: {exc}",
+                    }
+                )
         else:
             self.process = None
 

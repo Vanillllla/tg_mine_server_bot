@@ -55,25 +55,6 @@
      <enum>Qt::Vertical</enum>
     </property>
    </widget>
-   <widget class="QFrame" name="frame">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>10</y>
-      <width>431</width>
-      <height>91</height>
-     </rect>
-    </property>
-    <property name="autoFillBackground">
-     <bool>false</bool>
-    </property>
-    <property name="frameShape">
-     <enum>QFrame::Panel</enum>
-    </property>
-    <property name="frameShadow">
-     <enum>QFrame::Raised</enum>
-    </property>
-   </widget>
    <widget class="QFrame" name="frame_2">
     <property name="geometry">
      <rect>
@@ -159,11 +140,63 @@
      </property>
     </widget>
    </widget>
+   <widget class="QGroupBox" name="consoleGroupBox">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>190</y>
+      <width>431</width>
+      <height>291</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Server Console</string>
+    </property>
+    <widget class="QPlainTextEdit" name="console_output">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>30</y>
+       <width>411</width>
+       <height>211</height>
+      </rect>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="console_input">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>250</y>
+       <width>321</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="placeholderText">
+      <string>Введите команду сервера...</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="console_send_button">
+     <property name="geometry">
+      <rect>
+       <x>340</x>
+       <y>250</y>
+       <width>81</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Send</string>
+     </property>
+    </widget>
+   </widget>
    <widget class="QGroupBox" name="serverGroupBox">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>160</y>
+      <y>60</y>
       <width>431</width>
       <height>131</height>
      </rect>
@@ -211,7 +244,7 @@
      <property name="geometry">
       <rect>
        <x>80</x>
-       <y>20</y>
+       <y>10</y>
        <width>231</width>
        <height>21</height>
       </rect>
@@ -369,7 +402,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>110</y>
+      <y>10</y>
       <width>221</width>
       <height>31</height>
      </rect>
@@ -378,8 +411,8 @@
    <widget class="Line" name="line_2">
     <property name="geometry">
      <rect>
-      <x>-10</x>
-      <y>140</y>
+      <x>0</x>
+      <y>40</y>
       <width>451</width>
       <height>20</height>
      </rect>
@@ -413,6 +446,7 @@
     <addaction name="core_select_action"/>
     <addaction name="separator"/>
     <addaction name="open_setings_action"/>
+    <addaction name="open_setings_console_action"/>
     <addaction name="separator"/>
     <addaction name="restart_action"/>
     <addaction name="to_trey_action"/>
@@ -509,6 +543,11 @@
   <action name="exit_action">
    <property name="text">
     <string>Закрыть программу</string>
+   </property>
+  </action>
+  <action name="open_setings_console_action">
+   <property name="text">
+    <string>Настройки консоли</string>
    </property>
   </action>
  </widget>

@@ -15,7 +15,7 @@ class SettingsWindow(QDialog):
         super().__init__(parent)
         self.settings_path = config_path("program_settings.json")
         uic.loadUi(ui_path("settings_ui.ui"), self)
-        self.setWindowTitle("Servers Telegram controller")
+        self.setWindowTitle("Настройки программы")
         self.setWindowIcon(QIcon(icon_path("icon.ico")))
 
         with self.settings_path.open("r", encoding="utf-8") as file:
