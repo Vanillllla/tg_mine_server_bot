@@ -1,20 +1,6 @@
-from PyQt5.QtGui import QPalette, QColor
-from PyQt5.QtCore import Qt
-
-
 class Themes:
     @staticmethod
-    def get_theme(name):
-        if name == "dark":
-            return Themes.dark_theme()
-        elif name == "green":
-            return Themes.green_theme()
-        else:  # "light" or default
-            return Themes.light_theme()
-
-    @staticmethod
     def light_theme():
-        """Светлая тема (стандартная)"""
         return """
             QMainWindow, QDialog, QWidget {
                 background-color: #f0f0f0;
@@ -67,7 +53,6 @@ class Themes:
 
     @staticmethod
     def dark_theme():
-        """Тёмная тема"""
         return """
             QMainWindow, QDialog, QWidget {
                 background-color: #2b2b2b;
@@ -143,7 +128,6 @@ class Themes:
 
     @staticmethod
     def green_theme():
-        """Тёмная тема с зелёным акцентом"""
         return """
             QMainWindow, QDialog, QWidget {
                 background-color: #1e1e1e;
@@ -219,40 +203,21 @@ class Themes:
                 background-color: #2d5d2d;
             }
         """
-    @staticmethod
-    def get_dialog_styles():
-        """Дополнительные стили для диалоговых окон"""
-        return """
-            QDialog {
-                background-color: inherit;
-            }
-            QProgressBar {
-                border: 1px solid #a0a0a0;
-                border-radius: 4px;
-                text-align: center;
-                font-size: 10px;
-            }
-            QProgressBar::chunk {
-                border-radius: 4px;
-            }
-        """
 
     @staticmethod
     def get_theme(name):
         if name == "system":
-            # Автоматическое определение системной темы
             from PyQt5.QtWidgets import QApplication
+
             app = QApplication.instance()
             if app:
                 bg_color = app.palette().window().color()
                 if bg_color.lightness() > 128:
                     return Themes.light_theme()
-                else:
-                    return Themes.dark_theme()
-            return Themes.light_theme()  # По умолчанию
-        elif name == "dark":
-            return Themes.dark_theme()
-        elif name == "green":
-            return Themes.green_theme()
-        else:  # "light" or default
+                return Themes.dark_theme()
             return Themes.light_theme()
+        if name == "dark":
+            return Themes.dark_theme()
+        if name == "green":
+            return Themes.green_theme()
+        return Themes.light_theme()

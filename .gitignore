@@ -1,7 +1,9 @@
 .env
 logs
 .venv
-/Server
+.idea/
+__pycache__/
+*.pyc
 
 /downloads_cores/
 /media/

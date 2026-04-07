@@ -1,12 +1,27 @@
-[![Python](https://img.shields.io/badge/Python-3.13%2B-gree)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/Python-3.13%2B-green)](https://www.python.org/downloads/)
 
-# 🎮 Minecraft Server Telegram Bot
+# Minecraft Server Telegram Bot
 
-Управляйте сервером Minecraft прямо из Telegram! Этот бот позволяет запускать, останавливать, перезапускать и настраивать сервер на вашем компьютере удалённо, даже если вас нет дома. Подключайтесь к серверу с друзьями через VPN (Hamachi, Radmin и т.д.).
+Desktop app for managing a local Minecraft server and controlling it from Telegram.
 
-> ⚠️ **Больше информации в Readme по новой версии появится на ее релизе.** 
+## Project Structure
 
-> ⚠️ Поддержка английского языка будет добавлена в следующих обновлениях.
+```text
+app/
+  core/         # shared paths and filesystem helpers
+  gui/          # PyQt windows, dialogs, themes
+  services/     # Telegram bot and Minecraft server control
+config/         # JSON configuration files
+resources/
+  assets/icons/ # application icons
+  ui/           # Qt Designer .ui files
+downloads_cores/
+Servers/
+main.py
+```
 
-Ъ!
+## Run
 
+```bash
+python main.py
+```
