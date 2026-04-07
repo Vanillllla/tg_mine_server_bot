@@ -17,11 +17,11 @@ resources/
   ui/           # Qt Designer .ui files
 downloads_cores/
 Servers/
-process_connector.py
+main.py
 ```
 
 ## Run
 
 ```bash
-python process_connector.py
+python main.py
 ```
