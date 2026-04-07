@@ -1,10 +1,10 @@
 {
-    "autostart": false,
-    "theme": "green",
-    "autostart_bot": true,
-    "serve_host_name": "",
-    "telegram_bot_token": "",
-    "use_modern_style": true,
-    "use_last_active_core": false,
-    "active_core": ""
+  "autostart": false,
+  "theme": "green",
+  "autostart_bot": false,
+  "serve_host_name": "",
+  "telegram_bot_token": "",
+  "use_modern_style": true,
+  "use_last_active_core": false,
+  "active_core": ""
 }
