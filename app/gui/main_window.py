@@ -98,9 +98,8 @@ class MyApp(QMainWindow):
             self.append_server_log(msg)
 
     def append_server_log(self, msg):
-        stream = msg.get("data", {}).get("stream", "LOG")
         line = msg.get("data", {}).get("line", "")
-        self.console_output.appendPlainText(f"[{stream}] {line}")
+        self.console_output.appendPlainText(f"{line}")
 
     def send_server_command(self):
         command = self.console_input.text().strip()

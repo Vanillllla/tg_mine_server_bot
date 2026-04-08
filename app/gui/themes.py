@@ -22,16 +22,17 @@ class Themes:
                 border: 1px solid {colors['border']};
                 background-color: {colors['panel_bg']};
                 border-radius: 14px;
-                margin-top: 14px;
-                padding-top: 14px;
+                margin-top: -5px;
+                padding-top: -5px;
             }}
             QGroupBox::title {{
                 subcontrol-origin: margin;
                 left: 16px;
-                padding: 0 8px;
+                padding: 1px 4px;
                 color: {colors['title_text']};
                 background-color: {colors['window_bg']};
-                border: none;
+                border-radius: 8px;
+                border: 1 solid {colors['border']};
                 font-weight: 600;
             }}
             QPushButton {{
@@ -92,7 +93,12 @@ class Themes:
             QFrame#line_3 {{
                 background-color: transparent;
                 border: none;
-                border-top: 1px solid #245748;
+                border-top: 1px solid {colors["border"]};
+            }}
+            QFrame#line_4 {{
+                background-color: transparent;
+                border: none;
+                border-left: 1px solid {colors["border"]};
             }}
             QPushButton#console_send_button:hover {{
                 background-color: {colors['console_button_hover']};

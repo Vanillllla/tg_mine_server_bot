@@ -27,7 +27,7 @@ class ServerSystem:
             try:
                 msg = self.conn.recv()
 
-                if msg["command"] == "set_server_status":
+                if msg["command"] == "set_server_status" and msg["data"] == True:
                     if not self.is_running():
                         self.start_server()
                         status = self.is_running()
@@ -44,6 +44,8 @@ class ServerSystem:
                             "request_id": msg.get("request_id"),
                         }
                     )
+                elif msg["command"] == "set_server_status" and msg["data"] == False:
+                    pass
                 elif msg["command"] == "server_command":
                     self.send_commands(msg["data"])
                 elif msg["command"] == "get_server_status":

@@ -166,9 +166,9 @@ QLabel#botStatusLabel_ind {
     <widget class="QPushButton" name="startServerButton">
      <property name="geometry">
       <rect>
-       <x>310</x>
-       <y>20</y>
-       <width>101</width>
+       <x>320</x>
+       <y>10</y>
+       <width>100</width>
        <height>38</height>
       </rect>
      </property>
@@ -179,9 +179,9 @@ QLabel#botStatusLabel_ind {
     <widget class="QPushButton" name="settingsServerButton">
      <property name="geometry">
       <rect>
-       <x>310</x>
-       <y>80</y>
-       <width>103</width>
+       <x>320</x>
+       <y>60</y>
+       <width>100</width>
        <height>38</height>
       </rect>
      </property>
@@ -192,9 +192,9 @@ QLabel#botStatusLabel_ind {
     <widget class="Line" name="line_3">
      <property name="geometry">
       <rect>
-       <x>10</x>
+       <x>0</x>
        <y>70</y>
-       <width>291</width>
+       <width>301</width>
        <height>16</height>
       </rect>
      </property>
@@ -252,6 +252,19 @@ QLabel#botStatusLabel_ind {
      </property>
      <property name="text">
       <string>000</string>
+     </property>
+    </widget>
+    <widget class="Line" name="line_4">
+     <property name="geometry">
+      <rect>
+       <x>300</x>
+       <y>10</y>
+       <width>16</width>
+       <height>125</height>
+      </rect>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
      </property>
     </widget>
    </widget>

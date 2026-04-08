@@ -90,7 +90,8 @@ class Bott:
         )
 
     async def server_switch(self, message: Message, state: FSMContext):
-        return None
+        msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": True}
+        self.pipe_send(msg)
 
     async def nonmess(self, message: Message, state: FSMContext):
         await message.answer("Отправлена команда : " + message.text)
