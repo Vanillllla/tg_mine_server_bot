@@ -6,71 +6,114 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>166</height>
+    <width>420</width>
+    <height>180</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>400</width>
-    <height>166</height>
+    <width>420</width>
+    <height>180</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>400</width>
-    <height>166</height>
+    <width>420</width>
+    <height>180</height>
    </size>
+  </property>
+  <property name="font">
+   <font>
+    <family>Segoe UI</family>
+    <pointsize>10</pointsize>
+   </font>
   </property>
   <property name="windowTitle">
    <string>Загрузка файла</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">QPushButton {
+    min-height: 30px;
+    border-radius: 4px;
+    padding: 4px 10px;
+}
+QProgressBar {
+    border-radius: 4px;
+}</string>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="leftMargin">
+    <number>14</number>
+   </property>
+   <property name="topMargin">
+    <number>14</number>
+   </property>
+   <property name="rightMargin">
+    <number>14</number>
+   </property>
+   <property name="bottomMargin">
+    <number>14</number>
+   </property>
+   <property name="spacing">
+    <number>10</number>
+   </property>
+   <item>
+    <widget class="QLabel" name="label">
+     <property name="font">
+      <font>
+       <family>Segoe UI Semibold</family>
+       <pointsize>11</pointsize>
+       <weight>63</weight>
+       <bold>false</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Выберите файл</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QProgressBar" name="progressBar">
+     <property name="value">
+      <number>0</number>
+     </property>
+    </widget>
+   </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
-      <widget class="QLabel" name="label">
-       <property name="font">
-        <font>
-         <pointsize>10</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>Выберите файл</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignCenter</set>
-       </property>
-       <property name="margin">
-        <number>2</number>
-       </property>
-      </widget>
-     </item>
+     <property name="spacing">
+      <number>10</number>
+     </property>
      <item>
       <widget class="QPushButton" name="selectFileButton">
-       <property name="font">
-        <font>
-         <pointsize>10</pointsize>
-        </font>
+       <property name="minimumSize">
+        <size>
+         <width>160</width>
+         <height>32</height>
+        </size>
        </property>
        <property name="text">
         <string>Выбрать файл</string>
        </property>
       </widget>
      </item>
+     <item>
+      <widget class="QPushButton" name="closeButton">
+       <property name="minimumSize">
+        <size>
+         <width>120</width>
+         <height>32</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Закрыть</string>
+       </property>
+      </widget>
+     </item>
     </layout>
-   </item>
-   <item>
-    <widget class="QProgressBar" name="progressBar">
-     <property name="font">
-      <font>
-       <pointsize>10</pointsize>
-      </font>
-     </property>
-     <property name="value">
-      <number>0</number>
-     </property>
-    </widget>
    </item>
    <item>
     <spacer name="verticalSpacer">
@@ -79,23 +122,11 @@
      </property>
      <property name="sizeHint" stdset="0">
       <size>
-       <width>10</width>
-       <height>10</height>
+       <width>20</width>
+       <height>20</height>
       </size>
      </property>
     </spacer>
-   </item>
-   <item>
-    <widget class="QPushButton" name="closeButton">
-     <property name="font">
-      <font>
-       <pointsize>10</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>Закрыть</string>
-     </property>
-    </widget>
    </item>
   </layout>
  </widget>
