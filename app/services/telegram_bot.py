@@ -15,7 +15,7 @@ from app.core.paths import config_path
 
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-
+VANILLA = os.getenv("VANILLA")
 
 class Form(StatesGroup):
     main_menu = State()
@@ -28,7 +28,7 @@ class Bott:
         self.conn = conn
         self.dp = Dispatcher()
         self._register_handlers()
-        self.vanilla = 1007806948
+        self.vanilla = VANILLA if VANILLA else None
         self.pending = {}
         self._response_task = None
 
@@ -74,13 +74,15 @@ class Bott:
 
     def _register_handlers(self):
         self.dp.message.register(self.start, Command("start"))
+        # self.dp.message.register(self.start_server, F.text == "Запустить сервер")
         self.dp.message.register(self.server_switch, F.text == "переключить_сервер")
         self.dp.message.register(self.nonmess)
 
     async def start(self, message: Message, state: FSMContext):
+        # self.state = await state.set_state(???)
         keyboard = [
             [KeyboardButton(text="Запустить сервер"), KeyboardButton(text="Остановить сервер")],
-            [KeyboardButton(text="Просто кнопка))) (причём широкая)")],
+            [KeyboardButton(text="переключить_сервер")],
         ]
         await message.answer(
             "Выберите действие:",

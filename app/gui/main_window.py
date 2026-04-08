@@ -171,12 +171,20 @@ class MyApp(QMainWindow):
         if is_active:
             self.botStatusLabel_ind.setText(t(self.language, "bot_on"))
             self.botStatusLabel_ind.setStyleSheet(
-                "background-color: rgba(0, 255, 0, 0.2); color: rgba(0, 255, 0, 0.9);"
+                "background-color: transparent;"
+                "color: #8dff77;"
+                "border: 1px solid rgba(141, 255, 119, 0.85);"
+                "border-radius: 14px;"
+                "padding: 0 12px;"
             )
         else:
             self.botStatusLabel_ind.setText(t(self.language, "bot_off"))
             self.botStatusLabel_ind.setStyleSheet(
-                "background-color: rgba(255, 0, 0, 0.2);color: rgba(255, 0, 0, 0.9);"
+                "background-color: transparent;"
+                "color: #ff7d7d;"
+                "border: 1px solid rgba(255, 125, 125, 0.85);"
+                "border-radius: 14px;"
+                "padding: 0 12px;"
             )
 
     def update_server_status(self):

@@ -18,7 +18,7 @@ class ProcessConnector:
         self.bot_prefix = "[ BOT ]"
         self.ui_prefix = "[ UI ]"
         self.server_prefix = "[ SERVER ]"
-        self.main_prefix = "[ MAIN ]"
+        self.main_prefix = "[ CONNECTOR ]"
         self.error_prefix = "[ ERROR ]"
 
         with config_path("program_settings.json").open("r", encoding="utf-8") as file:
@@ -49,7 +49,7 @@ class ProcessConnector:
             self.ui_parent_conn, ui_child_conn = Pipe()
             from app.gui.main_window import run
 
-            self.ui_process = Process(target=run, args=(ui_child_conn,), name="ui_process", daemon=True)
+            self.ui_process = Process(target=run, args=(ui_child_conn,), name="gui_process", daemon=True)
             self.ui_process.start()
             threading.Thread(target=self._read_from_ui, daemon=True).start()
         else:
@@ -119,24 +119,24 @@ class ProcessConnector:
                 if msg["command"] == "bot_switch":
                     if (self.bot_process is None) or (not self.bot_process.is_alive()):
                         self.bot_start()
-                        self.ui_parent_conn.send(
-                            {"to_process": "ui", "from_process": "connector", "command": "set_bot_status", "data": True}
-                        )
+                        msg2 = {"to_process": "gui", "from_process": "connector", "command": "set_bot_status", "data": True}
+                        print(self.main_prefix, msg2)
+                        self.ui_parent_conn.send(msg2)
                     else:
                         self.bot_process.terminate()
                         self.th_botRead.join(timeout=1)
-                        self.ui_parent_conn.send(
-                            {"to_process": "ui", "from_process": "connector", "command": "set_bot_status", "data": False}
-                        )
+                        msg2 = {"to_process": "gui", "from_process": "connector", "command": "set_bot_status", "data": False}
+                        print(self.main_prefix, msg2)
+                        self.ui_parent_conn.send(msg2)
                 elif msg["command"] == "get_bot_status":
-                    self.ui_parent_conn.send(
-                        {
+                    msg2 = {
                             "to_process": "gui",
                             "from_process": "connector",
                             "command": "set_bot_status",
                             "data": self.bot_process.is_alive() if self.bot_process else False,
                         }
-                    )
+                    print(self.main_prefix, msg2)
+                    self.ui_parent_conn.send(msg2)
                 elif msg["command"] == "restart":
                     pass
                 elif msg["command"] == "exit":
