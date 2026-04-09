@@ -80,7 +80,7 @@ QLabel#botStatusLabel_ind {
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>20</y>
+      <y>10</y>
       <width>411</width>
       <height>31</height>
      </rect>
@@ -103,9 +103,9 @@ QLabel#botStatusLabel_ind {
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>60</y>
+      <y>50</y>
       <width>431</width>
-      <height>131</height>
+      <height>141</height>
      </rect>
     </property>
     <property name="title">
@@ -258,9 +258,9 @@ QLabel#botStatusLabel_ind {
      <property name="geometry">
       <rect>
        <x>300</x>
-       <y>10</y>
+       <y>4</y>
        <width>16</width>
-       <height>125</height>
+       <height>141</height>
       </rect>
      </property>
      <property name="orientation">

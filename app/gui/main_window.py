@@ -46,8 +46,15 @@ class MyApp(QMainWindow):
         self.tray_icon.setIcon(QIcon(icon_path("icon_tray.ico")))
         traymenu = QMenu()
         self.tray_open_action = traymenu.addAction("")
+        traymenu.addSeparator()
+        self.tray_toggle_server_action = traymenu.addAction("")
+        self.tray_toggle_bot_action = traymenu.addAction("")
+        traymenu.addSeparator()
         self.tray_exit_action = traymenu.addAction("")
+
         self.tray_open_action.triggered.connect(self.show)
+        self.tray_toggle_server_action.triggered.connect(self.toggle_server_from_tray)
+        self.tray_toggle_bot_action.triggered.connect(self.toggle_bot_from_tray)
         self.tray_exit_action.triggered.connect(self.close_program)
         self.tray_icon.setContextMenu(traymenu)
 
@@ -78,6 +85,7 @@ class MyApp(QMainWindow):
         self.bot_indicator(False)
         self.show_server_status(False)
         self.apply_localization()
+        self._update_tray_labels()
 
         self.tray_icon.show()
         self.show()
@@ -144,6 +152,8 @@ class MyApp(QMainWindow):
         self.console_input.setPlaceholderText(t(lang, "console_placeholder"))
         self.console_send_button.setText(t(lang, "console_send"))
 
+        self._update_tray_labels()
+
         if self.coreSelectBox.count() > 0:
             self.coreSelectBox.setItemText(0, t(lang, "core_select_placeholder"))
         if self.versionLabel.text() in ("Появится позже :3", "Will be available later :3"):
@@ -185,6 +195,7 @@ class MyApp(QMainWindow):
                 "border-radius: 14px;"
                 "padding: 0 12px;"
             )
+        self._update_tray_labels()
 
     def update_server_status(self):
         self.conn.send({"to_process": "server", "from_process": "gui", "command": "get_server_status", "data": ""})
@@ -200,6 +211,7 @@ class MyApp(QMainWindow):
         else:
             self.startServerButton.setText(t(self.language, "server_start"))
             self.startServerButton.setStyleSheet("color: #00CC00;")
+        self._update_tray_labels()
 
     def start_server(self):
         self.conn.send({"to_process": "server", "from_process": "gui", "command": "set_server_status", "data": True})
@@ -238,6 +250,12 @@ class MyApp(QMainWindow):
 
     def start_bot(self):
         self.pipe_send({"to_process": "connector", "from_process": "ui", "command": "bot_switch", "data": None})
+
+    def toggle_bot_from_tray(self):
+        self.start_bot()
+
+    def toggle_server_from_tray(self):
+        self.start_server()
 
     def pipe_send(self, msg: dict):
         if self.conn:
@@ -285,8 +303,19 @@ class MyApp(QMainWindow):
         self.hide()
         self.tray_icon.show()
         event.ignore()
-        QApplication.quit()
-        self.pipe_send({"to_process": "connector", "from_process": "ui", "command": "exit", "data": None})
+        # QApplication.quit()
+        # self.pipe_send({"to_process": "connector", "from_process": "ui", "command": "exit", "data": None})
+
+    def _update_tray_labels(self):
+        if hasattr(self, "tray_toggle_server_action"):
+            server_text = t(self.language, "tray_server_stop" if self.server_is_active else "tray_server_start")
+            bot_text = t(self.language, "tray_bot_stop" if self.bot_is_active else "tray_bot_start")
+            self.tray_toggle_server_action.setText(server_text)
+            self.tray_toggle_bot_action.setText(bot_text)
+        if hasattr(self, "tray_open_action"):
+            self.tray_open_action.setText(t(self.language, "tray_open"))
+        if hasattr(self, "tray_exit_action"):
+            self.tray_exit_action.setText(t(self.language, "tray_exit"))
 
 
 def run(conn):
