@@ -9,6 +9,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup
+from anyio import to_process
 from dotenv import load_dotenv
 
 from app.core.paths import config_path
@@ -17,10 +18,88 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 VANILLA = os.getenv("VANILLA")
 
+class BotKeyboards:
+    @staticmethod
+    def user_main() -> ReplyKeyboardMarkup:
+        keyboard = [
+            [KeyboardButton(text="🚀 Запустить сервер")],
+            [KeyboardButton(text="👥 Онлайн на сервере")],
+            [KeyboardButton(text="⚙️ Мои настройки")],
+        ]
+        return ReplyKeyboardMarkup(
+            keyboard=keyboard,
+            resize_keyboard=True
+        )
+
+    @staticmethod
+    def user_settings() -> ReplyKeyboardMarkup:
+        keyboard = [
+            [KeyboardButton(text="👤 Профиль")],
+            [KeyboardButton(text="⬅️ Назад")],
+        ]
+        return ReplyKeyboardMarkup(
+            keyboard=keyboard,
+            resize_keyboard=True
+        )
+
+    @staticmethod
+    def admin_main() -> ReplyKeyboardMarkup:
+        keyboard = [
+            [KeyboardButton(text="🚀 Запустить сервер"), KeyboardButton(text="🛑 Остановить сервер")],
+            [KeyboardButton(text="👥 Онлайн на сервере"),KeyboardButton(text="🔄 Перезапустить бота"), KeyboardButton(text="💻 Консоль")],
+            [KeyboardButton(text="⚙️ Настройки")],
+        ]
+        return ReplyKeyboardMarkup(
+            keyboard=keyboard,
+            resize_keyboard=True
+        )
+
+    @staticmethod
+    def admin_console() -> ReplyKeyboardMarkup:
+        keyboard = [
+            [KeyboardButton(text="⬅️ Назад")],
+        ]
+        return ReplyKeyboardMarkup(
+            keyboard=keyboard,
+            resize_keyboard=True
+        )
+
+    @staticmethod
+    def admin_settings(notifications_enabled: bool = True) -> ReplyKeyboardMarkup:
+        notify_button = (
+            "🟢 Выключить уведомления о запуске"
+            if notifications_enabled
+            else "🔴 Включить уведомления о запуске"
+        )
+
+        keyboard = [
+            [KeyboardButton(text="🧩 server.properties")],
+            [KeyboardButton(text="👤 Пользователи бота")],
+            [KeyboardButton(text="📊 Нагрузка сервера")],
+            [KeyboardButton(text=notify_button)],
+            [KeyboardButton(text="⬅️ Назад")],
+        ]
+        return ReplyKeyboardMarkup(
+            keyboard=keyboard,
+            resize_keyboard=True
+        )
+
+    @staticmethod
+    def admin_users() -> ReplyKeyboardMarkup:
+        keyboard = [
+            [KeyboardButton(text="📋 Список пользователей")],
+            [KeyboardButton(text="➕ Добавить пользователя"), KeyboardButton(text="➖ Удалить пользователя")],
+            [KeyboardButton(text="🔒 Права доступа")],
+            [KeyboardButton(text="⬅️ Назад")],
+        ]
+        return ReplyKeyboardMarkup(
+            keyboard=keyboard,
+            resize_keyboard=True
+        )
+
 class Form(StatesGroup):
     main_menu = State()
     dop_manu = State()
-
 
 class Bott:
     def __init__(self, token: str, conn: Connection = None):
@@ -75,22 +154,16 @@ class Bott:
     def _register_handlers(self):
         self.dp.message.register(self.start, Command("start"))
         # self.dp.message.register(self.start_server, F.text == "Запустить сервер")
-        self.dp.message.register(self.server_switch, F.text == "переключить_сервер")
+        self.dp.message.register(self.server_switch, F.text == "🚀 Запустить сервер")
+        self.dp.message.register(self.reload_bot, F.text == "🔄 Перезапустить бота")
         self.dp.message.register(self.nonmess)
-
-    async def start(self, message: Message, state: FSMContext):
-        # self.state = await state.set_state(???)
-        keyboard = [
-            [KeyboardButton(text="Запустить сервер"), KeyboardButton(text="Остановить сервер")],
-            [KeyboardButton(text="переключить_сервер")],
-        ]
-        await message.answer(
-            "Выберите действие:",
-            reply_markup=ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True),
-        )
 
     async def server_switch(self, message: Message, state: FSMContext):
         msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": True}
+        self.pipe_send(msg)
+
+    async def reload_bot(self, message: Message, state: FSMContext):
+        msg = {"to_process": "connector", "from_process": "bot", "command": "reload_bot", "data": ""}
         self.pipe_send(msg)
 
     async def nonmess(self, message: Message, state: FSMContext):
@@ -104,11 +177,18 @@ class Bott:
             }
         )
 
+    async def start(self, message: Message, state: FSMContext):
+        # self.state = await state.set_state(???)
+        await message.answer(
+            "Выберите действие:",
+            reply_markup=BotKeyboards.admin_main(),
+        )
+
     async def run(self):
         try:
             self._response_task = asyncio.create_task(self._response_listener())
             print("Bot successfully started...")
-            await self.bot.send_message(1007806948, "Bot successfully started...")
+            await self.bot.send_message(1007806948, "Bot successfully started... /start")
             await self.dp.start_polling(self.bot)
         except Exception as exc:
             print(f"Ошибка в боте: {exc}")

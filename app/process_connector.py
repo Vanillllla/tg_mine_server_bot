@@ -2,6 +2,7 @@ import json
 import sys
 import threading
 from multiprocessing import Pipe, Process
+from time import sleep
 
 from app.core.paths import config_path
 
@@ -128,6 +129,21 @@ class ProcessConnector:
                         msg2 = {"to_process": "gui", "from_process": "connector", "command": "set_bot_status", "data": False}
                         print(self.main_prefix, msg2)
                         self.ui_parent_conn.send(msg2)
+                elif msg["command"] == "reload_bot":
+                    self.bot_process.terminate()
+                    self.bot_process.join(timeout=1)
+                    if self.bot_process.is_alive():
+                        self.bot_process.kill()
+                        self.bot_process.join(timeout=1)
+                    msg2 = {"to_process": "gui", "from_process": "connector", "command": "set_bot_status",
+                            "data": False}
+                    print(self.main_prefix, msg2)
+                    self.ui_parent_conn.send(msg2)
+                    self.bot_start()
+                    msg3 = {"to_process": "gui", "from_process": "connector", "command": "set_bot_status", "data": True}
+                    print(self.main_prefix, msg3)
+                    self.ui_parent_conn.send(msg3)
+
                 elif msg["command"] == "get_bot_status":
                     msg2 = {
                             "to_process": "gui",
