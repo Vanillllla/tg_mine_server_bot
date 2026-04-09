@@ -3,6 +3,7 @@ import json
 import os
 import uuid
 from multiprocessing.connection import Connection
+from dotenv import load_dotenv
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
@@ -10,7 +11,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup
 from anyio import to_process
-from dotenv import load_dotenv
+from aiogram.filters import StateFilter
 
 from app.core.paths import config_path
 
@@ -24,7 +25,7 @@ class BotKeyboards:
         keyboard = [
             [KeyboardButton(text="🚀 Запустить сервер")],
             [KeyboardButton(text="👥 Онлайн на сервере")],
-            [KeyboardButton(text="⚙️ Мои настройки")],
+            [KeyboardButton(text="⚙️ Мои настройки"), KeyboardButton(text="test")],
         ]
         return ReplyKeyboardMarkup(
             keyboard=keyboard,
@@ -47,7 +48,7 @@ class BotKeyboards:
         keyboard = [
             [KeyboardButton(text="🚀 Запустить сервер"), KeyboardButton(text="🛑 Остановить сервер")],
             [KeyboardButton(text="👥 Онлайн на сервере"),KeyboardButton(text="🔄 Перезапустить бота"), KeyboardButton(text="💻 Консоль")],
-            [KeyboardButton(text="⚙️ Настройки")],
+            [KeyboardButton(text="⚙️ Настройки"), KeyboardButton(text="test")],
         ]
         return ReplyKeyboardMarkup(
             keyboard=keyboard,
@@ -98,8 +99,13 @@ class BotKeyboards:
         )
 
 class Form(StatesGroup):
-    main_menu = State()
-    dop_manu = State()
+    user_main_menu = State()
+    user_dop_manu = State()
+    admin_main_menu = State()
+    admin_settings = State()
+    admin_console = State()
+    admin_dop_manu = State()
+
 
 class Bott:
     def __init__(self, token: str, conn: Connection = None):
@@ -153,14 +159,16 @@ class Bott:
 
     def _register_handlers(self):
         self.dp.message.register(self.start, Command("start"))
-        # self.dp.message.register(self.start_server, F.text == "Запустить сервер")
-        self.dp.message.register(self.server_switch, F.text == "🚀 Запустить сервер")
-        self.dp.message.register(self.reload_bot, F.text == "🔄 Перезапустить бота")
+        self.dp.message.register(self.server_switch, F.text == "🚀 Запустить сервер", StateFilter(Form.user_main_menu))
+        self.dp.message.register(self.reload_bot, F.text == "🔄 Перезапустить бота", StateFilter(Form.admin_main_menu))
         self.dp.message.register(self.nonmess)
 
     async def server_switch(self, message: Message, state: FSMContext):
         msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": True}
         self.pipe_send(msg)
+
+    async def start_server(self, message: Message, state: FSMContext):
+        pass
 
     async def reload_bot(self, message: Message, state: FSMContext):
         msg = {"to_process": "connector", "from_process": "bot", "command": "reload_bot", "data": ""}
@@ -179,8 +187,12 @@ class Bott:
 
     async def start(self, message: Message, state: FSMContext):
         # self.state = await state.set_state(???)
+        self.profile = {"status": 1 if str(message.from_user.id) == str(VANILLA) else 0, "userid": message.from_user.id}
+        if self.profile["status"] != 0 :
+            # await state.set_state(admin_main_menu)
+            pass
         await message.answer(
-            "Выберите действие:",
+            f"Выберите действие: {self.profile}",
             reply_markup=BotKeyboards.admin_main(),
         )
 
