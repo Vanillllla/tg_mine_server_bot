@@ -30,14 +30,10 @@ class ServerSystem:
                 if msg["command"] == "set_server_status" and msg["data"] == True:
                     if not self.is_running():
                         self.start_server()
-                        status = self.is_running()
-                    else:
-                        self.stop_server()
-                        status = False
-
+                    status = self.is_running()
                     self._send(
                         {
-                            "to_process": "gui",
+                            "to_process": msg.get("from_process"),
                             "from_process": "server",
                             "command": "set_server_status",
                             "data": status,
@@ -45,7 +41,18 @@ class ServerSystem:
                         }
                     )
                 elif msg["command"] == "set_server_status" and msg["data"] == False:
-                    pass
+                    if self.is_running():
+                        self.stop_server()
+                    status = self.is_running()
+                    self._send(
+                        {
+                            "to_process": msg.get("from_process"),
+                            "from_process": "server",
+                            "command": "set_server_status",
+                            "data": status,
+                            "request_id": msg.get("request_id"),
+                        }
+                    )
                 elif msg["command"] == "server_command":
                     self.send_commands(msg["data"])
                 elif msg["command"] == "get_server_status":

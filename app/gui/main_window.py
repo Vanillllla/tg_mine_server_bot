@@ -214,7 +214,12 @@ class MyApp(QMainWindow):
         self._update_tray_labels()
 
     def start_server(self):
-        self.conn.send({"to_process": "server", "from_process": "gui", "command": "set_server_status", "data": True})
+        if self.server_is_active:
+            self.conn.send({"to_process": "server", "from_process": "gui", "command": "set_server_status", "data": False})
+            self.show_server_status(False)
+        else:
+            self.conn.send({"to_process": "server", "from_process": "gui", "command": "set_server_status", "data": True})
+            self.show_server_status(True)
 
     def load_cores_to_combobox(self):
         self.coreSelectBox.clear()

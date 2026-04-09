@@ -98,7 +98,7 @@ class BotKeyboards:
             resize_keyboard=True
         )
 
-class Form(StatesGroup):
+class State(StatesGroup):
     user_main_menu = State()
     user_dop_manu = State()
     admin_main_menu = State()
@@ -117,7 +117,7 @@ class Bott:
         self.pending = {}
         self._response_task = None
 
-    async def request(self, data: dict, timeout: float = 30.0) -> dict:
+    async def request(self, data: dict, timeout: float = 90.0) -> dict:
         req_id = str(uuid.uuid4())
         future = asyncio.Future()
         self.pending[req_id] = future
@@ -159,8 +159,8 @@ class Bott:
 
     def _register_handlers(self):
         self.dp.message.register(self.start, Command("start"))
-        self.dp.message.register(self.server_switch, F.text == "🚀 Запустить сервер", StateFilter(Form.user_main_menu))
-        self.dp.message.register(self.reload_bot, F.text == "🔄 Перезапустить бота", StateFilter(Form.admin_main_menu))
+        self.dp.message.register(self.start_server, F.text == "🚀 Запустить сервер", StateFilter(State.user_main_menu, State.admin_main_menu))
+        self.dp.message.register(self.reload_bot, F.text == "🔄 Перезапустить бота", StateFilter(State.admin_main_menu))
         self.dp.message.register(self.nonmess)
 
     async def server_switch(self, message: Message, state: FSMContext):
@@ -168,7 +168,17 @@ class Bott:
         self.pipe_send(msg)
 
     async def start_server(self, message: Message, state: FSMContext):
-        pass
+        msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": True}
+        print("\033[3;32m ______________________________________________________ \033[0m")
+        ans = await self.request(msg)
+        print("\033[4;32m ______________________________________________________ \033[0m")
+        await message.answer(str(ans["data"]))
+
+    async def stop_server(self, message: Message, state: FSMContext):
+        msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": True}
+        ans = await self.request(msg)
+        print(123)
+        await message.answer(ans["data"])
 
     async def reload_bot(self, message: Message, state: FSMContext):
         msg = {"to_process": "connector", "from_process": "bot", "command": "reload_bot", "data": ""}
@@ -186,15 +196,16 @@ class Bott:
         )
 
     async def start(self, message: Message, state: FSMContext):
-        # self.state = await state.set_state(???)
         self.profile = {"status": 1 if str(message.from_user.id) == str(VANILLA) else 0, "userid": message.from_user.id}
-        if self.profile["status"] != 0 :
-            # await state.set_state(admin_main_menu)
-            pass
-        await message.answer(
-            f"Выберите действие: {self.profile}",
-            reply_markup=BotKeyboards.admin_main(),
-        )
+        if self.profile["status"] == 1 :
+            await state.set_state(State.admin_main_menu)
+            await message.answer(
+                f"Выберите действие: {self.profile}",
+                reply_markup=BotKeyboards.admin_main(),
+            )
+        elif self.profile["status"] == 0:
+            await state.set_state(State.user_main_menu)
+            await message.answer("Выберите действие: ", reply_markup=BotKeyboards.user_main())
 
     async def run(self):
         try:

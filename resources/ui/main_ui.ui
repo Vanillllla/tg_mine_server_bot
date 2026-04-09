@@ -326,7 +326,7 @@ QLabel#botStatusLabel_ind {
       <x>460</x>
       <y>10</y>
       <width>491</width>
-      <height>80</height>
+      <height>71</height>
      </rect>
     </property>
     <property name="frameShape">
