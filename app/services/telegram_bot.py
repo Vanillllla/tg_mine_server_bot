@@ -116,6 +116,7 @@ class Bott:
         self.vanilla = VANILLA if VANILLA else None
         self.pending = {}
         self._response_task = None
+        self.services_states = {"server_status": False}
 
     async def request(self, data: dict, timeout: float = 90.0) -> dict:
         req_id = str(uuid.uuid4())
@@ -160,6 +161,7 @@ class Bott:
     def _register_handlers(self):
         self.dp.message.register(self.start, Command("start"))
         self.dp.message.register(self.start_server, F.text == "🚀 Запустить сервер", StateFilter(State.user_main_menu, State.admin_main_menu))
+        self.dp.message.register(self.stop_server, F.text == "🛑 Остановить сервер", StateFilter(State.admin_main_menu))
         self.dp.message.register(self.reload_bot, F.text == "🔄 Перезапустить бота", StateFilter(State.admin_main_menu))
         self.dp.message.register(self.nonmess)
 
@@ -169,16 +171,21 @@ class Bott:
 
     async def start_server(self, message: Message, state: FSMContext):
         msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": True}
-        print("\033[3;32m ______________________________________________________ \033[0m")
+        msg2 = {"to_process": "server", "from_process": "bot", "command": "get_server_work_data", "data": ''}
         ans = await self.request(msg)
-        print("\033[4;32m ______________________________________________________ \033[0m")
-        await message.answer(str(ans["data"]))
+        if "dabble_start_flag" in ans:
+            if ans["dabble_start_flag"] == True:
+                self.services_states["server_status"] = True
+                await message.answer("Сервер уже запущен!", )
+            elif ans["dabble_start_flag"] == False :
+                await message.answer("Сервер запускается...")
+                ans2 = await self.request(msg2)
+                await self.bot.send_message(chat_id=message.chat.id, text=f"Параметры запуска: {ans2["data"]}")
 
     async def stop_server(self, message: Message, state: FSMContext):
-        msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": True}
+        msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": False}
         ans = await self.request(msg)
-        print(123)
-        await message.answer(ans["data"])
+        await message.answer((f"Сервер успешно остановлен! Время последнего сеанса: {"БУДЕТ ПОТОМ!" + " " + str(ans["data"]) }" if ans["data"] == False else "СЕРВЕР НЕУСПЕШНО НЕ ОСТАНОВЛЕН!!!!"))
 
     async def reload_bot(self, message: Message, state: FSMContext):
         msg = {"to_process": "connector", "from_process": "bot", "command": "reload_bot", "data": ""}
@@ -212,7 +219,10 @@ class Bott:
             self._response_task = asyncio.create_task(self._response_listener())
             print("Bot successfully started...")
             await self.bot.send_message(1007806948, "Bot successfully started... /start")
+            msg = {"to_process": "server", "from_process": "bot", "command": "get_server_status", "data": ''}
+            self.services_states["server_status"] = await self.request(msg)
             await self.dp.start_polling(self.bot)
+
         except Exception as exc:
             print(f"Ошибка в боте: {exc}")
             import traceback

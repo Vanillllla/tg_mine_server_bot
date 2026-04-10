@@ -74,6 +74,9 @@ class ProcessConnector:
                     self.main_child_conn.send(msg)
                 elif msg["to_process"] == "gui":
                     self.ui_parent_conn.send(msg)
+                elif msg["to_process"] == "bot":
+                    if self.bot_parent_conn:
+                        self.bot_parent_conn.send(msg)
             except EOFError:
                 print(self.server_prefix, "Канал закрыт, завершаем чтение")
                 break

@@ -28,8 +28,12 @@ class ServerSystem:
                 msg = self.conn.recv()
 
                 if msg["command"] == "set_server_status" and msg["data"] == True:
+                    print("_______________" + str(self.is_running()))
                     if not self.is_running():
                         self.start_server()
+                        dabble_start_flag = False
+                    else:
+                        dabble_start_flag = True
                     status = self.is_running()
                     self._send(
                         {
@@ -38,6 +42,7 @@ class ServerSystem:
                             "command": "set_server_status",
                             "data": status,
                             "request_id": msg.get("request_id"),
+                            "dabble_start_flag": dabble_start_flag,
                         }
                     )
                 elif msg["command"] == "set_server_status" and msg["data"] == False:
@@ -58,10 +63,25 @@ class ServerSystem:
                 elif msg["command"] == "get_server_status":
                     self._send(
                         {
-                            "to_process": "gui",
+                            "to_process": msg.get("from_process"),
                             "from_process": "server",
                             "command": "set_server_status",
                             "data": self.is_running(),
+                            "request_id": msg.get("request_id"),
+                        }
+                    )
+                elif msg["command"] == "get_server_work_data":
+                    self._send(
+                        {
+                            "to_process": msg.get("from_process"),
+                            "from_process": "server",
+                            "command": "set_server_work_data",
+                            "data": {
+                                "status": self.is_running(),
+                                "start_time": '',
+                                "launch_time": '',
+
+                            },
                             "request_id": msg.get("request_id"),
                         }
                     )
