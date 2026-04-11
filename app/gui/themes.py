@@ -39,7 +39,7 @@ class Themes:
                 background-color: {colors['button_bg']};
                 border: 1px solid {colors['border']};
                 color: {colors['button_text']};
-                border-radius: 10px;
+                border-radius: 4px;
                 padding: 6px 12px;
             }}
             QPushButton:hover {{
@@ -57,7 +57,7 @@ class Themes:
                 background-color: {colors['button_primary_bg']};
                 border: 1px solid {colors['button_primary_border']};
                 color: {colors['button_primary_text']};
-                font-weight: 600;
+                font-weight: 60;
             }}
             QPushButton#startServerButton:hover, QPushButton#bot_control_button:hover, QPushButton#saveOut:hover, QPushButton#selectFileButton:hover {{
                 background-color: {colors['button_primary_hover']};

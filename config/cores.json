@@ -1,10 +1,10 @@
 {
     "1": {
-        "name": "server.jar",
+        "name": "server1710.jar",
         "xms": 256,
         "xmx": 2048,
         "core_name": "",
-        "core_folder": "C:\\Users\\ivanm\\PycharmProjects\\tg_mine_server_bot\\Servers\\1_server_server",
+        "core_folder": "C:\\Users\\ivanm\\PycharmProjects\\tg_mine_server_bot\\Servers\\2_server_server1710",
         "eula_accept": false,
         "jave_version": "",
         "java_path": ""

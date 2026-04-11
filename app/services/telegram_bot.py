@@ -1,7 +1,6 @@
 import asyncio
 import json
 import os
-import threading
 import time
 import uuid
 from multiprocessing.connection import Connection
@@ -20,6 +19,7 @@ from app.core.paths import config_path
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 VANILLA = os.getenv("VANILLA")
+
 
 class BotKeyboards:
     @staticmethod
@@ -49,7 +49,8 @@ class BotKeyboards:
     def admin_main() -> ReplyKeyboardMarkup:
         keyboard = [
             [KeyboardButton(text="🚀 Запустить сервер"), KeyboardButton(text="🛑 Остановить сервер")],
-            [KeyboardButton(text="👥 Онлайн на сервере"),KeyboardButton(text="🔄 Перезапустить бота"), KeyboardButton(text="💻 Консоль")],
+            [KeyboardButton(text="👥 Онлайн на сервере"), KeyboardButton(text="🔄 Перезапустить бота"),
+             KeyboardButton(text="💻 Консоль")],
             [KeyboardButton(text="⚙️ Настройки"), KeyboardButton(text="test")],
         ]
         return ReplyKeyboardMarkup(
@@ -100,6 +101,7 @@ class BotKeyboards:
             resize_keyboard=True
         )
 
+
 class States(StatesGroup):
     user_main_menu = State()
     user_dop_manu = State()
@@ -119,16 +121,12 @@ class Bott:
         self.pending = {}
         self._response_task = None
         self.services_states = {"server_status": False}
-        # self.state_updater = threading.Thread(target=self._state_updater, daemon=True)
-        # self.tester = threading.Thread(target=self.test, daemon=True)
 
     async def _state_updater(self):
-        i = 0
-        while True:
-            i+= 1
-            print("Updating state...{}".format(i))
-            self.services_states["test"] = i
-            time.sleep(1)
+        msg = {"to_process": "server", "from_process": "bot", "command": "get_server_work_data", "data": ''}
+        ans = await self.request(msg)
+        self.services_states.update(ans["data"])
+        time.sleep(5)
 
     async def request(self, data: dict, timeout: float = 90.0) -> dict:
         req_id = str(uuid.uuid4())
@@ -172,10 +170,10 @@ class Bott:
 
     def _register_handlers(self):
         self.dp.message.register(self.start, Command("start"))
-        self.dp.message.register(self.start_server, F.text == "🚀 Запустить сервер", StateFilter(States.user_main_menu, States.admin_main_menu))
+        self.dp.message.register(self.start_server, F.text == "🚀 Запустить сервер",
+                                 StateFilter(States.user_main_menu, States.admin_main_menu))
         self.dp.message.register(self.stop_server, F.text == "🛑 Остановить сервер", StateFilter(States.admin_main_menu))
         self.dp.message.register(self.reload_bot, F.text == "🔄 Перезапустить бота", StateFilter(States.admin_main_menu))
-        # self.dp.message.register(self.test, F.text == "1")
         self.dp.message.register(self.nonmess)
 
     async def server_switch(self, message: Message, state: FSMContext):
@@ -190,7 +188,7 @@ class Bott:
             if ans["dabble_start_flag"] == True:
                 self.services_states["server_status"] = True
                 await message.answer("Сервер уже запущен!", )
-            elif ans["dabble_start_flag"] == False :
+            elif ans["dabble_start_flag"] == False:
                 await message.answer("Сервер запускается...")
                 ans2 = await self.request(msg2)
                 await self.bot.send_message(chat_id=message.chat.id, text=f"Параметры запуска: {ans2["data"]}")
@@ -198,7 +196,9 @@ class Bott:
     async def stop_server(self, message: Message, state: FSMContext):
         msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": False}
         ans = await self.request(msg)
-        await message.answer((f"Сервер успешно остановлен! Время последнего сеанса: {"БУДЕТ ПОТОМ!" + " " + str(ans["data"]) }" if ans["data"] == False else "СЕРВЕР НЕУСПЕШНО НЕ ОСТАНОВЛЕН!!!!"))
+        await message.answer((
+                                 f"Сервер успешно остановлен! Время последнего сеанса: {"БУДЕТ ПОТОМ!" + " " + str(ans["data"])}" if
+                                 ans["data"] == False else "СЕРВЕР НЕУСПЕШНО НЕ ОСТАНОВЛЕН!!!!"))
 
     async def reload_bot(self, message: Message, state: FSMContext):
         msg = {"to_process": "connector", "from_process": "bot", "command": "reload_bot", "data": ""}
@@ -218,7 +218,7 @@ class Bott:
     async def start(self, message: Message, state: FSMContext):
         print(self.services_states)
         self.profile = {"status": 1 if str(message.from_user.id) == str(VANILLA) else 0, "userid": message.from_user.id}
-        if self.profile["status"] == 1 :
+        if self.profile["status"] == 1:
             await state.set_state(States.admin_main_menu)
             await message.answer(
                 f"Выберите действие: {self.profile}",
@@ -231,17 +231,10 @@ class Bott:
     async def run(self):
         try:
             self._response_task = asyncio.create_task(self._response_listener())
-
-
-            self.state_updater = asyncio.create_task(self._state_updater())
-            # self.state_updater.run()
-            # time.sleep(3)            # self.tester = asyncio.create_task(self.test())
-            print(self.services_states)
+            self._state_updater_task = asyncio.create_task(self._state_updater())
 
             print("Bot successfully started...")
             await self.bot.send_message(1007806948, "Bot successfully started... /start")
-            # msg = {"to_process": "server", "from_process": "bot", "command": "get_server_status", "data": ''}
-            # self.services_states["server_status"] = await self.request(msg)
 
             await self.dp.start_polling(self.bot)
 
