@@ -103,7 +103,7 @@ class ServerSystem:
             core_list = json.load(file)
 
         if settings["active_core"] == "":
-            self._send({"to_process": "gui", "from_process": "server", "command": "error_out", "data": 1})
+            self._send({"to_process": "gui", "from_process": "server", "command": "error_out", "data": "core_file_not_found_or_selected"})
             return
 
         core = Path(core_list[settings["active_core"]]["core_folder"]) / (

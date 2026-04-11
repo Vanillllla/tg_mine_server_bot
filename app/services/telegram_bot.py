@@ -216,7 +216,6 @@ class Bott:
         )
 
     async def start(self, message: Message, state: FSMContext):
-        print(self.services_states)
         self.profile = {"status": 1 if str(message.from_user.id) == str(VANILLA) else 0, "userid": message.from_user.id}
         if self.profile["status"] == 1:
             await state.set_state(States.admin_main_menu)

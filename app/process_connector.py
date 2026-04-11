@@ -95,6 +95,7 @@ class ProcessConnector:
                     self.server_parent_conn.send(msg)
             except EOFError:
                 print(self.ui_prefix, "Канал закрыт, завершаем чтение")
+                self.main_child_conn.send({"command": "exit"})
                 break
             except Exception as exc:
                 print(self.ui_prefix, f"Ошибка чтения из канала: {exc}")
@@ -159,6 +160,8 @@ class ProcessConnector:
                 elif msg["command"] == "restart":
                     pass
                 elif msg["command"] == "exit":
+                    self.server_parent_conn.send(
+                        {"to_process": "server", "from_process": "gui", "command": "set_server_status", "data": False})
                     sys.exit()
             except EOFError:
                 print(self.main_prefix, "Канал закрыт, завершаем чтение")

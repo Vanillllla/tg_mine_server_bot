@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import threading
+from pathlib import Path
 
 os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 
@@ -20,7 +21,6 @@ from app.gui.upload_window import UploadWindow
 
 class MyApp(QMainWindow):
     pipe_message = pyqtSignal(dict)
-
     def __init__(self, conn):
         super().__init__()
         self.upload_window = None
@@ -73,6 +73,7 @@ class MyApp(QMainWindow):
         self.restart_action.triggered.connect(self.restart_program)
         self.action_GitHub.triggered.connect(self.open_github)
         self.bot_control_button.clicked.connect(self.start_bot)
+        self.openfolderButton.clicked.connect(self.open_folder)
 
         self.console_output.setMaximumBlockCount(3000)
         self.console_input.returnPressed.connect(self.send_server_command)
@@ -212,6 +213,16 @@ class MyApp(QMainWindow):
             self.startServerButton.setText(t(self.language, "server_start"))
             self.startServerButton.setStyleSheet("color: #00CC00;")
         self._update_tray_labels()
+
+    def open_folder(self):
+        with config_path("cores.json").open("r", encoding="utf-8") as file:
+            core_list = json.load(file)
+
+        if self.settings["active_core"] != "":
+            path = str(core_list[str(self.settings["active_core"])]["core_folder"])
+            QDesktopServices.openUrl(QUrl.fromLocalFile(path))
+        else:
+            self.error_output({'from_process': "GUI", "data": 'core_folder_not_selected'})
 
     def start_server(self):
         if self.server_is_active:
