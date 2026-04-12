@@ -83,6 +83,17 @@ class ServerSystem:
                     self._try_toggle_rcon(msg.get("data"))
                 elif msg["command"] == "server_command":
                     self.send_commands(msg["data"])
+                elif msg["command"] == "server_rcon_commaand":
+                    response_text = self.handle_server_rcon_commaand(msg.get("data", ""))
+                    self._send(
+                        {
+                            "to_process": msg.get("from_process"),
+                            "from_process": "server",
+                            "command": "server_rcon_commaand",
+                            "data": response_text,
+                            "request_id": msg.get("request_id"),
+                        }
+                    )
                 elif msg["command"] == "get_server_status":
                     self._try_toggle_rcon(True)
                     self._send(
@@ -267,6 +278,96 @@ class ServerSystem:
                 return payload.get("version", {}).get("name")
         except Exception:
             return None
+
+    @staticmethod
+    def _read_rcon_packet(sock: socket.socket):
+        packet_len_raw = ServerSystem._read_exact(sock, 4)
+        packet_len = int.from_bytes(packet_len_raw, "little", signed=True)
+        if packet_len < 10:
+            raise ValueError("rcon_invalid_packet_length")
+
+        payload = ServerSystem._read_exact(sock, packet_len)
+        request_id = int.from_bytes(payload[0:4], "little", signed=True)
+        packet_type = int.from_bytes(payload[4:8], "little", signed=True)
+        body_bytes = payload[8:-2]
+        body = body_bytes.decode("utf-8", errors="replace")
+        return request_id, packet_type, body
+
+    @staticmethod
+    def _write_rcon_packet(sock: socket.socket, request_id: int, packet_type: int, body: str):
+        body_bytes = (body or "").encode("utf-8")
+        payload = (
+            int(request_id).to_bytes(4, "little", signed=True)
+            + int(packet_type).to_bytes(4, "little", signed=True)
+            + body_bytes
+            + b"\x00\x00"
+        )
+        sock.sendall(len(payload).to_bytes(4, "little", signed=True) + payload)
+
+    @staticmethod
+    def _get_rcon_params_from_active_core():
+        with config_path("program_settings.json").open("r", encoding="utf-8") as file:
+            settings = json.load(file)
+        with config_path("cores.json").open("r", encoding="utf-8") as file:
+            core_list = json.load(file)
+
+        active_core = str(settings.get("active_core", ""))
+        if not active_core:
+            raise ValueError("active_core_not_selected")
+        if active_core not in core_list:
+            raise ValueError("active_core_not_found_in_cores")
+
+        server_dir = core_list[active_core].get("core_folder", "")
+        if not server_dir:
+            raise ValueError("active_core_folder_not_set")
+
+        properties_path = Path(server_dir) / "server.properties"
+        if not properties_path.is_file():
+            raise FileNotFoundError(f"server_properties_not_found: {properties_path}")
+
+        props = {}
+        for row in properties_path.read_text(encoding="utf-8", errors="replace").splitlines():
+            stripped = row.strip()
+            if stripped and not stripped.startswith("#") and "=" in row:
+                key, value = row.split("=", 1)
+                props[key.strip()] = value.strip()
+
+        if props.get("enable-rcon", "false").lower() != "true":
+            raise ValueError("rcon_disabled")
+
+        host = props.get("server-ip") or "127.0.0.1"
+        port = int(props.get("rcon.port", "25575"))
+        password = props.get("rcon.password", "")
+        if not password:
+            raise ValueError("rcon_password_not_set")
+        return host, port, password
+
+    def execute_rcon_command(self, command: str, timeout: float = 5.0) -> str:
+        host, port, password = self._get_rcon_params_from_active_core()
+        with socket.create_connection((host, port), timeout=timeout) as sock:
+            sock.settimeout(timeout)
+
+            self._write_rcon_packet(sock, request_id=1, packet_type=3, body=password)
+            auth_id, _, _ = self._read_rcon_packet(sock)
+            if auth_id == -1:
+                raise PermissionError("rcon_auth_failed")
+
+            self._write_rcon_packet(sock, request_id=2, packet_type=2, body=command)
+            response_id, _, response_body = self._read_rcon_packet(sock)
+            if response_id == -1:
+                raise PermissionError("rcon_command_rejected")
+            return response_body
+
+    def handle_server_rcon_commaand(self, command: str) -> str:
+        try:
+            if not isinstance(command, str):
+                return "rcon_invalid_command_type"
+            cmd = command.strip()
+            if not cmd:
+                return "rcon_empty_command"
+            return self.execute_rcon_command(cmd)
+        except Exception as exc:
+            return f"rcon_command_failed: {exc}"
 
     @staticmethod
     def _save_minecraft_version(core_id: str, version: str):
