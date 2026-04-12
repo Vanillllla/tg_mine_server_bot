@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QMessageBox, QSyst
 from app.core.dirs_manager import DirsManager
 from app.core.paths import config_path, icon_path, ui_path
 from app.gui.i18n import normalize_language, t
+from app.gui.server_settings_window import ServerSettingsWindow
 from app.gui.settings_window import SettingsWindow
 from app.gui.themes import Themes
 from app.gui.upload_window import UploadWindow
@@ -25,6 +26,7 @@ class MyApp(QMainWindow):
         super().__init__()
         self.upload_window = None
         self.settings_window = None
+        self.server_settings_window = None
         self.manager = DirsManager()
         self.conn = conn
         self.bot_is_active = False
@@ -65,6 +67,7 @@ class MyApp(QMainWindow):
 
         self.coreSelectBox.currentIndexChanged.connect(self.on_core_selected)
         self.startServerButton.clicked.connect(self.start_server)
+        self.settingsServerButton.clicked.connect(self.open_server_settings_window)
         self.upload_core_action.triggered.connect(self.open_upload_cores_window)
         self.open_setings_action.triggered.connect(self.open_settings_window)
         self.auto_start_last_core_action.triggered.connect(self.auto_start_last_core)
@@ -285,6 +288,14 @@ class MyApp(QMainWindow):
         self.apply_theme()
         self.apply_localization()
         self.load_cores_to_combobox()
+
+    def open_server_settings_window(self):
+        active_core = self.settings.get("active_core", "")
+        if not active_core:
+            QMessageBox.warning(self, t(self.language, "error_title"), t(self.language, "active_core_not_selected"))
+            return
+        self.server_settings_window = ServerSettingsWindow(self, active_core)
+        self.server_settings_window.exec_()
 
     def open_settings_window(self):
         self.settings_window = SettingsWindow(self)
