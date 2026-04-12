@@ -299,6 +299,8 @@ class MyApp(QMainWindow):
             QMessageBox.warning(self, t(self.language, "error_title"), t(self.language, "active_core_not_selected"))
             return
         self.server_settings_window = ServerSettingsWindow(self, active_core)
+        if getattr(self.server_settings_window, "init_failed", False):
+            return
         self.server_settings_window.exec_()
 
     def open_settings_window(self):

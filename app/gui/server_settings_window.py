@@ -55,6 +55,7 @@ class ServerSettingsWindow(QDialog):
         self.difficultyLabel.setText(t(lang, "server_difficulty"))
 
         self.onlineModeCheckBox.setText(t(lang, "server_online_mode"))
+        self.rconCheckBox.setText(t(lang, "server_rcon_toggle"))
         self.viewDistanceLabel.setText(t(lang, "server_view_distance"))
         self.portLabel.setText(t(lang, "server_port"))
         self.motdLabel.setText(t(lang, "server_motd"))
@@ -66,16 +67,17 @@ class ServerSettingsWindow(QDialog):
         self.cancelButton.setText(t(lang, "settings_cancel"))
 
     def load_values(self):
+        self.init_failed = False
         if not self.active_core:
             QMessageBox.warning(self, t(self.language, "error_title"), t(self.language, "core_not_selected"))
-            self.reject()
+            self.init_failed = True
             return
 
         try:
             self.properties = PropertiesCustomizer.get_properties(self.active_core)
         except Exception as exc:
             QMessageBox.warning(self, t(self.language, "error_title"), str(exc))
-            self.reject()
+            self.init_failed = True
             return
 
         def to_bool(key: str, default=False):
@@ -96,6 +98,7 @@ class ServerSettingsWindow(QDialog):
         self.difficultyComboBox.setCurrentIndex(max(idx, 0))
 
         self.onlineModeCheckBox.setChecked(to_bool("online-mode", True))
+        self.rconCheckBox.setChecked(to_bool("enable-rcon", False))
         self.viewDistanceLineEdit.setText(str(to_int("view-distance", "")))
         self.serverPortLineEdit.setText(str(to_int("server-port", "")))
         self.motdTextEdit.setPlainText(self.properties.get("motd", ""))
@@ -145,6 +148,7 @@ class ServerSettingsWindow(QDialog):
             "enable-command-block": "true" if self.commandBlockCheckBox.isChecked() else "false",
             "spawn-monsters": "true" if self.spawnMonstersCheckBox.isChecked() else "false",
             "online-mode": "true" if self.onlineModeCheckBox.isChecked() else "false",
+            "enable-rcon": "true" if self.rconCheckBox.isChecked() else "false",
             "difficulty": self.difficultyComboBox.currentText(),
             "motd": self.motdTextEdit.toPlainText().replace("\r", ""),
         }

@@ -31,6 +31,18 @@ class ServerSystem:
         self.startup_log_tail = deque(maxlen=10)
         self.pending_work_data_requests = []
 
+    def _try_toggle_rcon(self, value=True):
+        try:
+            self.toggle_rcon_in_active_core(value)
+        except (ValueError, FileNotFoundError):
+            return
+
+    @staticmethod
+    def _active_core_selected() -> bool:
+        with config_path("program_settings.json").open("r", encoding="utf-8") as file:
+            settings = json.load(file)
+        return bool(settings.get("active_core"))
+
     def _read_from_connector(self):
         while True:
             try:
@@ -67,11 +79,11 @@ class ServerSystem:
                         }
                     )
                 elif msg["command"] == "set_server_rcon":
-                    self.toggle_rcon_in_active_core(msg.get("data"))
+                    self._try_toggle_rcon(msg.get("data"))
                 elif msg["command"] == "server_command":
                     self.send_commands(msg["data"])
                 elif msg["command"] == "get_server_status":
-                    self.toggle_rcon_in_active_core(True)
+                    self._try_toggle_rcon(True)
                     self._send(
                         {
                             "to_process": msg.get("from_process"),
@@ -82,6 +94,18 @@ class ServerSystem:
                         }
                     )
                 elif msg["command"] == "get_server_work_data":
+                    if not self._active_core_selected():
+                        self._send(
+                            {
+                                "to_process": msg.get("from_process"),
+                                "from_process": "server",
+                                "command": "set_server_work_data",
+                                "data": {},
+                                "request_id": msg.get("request_id"),
+                            }
+                        )
+                        continue
+
                     should_send_now = False
                     with self.state_lock:
                         if self.is_starting:

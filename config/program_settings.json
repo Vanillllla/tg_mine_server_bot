@@ -5,8 +5,8 @@
     "serve_host_name": "",
     "telegram_bot_token": "",
     "use_modern_style": true,
-    "use_last_active_core": true,
-    "active_core": "1",
+    "use_last_active_core": false,
+    "active_core": "2",
     "language": "ru",
     "debag_mode": false
 }
