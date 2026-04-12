@@ -5,6 +5,9 @@ logs
 __pycache__/
 *.pyc
 
+/config/cores.json
+/config/program_settings.json
+
 /downloads_cores/
 /media/
 /Servers/
