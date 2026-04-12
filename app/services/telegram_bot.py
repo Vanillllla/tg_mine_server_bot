@@ -190,10 +190,11 @@ class Bott:
         self.dp.message.register(self.stop_server, F.text == "🔴 Остановить сервер 🔴",
                                  StateFilter(States.admin_main_menu))
         self.dp.message.register(self.reload_bot, F.text == "🔄 Перезапустить бота", StateFilter(States.admin_main_menu))
-        self.dp.message.register(self.chek_online, F.text == "👥 Онлайн на сервере", StateFilter(States.admin_main_menu, States.user_main_menu))
-        self.dp.message.register(self.nonmess_main_menu, StateFilter(States.user_main_menu, States.admin_main_menu))
+        self.dp.message.register(self.chek_online, F.text == "👥 Онлайн на сервере",
+                                 StateFilter(States.admin_main_menu, States.user_main_menu))
+        self.dp.message.register(self.noname_main_menu, StateFilter(States.user_main_menu, States.admin_main_menu))
 
-        self.dp.message.register(self.nonmess_no_auth)
+        self.dp.message.register(self.noname_no_auth)
 
     async def server_switch(self, message: Message, state: FSMContext):
         msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": True}
@@ -241,15 +242,17 @@ class Bott:
         self.pipe_send(msg)
 
     async def chek_online(self, message: Message, state: FSMContext):
-        pass
+        msg = {"to_process": "server", "from_process": "bot", "command": "server_command","data": "?"}
+        ans = await self.request(msg)
+        print(ans)
 
-
-    async def nonmess_main_menu(self, message: Message):
+    async def noname_main_menu(self, message: Message):
         await message.answer("Неизвестная команда",
-                reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
-                                                       server_status=self.server_info["status"]))
+                             reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
+                                                                    server_status=self.server_info["status"]))
 
-    async def nonmess_no_auth(self, message: Message):
+    @staticmethod
+    async def noname_no_auth(message: Message):
         await message.answer("Введите /start для входа", reply_markup=ReplyKeyboardRemove())
 
     async def start(self, message: Message, state: FSMContext):

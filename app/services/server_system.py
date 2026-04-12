@@ -31,6 +31,134 @@ class ServerSystem:
         self.startup_log_tail = deque(maxlen=10)
         self.pending_work_data_requests = []
 
+    def _read_from_connector(self):
+        while True:
+            try:
+                msg = self.conn.recv()
+
+                if msg["command"] == "set_server_status" and msg["data"] == True:
+                    if not self.is_running() and not self.is_starting:
+                        self.start_server()
+                        dabble_start_flag = False
+                    else:
+                        dabble_start_flag = True
+                    status = self.is_running()
+                    self._send(
+                        {
+                            "to_process": msg.get("from_process"),
+                            "from_process": "server",
+                            "command": "set_server_status",
+                            "data": status,
+                            "request_id": msg.get("request_id"),
+                            "dabble_start_flag": dabble_start_flag,
+                        }
+                    )
+                elif msg["command"] == "set_server_status" and msg["data"] == False:
+                    if self.is_running() or self.is_starting:
+                        self.stop_server()
+                    status = self.is_running()
+                    self._send(
+                        {
+                            "to_process": msg.get("from_process"),
+                            "from_process": "server",
+                            "command": "set_server_status",
+                            "data": status,
+                            "request_id": msg.get("request_id"),
+                        }
+                    )
+                elif msg["command"] == "set_server_rcon":
+                    self.toggle_rcon_in_active_core(msg.get("data"))
+                elif msg["command"] == "server_command":
+                    self.send_commands(msg["data"])
+                elif msg["command"] == "get_server_status":
+                    self.toggle_rcon_in_active_core(True)
+                    self._send(
+                        {
+                            "to_process": msg.get("from_process"),
+                            "from_process": "server",
+                            "command": "set_server_status",
+                            "data": self.is_running(),
+                            "request_id": msg.get("request_id"),
+                        }
+                    )
+                elif msg["command"] == "get_server_work_data":
+                    should_send_now = False
+                    with self.state_lock:
+                        if self.is_starting:
+                            self.pending_work_data_requests.append(msg)
+                        else:
+                            should_send_now = True
+                    if should_send_now:
+                        self._send_work_data_response(msg)
+
+            except EOFError as exc:
+                print(self.conn, exc)
+
+    @staticmethod
+    def toggle_rcon_in_active_core(enable_rcon=None):
+        with config_path("program_settings.json").open("r", encoding="utf-8") as file:
+            settings = json.load(file)
+        with config_path("cores.json").open("r", encoding="utf-8") as file:
+            core_list = json.load(file)
+
+        active_core = str(settings.get("active_core", ""))
+        if not active_core:
+            raise ValueError("active_core_not_selected")
+        if active_core not in core_list:
+            raise ValueError("active_core_not_found_in_cores")
+
+        server_dir = core_list[active_core].get("core_folder", "")
+        if not server_dir:
+            raise ValueError("active_core_folder_not_set")
+
+        properties_path = Path(server_dir) / "server.properties"
+        if not properties_path.is_file():
+            raise FileNotFoundError(f"server_properties_not_found: {properties_path}")
+
+        text = properties_path.read_text(encoding="utf-8", errors="replace")
+        lines = text.splitlines()
+
+        values = {}
+        for line in lines:
+            stripped = line.strip()
+            if stripped and not stripped.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
+                values[key.strip()] = value.strip()
+
+        current_enable = values.get("enable-rcon", "false").lower() == "true"
+        target_enable = (not current_enable) if enable_rcon is None else bool(enable_rcon)
+        target_values = {
+            "enable-rcon": "true" if target_enable else "false",
+            "rcon.port": "25575",
+            "rcon.password": "VERY_STRONG_PASSWORD_HERE",
+            "broadcast-rcon-to-ops": "false",
+        }
+
+        def upsert(items, key, value):
+            prefix = f"{key}="
+            for i, row in enumerate(items):
+                if row.strip().startswith(prefix):
+                    items[i] = f"{key}={value}"
+                    return
+            items.append(f"{key}={value}")
+
+        for key, value in target_values.items():
+            upsert(lines, key, value)
+
+        final_text = "\n".join(lines)
+        if text.endswith("\n"):
+            final_text += "\n"
+
+        properties_path.write_text(final_text, encoding="utf-8")
+
+        return {
+            "server_properties_path": str(properties_path),
+            "enable_rcon": target_values["enable-rcon"],
+            "rcon_port": target_values["rcon.port"],
+            "rcon_password": target_values["rcon.password"],
+            "broadcast_rcon_to_ops": target_values["broadcast-rcon-to-ops"],
+        }
+
     def _send(self, payload):
         with self.conn_send_lock:
             self.conn.send(payload)
@@ -52,7 +180,8 @@ class ServerSystem:
             server_work_started_at = self.server_work_started_at
 
         status = self.is_running()
-        work_time = round(time.time() - server_work_started_at, 2) if status and server_work_started_at is not None else None
+        work_time = round(time.time() - server_work_started_at,
+                          2) if status and server_work_started_at is not None else None
 
         return {
             "status": status,
@@ -89,66 +218,6 @@ class ServerSystem:
         for msg in pending:
             self._send_work_data_response(msg)
 
-    def _read_from_connector(self):
-        while True:
-            try:
-                msg = self.conn.recv()
-
-                if msg["command"] == "set_server_status" and msg["data"] == True:
-                    if not self.is_running() and not self.is_starting:
-                        self.start_server()
-                        dabble_start_flag = False
-                    else:
-                        dabble_start_flag = True
-                    status = self.is_running()
-                    self._send(
-                        {
-                            "to_process": msg.get("from_process"),
-                            "from_process": "server",
-                            "command": "set_server_status",
-                            "data": status,
-                            "request_id": msg.get("request_id"),
-                            "dabble_start_flag": dabble_start_flag,
-                        }
-                    )
-                elif msg["command"] == "set_server_status" and msg["data"] == False:
-                    if self.is_running() or self.is_starting:
-                        self.stop_server()
-                    status = self.is_running()
-                    self._send(
-                        {
-                            "to_process": msg.get("from_process"),
-                            "from_process": "server",
-                            "command": "set_server_status",
-                            "data": status,
-                            "request_id": msg.get("request_id"),
-                        }
-                    )
-                elif msg["command"] == "server_command":
-                    self.send_commands(msg["data"])
-                elif msg["command"] == "get_server_status":
-                    self._send(
-                        {
-                            "to_process": msg.get("from_process"),
-                            "from_process": "server",
-                            "command": "set_server_status",
-                            "data": self.is_running(),
-                            "request_id": msg.get("request_id"),
-                        }
-                    )
-                elif msg["command"] == "get_server_work_data":
-                    should_send_now = False
-                    with self.state_lock:
-                        if self.is_starting:
-                            self.pending_work_data_requests.append(msg)
-                        else:
-                            should_send_now = True
-                    if should_send_now:
-                        self._send_work_data_response(msg)
-
-            except EOFError as exc:
-                print(self.conn, exc)
-
     def is_running(self):
         if self.process is None:
             return False
@@ -180,7 +249,8 @@ class ServerSystem:
                 self.last_start_duration = 0.0
                 self.start_error = "core_file_not_found_or_selected"
 
-            self._send({"to_process": "gui", "from_process": "server", "command": "error_out", "data": "core_file_not_found_or_selected"})
+            self._send({"to_process": "gui", "from_process": "server", "command": "error_out",
+                        "data": "core_file_not_found_or_selected"})
             self._flush_pending_work_data_requests()
             return
 
@@ -221,8 +291,10 @@ class ServerSystem:
             self._flush_pending_work_data_requests()
             return
 
-        self.stdout_thread = threading.Thread(target=self.read_output, args=(self.process.stdout, "STDOUT"), daemon=True)
-        self.stderr_thread = threading.Thread(target=self.read_output, args=(self.process.stderr, "STDERR"), daemon=True)
+        self.stdout_thread = threading.Thread(target=self.read_output, args=(self.process.stdout, "STDOUT"),
+                                              daemon=True)
+        self.stderr_thread = threading.Thread(target=self.read_output, args=(self.process.stderr, "STDERR"),
+                                              daemon=True)
         self.stdout_thread.start()
         self.stderr_thread.start()
 
