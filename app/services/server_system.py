@@ -254,15 +254,35 @@ class ServerSystem:
             self._flush_pending_work_data_requests()
             return
 
-        core = Path(core_list[settings["active_core"]]["core_folder"]) / (
-            f"{settings['active_core']}_{core_list[settings['active_core']]['name']}"
-        )
+        core_info = core_list[settings["active_core"]]
+        core = Path(core_info["core_folder"]) / (f"{settings['active_core']}_{core_info['name']}")
         full_core_path = core.absolute()
         server_directory = full_core_path.parent
 
+        def _memory_mb(key: str, default: int):
+            value = core_info.get(key, default)
+            try:
+                value = int(value)
+            except Exception:
+                value = default
+            return max(value, 64)
+
+        xms_mb = _memory_mb("xms", 256)
+        xmx_mb = _memory_mb("xmx", 1024)
+        if xmx_mb < xms_mb:
+            xmx_mb = xms_mb
+
         try:
             self.process = subprocess.Popen(
-                ["java", "-Dfile.encoding=UTF-8", "-Xmx1024M", "-Xms256M", "-jar", str(full_core_path), "nogui"],
+                [
+                    "java",
+                    "-Dfile.encoding=UTF-8",
+                    f"-Xmx{xmx_mb}M",
+                    f"-Xms{xms_mb}M",
+                    "-jar",
+                    str(full_core_path),
+                    "nogui",
+                ],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,

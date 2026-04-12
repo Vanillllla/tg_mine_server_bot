@@ -21,12 +21,14 @@
     },
     "3": {
         "name": "minecraft_server.1.16.5.jar",
-        "xms": 256,
-        "xmx": 2048,
+        "xms": 1024,
+        "xmx": 20480,
         "core_name": "",
         "core_folder": "C:\\Users\\ivanm\\PycharmProjects\\tg_mine_server_bot\\Servers\\3_server_magma-1-16-5",
         "eula_accept": false,
         "jave_version": "",
-        "java_path": ""
+        "java_path": "",
+        "xms_unit": "GB",
+        "xmx_unit": "GB"
     }
 }

@@ -1,216 +1,199 @@
-from typing import Dict, Any
+import json
+from typing import Dict
 
 from PyQt5 import uic
 from PyQt5.QtCore import QUrl
-from PyQt5.QtGui import QIcon, QDesktopServices
-from PyQt5.QtWidgets import QDialog, QMessageBox
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox
+from PyQt5.Qt import QDesktopServices
 
-from app.core.paths import icon_path, ui_path
+from app.core.paths import config_path, icon_path, ui_path
 from app.core.properties_customizer import PropertiesCustomizer
 from app.gui.i18n import normalize_language, t
 
 
 class ServerSettingsWindow(QDialog):
-    def __init__(self, parent=None, core_id: str = ""):
+    def __init__(self, parent=None, core_id: str = None):
         super().__init__(parent)
-        self.core_id = str(core_id or "")
-        self.language = normalize_language(getattr(parent, "language", "ru"))
-        self.customizer = PropertiesCustomizer()
+        self.settings_file = config_path("program_settings.json")
+        self.cores_file = config_path("cores.json")
+
         uic.loadUi(ui_path("server_settings_ui.ui"), self)
         self.setWindowIcon(QIcon(icon_path("icon.ico")))
 
-        self._difficulty_options = [
-            ("peaceful", "server_settings_difficulty_peaceful"),
-            ("easy", "server_settings_difficulty_easy"),
-            ("normal", "server_settings_difficulty_normal"),
-            ("hard", "server_settings_difficulty_hard"),
-        ]
+        with self.settings_file.open("r", encoding="utf-8") as file:
+            self.settings = json.load(file)
+        self.settings.setdefault("language", "ru")
+        self.language = normalize_language(self.settings.get("language", "ru"))
 
-        self._wire_signals()
-        self._populate_difficulty()
-        self.apply_localization()
+        with self.cores_file.open("r", encoding="utf-8") as file:
+            self.cores = json.load(file)
 
-        try:
-            self.load_properties()
-            self._show_status(t(self.language, "server_settings_status_idle"))
-        except Exception as exc:
-            self._show_error(exc)
-            self._show_status(t(self.language, "server_settings_status_error"))
+        self.active_core = str(core_id) if core_id else str(self.settings.get("active_core", ""))
+        self.properties: Dict[str, str] = {}
 
-    def _wire_signals(self):
+        self.cancelButton.clicked.connect(self.reject)
         self.saveButton.clicked.connect(self.save)
-        self.cancelButton.clicked.connect(self.close)
-        self.serverPortConfirmButton.clicked.connect(self.confirm_port)
-        self.motdConfirmButton.clicked.connect(self.confirm_motd)
         self.openPropertiesButton.clicked.connect(self.open_properties_file)
 
-    def _populate_difficulty(self):
-        self.difficultyComboBox.clear()
-        for value, _ in self._difficulty_options:
-            self.difficultyComboBox.addItem(value, value)
+        self.apply_localization()
+        self.load_values()
 
     def apply_localization(self):
         lang = self.language
         self.setWindowTitle(t(lang, "server_settings_title"))
-        self.titleLabel.setText(t(lang, "server_settings_header"))
-        self.gameGroupBox.setTitle(t(lang, "server_settings_group_game"))
-        self.serverGroupBox.setTitle(t(lang, "server_settings_group_server"))
+        self.headerLabel.setText(t(lang, "server_settings_title"))
 
-        self.pvpCheckBox.setText(t(lang, "server_settings_pvp"))
-        self.commandBlockCheckBox.setText(t(lang, "server_settings_command_block"))
-        self.spawnMonstersCheckBox.setText(t(lang, "server_settings_spawn_monsters"))
-        self.maxPlayersLabel.setText(t(lang, "server_settings_max_players"))
-        self.entityBroadcastLabel.setText(t(lang, "server_settings_entity_broadcast"))
-        self.difficultyLabel.setText(t(lang, "server_settings_difficulty"))
+        self.gameGroupBox.setTitle(t(lang, "server_settings_game"))
+        self.serverGroupBox.setTitle(t(lang, "server_settings_server"))
 
-        # rebuild difficulty with localized labels
-        current_value = self.difficultyComboBox.currentData()
-        self.difficultyComboBox.clear()
-        for value, text_key in self._difficulty_options:
-            self.difficultyComboBox.addItem(t(lang, text_key), value)
-        if current_value:
-            index = self.difficultyComboBox.findData(current_value)
-            if index >= 0:
-                self.difficultyComboBox.setCurrentIndex(index)
+        self.pvpCheckBox.setText(t(lang, "server_pvp"))
+        self.commandBlockCheckBox.setText(t(lang, "server_command_block"))
+        self.spawnMonstersCheckBox.setText(t(lang, "server_spawn_monsters"))
+        self.maxPlayersLabel.setText(t(lang, "server_max_players"))
+        self.broadcastLabel.setText(t(lang, "server_entity_broadcast"))
+        self.difficultyLabel.setText(t(lang, "server_difficulty"))
 
-        self.onlineModeCheckBox.setText(t(lang, "server_settings_online_mode"))
-        self.viewDistanceLabel.setText(t(lang, "server_settings_view_distance"))
-        self.serverPortLabel.setText(t(lang, "server_settings_server_port"))
-        self.serverPortLineEdit.setPlaceholderText("25565")
-        self.serverPortConfirmButton.setText(t(lang, "server_settings_confirm"))
-        self.motdLabel.setText(t(lang, "server_settings_motd"))
-        self.motdConfirmButton.setText(t(lang, "server_settings_confirm"))
+        self.onlineModeCheckBox.setText(t(lang, "server_online_mode"))
+        self.viewDistanceLabel.setText(t(lang, "server_view_distance"))
+        self.portLabel.setText(t(lang, "server_port"))
+        self.motdLabel.setText(t(lang, "server_motd"))
+        self.xmsLabel.setText(t(lang, "server_memory_min"))
+        self.xmxLabel.setText(t(lang, "server_memory_max"))
 
-        self.openPropertiesButton.setText(t(lang, "server_settings_open_properties"))
-        self.saveButton.setText(t(lang, "server_settings_save"))
-        self.cancelButton.setText(t(lang, "server_settings_cancel"))
+        self.openPropertiesButton.setText(t(lang, "server_open_properties"))
+        self.saveButton.setText(t(lang, "settings_save"))
+        self.cancelButton.setText(t(lang, "settings_cancel"))
 
-    def load_properties(self):
-        if not self.core_id:
-            raise ValueError("active_core_not_selected")
+    def load_values(self):
+        if not self.active_core:
+            QMessageBox.warning(self, t(self.language, "error_title"), t(self.language, "core_not_selected"))
+            self.reject()
+            return
 
-        props = self.customizer.get_properties(self.core_id)
+        try:
+            self.properties = PropertiesCustomizer.get_properties(self.active_core)
+        except Exception as exc:
+            QMessageBox.warning(self, t(self.language, "error_title"), str(exc))
+            self.reject()
+            return
 
-        def get_bool(name: str, default=False):
-            value = str(props.get(name, default)).strip().lower()
-            return value in ("true", "1", "yes", "on")
+        def to_bool(key: str, default=False):
+            val = self.properties.get(key, str(default))
+            return str(val).lower() == "true"
 
-        def get_int(name: str, default: int):
-            try:
-                return max(1, int(str(props.get(name, default)).strip()))
-            except Exception:
-                return default
+        def to_int(key: str, default=""):
+            return self.properties.get(key, default)
 
-        self.pvpCheckBox.setChecked(get_bool("pvp", True))
-        self.commandBlockCheckBox.setChecked(get_bool("enable-command-block", False))
-        self.spawnMonstersCheckBox.setChecked(get_bool("spawn-monsters", True))
-        self.maxPlayersSpinBox.setValue(get_int("max-players", 20))
-        self.entityBroadcastSpinBox.setValue(get_int("entity-broadcast-range-percentage", 100))
+        self.pvpCheckBox.setChecked(to_bool("pvp", True))
+        self.commandBlockCheckBox.setChecked(to_bool("enable-command-block", False))
+        self.spawnMonstersCheckBox.setChecked(to_bool("spawn-monsters", True))
+        self.maxPlayersLineEdit.setText(str(to_int("max-players", "")))
+        self.broadcastLineEdit.setText(str(to_int("entity-broadcast-range-percentage", "")))
 
-        difficulty_value = props.get("difficulty", "easy")
-        difficulty_value = self._normalize_difficulty_value(str(difficulty_value))
-        diff_index = self.difficultyComboBox.findData(difficulty_value)
-        if diff_index == -1:
-            self.difficultyComboBox.addItem(difficulty_value, difficulty_value)
-            diff_index = self.difficultyComboBox.findData(difficulty_value)
-        self.difficultyComboBox.setCurrentIndex(max(0, diff_index))
+        difficulty = self.properties.get("difficulty", "easy")
+        idx = self.difficultyComboBox.findText(difficulty)
+        self.difficultyComboBox.setCurrentIndex(max(idx, 0))
 
-        self.onlineModeCheckBox.setChecked(get_bool("online-mode", True))
-        self.viewDistanceSpinBox.setValue(get_int("view-distance", 10))
-        self.serverPortLineEdit.setText(str(get_int("server-port", 25565)))
-        motd_value = props.get("motd", "")
-        self.motdPlainTextEdit.setPlainText(motd_value.replace("\\n", "\n"))
+        self.onlineModeCheckBox.setChecked(to_bool("online-mode", True))
+        self.viewDistanceLineEdit.setText(str(to_int("view-distance", "")))
+        self.serverPortLineEdit.setText(str(to_int("server-port", "")))
+        self.motdTextEdit.setPlainText(self.properties.get("motd", ""))
+
+        # memory from cores.json
+        core = self.cores.get(self.active_core, {})
+        self._set_memory_field(core.get("xms", 256), self.xmsLineEdit, self.xmsUnitComboBox, core.get("xms_unit"))
+        self._set_memory_field(core.get("xmx", 1024), self.xmxLineEdit, self.xmxUnitComboBox, core.get("xmx_unit"))
 
     @staticmethod
-    def _normalize_difficulty_value(value: str) -> str:
-        mapping = {"0": "peaceful", "1": "easy", "2": "normal", "3": "hard"}
-        lower = value.lower()
-        return mapping.get(lower, lower)
-
-    def _collect_values(self) -> Dict[str, Any]:
+    def _set_memory_field(value, line_edit, unit_combo, unit_hint=None):
         try:
-            port = self._validate_port()
-        except ValueError as exc:
-            self._show_error(exc)
-            raise
+            value = int(value)
+        except Exception:
+            value = 256
+        unit = unit_hint or ("GB" if value % 1024 == 0 and value >= 1024 else "MB")
+        display_val = value // 1024 if unit == "GB" else value
+        unit_combo.setCurrentText(unit)
+        line_edit.setText(str(display_val))
 
-        values = {
-            "pvp": "true" if self.pvpCheckBox.isChecked() else "false",
-            "enable-command-block": "true" if self.commandBlockCheckBox.isChecked() else "false",
-            "spawn-monsters": "true" if self.spawnMonstersCheckBox.isChecked() else "false",
-            "max-players": self.maxPlayersSpinBox.value(),
-            "entity-broadcast-range-percentage": self.entityBroadcastSpinBox.value(),
-            "difficulty": self.difficultyComboBox.currentData() or "easy",
-            "online-mode": "true" if self.onlineModeCheckBox.isChecked() else "false",
-            "view-distance": self.viewDistanceSpinBox.value(),
-            "server-port": port,
-            "motd": self.motdPlainTextEdit.toPlainText().replace("\n", "\\n"),
-        }
-        return values
-
-    def save(self):
+    def _memory_to_mb(self, line_edit, unit_combo, fallback):
         try:
-            values = self._collect_values()
-            self.customizer.set_properties(self.core_id, values)
-            self._show_status(t(self.language, "server_settings_status_saved"))
-            self.accept()
-        except Exception as exc:
-            self._show_error(exc)
-            self._show_status(t(self.language, "server_settings_status_error"))
-
-    def confirm_port(self):
-        try:
-            self._validate_port()
-            self._show_status(t(self.language, "server_settings_port_ok"))
-        except Exception as exc:
-            self._show_error(exc)
-            self._show_status(t(self.language, "server_settings_status_error"))
-
-    def confirm_motd(self):
-        text = self.motdPlainTextEdit.toPlainText()
-        if "\n" in text.strip() or text.strip():
-            self._show_status(t(self.language, "server_settings_motd_ok"))
-        else:
-            self._show_status(t(self.language, "server_settings_status_idle"))
-
-    def _validate_port(self) -> int:
-        text = self.serverPortLineEdit.text().strip()
-        if not text:
-            raise ValueError(t(self.language, "server_settings_port_invalid"))
-        try:
-            port = int(text)
+            val = int(line_edit.text())
         except ValueError:
-            raise ValueError(t(self.language, "server_settings_port_invalid"))
-        if port <= 0 or port > 65535:
-            raise ValueError(t(self.language, "server_settings_port_invalid"))
-        return port
-
-    def _show_error(self, exc: Exception):
-        raw = str(exc)
-        known_keys = {
-            "active_core_not_selected",
-            "active_core_not_found_in_cores",
-            "active_core_folder_not_set",
-        }
-        if raw in known_keys:
-            message = t(self.language, raw)
-        elif isinstance(exc, FileNotFoundError) and "server_properties_not_found" in raw:
-            message = t(self.language, "server_settings_properties_missing")
-        else:
-            message = raw
-        QMessageBox.warning(
-            self,
-            t(self.language, "error_title"),
-            message,
-        )
-
-    def _show_status(self, message: str):
-        if hasattr(self, "statusLabel"):
-            self.statusLabel.setText(message)
+            return fallback
+        if val <= 0:
+            return fallback
+        unit = unit_combo.currentText()
+        return val * 1024 if unit == "GB" else val
 
     def open_properties_file(self):
         try:
-            path = self.customizer.get_properties_path(self.core_id)
+            path = PropertiesCustomizer._properties_path(self.active_core)  # type: ignore[attr-defined]
             QDesktopServices.openUrl(QUrl.fromLocalFile(str(path)))
         except Exception as exc:
-            self._show_error(exc)
+            QMessageBox.warning(self, t(self.language, "error_title"), str(exc))
+
+    def save(self):
+        int_fields = [
+            (self.maxPlayersLineEdit, "max-players", 1, 100000),
+            (self.broadcastLineEdit, "entity-broadcast-range-percentage", 1, 10000),
+            (self.viewDistanceLineEdit, "view-distance", 1, 64),
+            (self.serverPortLineEdit, "server-port", 1, 65535),
+        ]
+        changes: Dict[str, str] = {
+            "pvp": "true" if self.pvpCheckBox.isChecked() else "false",
+            "enable-command-block": "true" if self.commandBlockCheckBox.isChecked() else "false",
+            "spawn-monsters": "true" if self.spawnMonstersCheckBox.isChecked() else "false",
+            "online-mode": "true" if self.onlineModeCheckBox.isChecked() else "false",
+            "difficulty": self.difficultyComboBox.currentText(),
+            "motd": self.motdTextEdit.toPlainText().replace("\r", ""),
+        }
+
+        for widget, key, min_v, max_v in int_fields:
+            text = widget.text().strip()
+            if not text.isdigit():
+                QMessageBox.warning(self, t(self.language, "error_title"), t(self.language, "field_should_be_int"))
+                return
+            value = int(text)
+            if value < min_v or value > max_v:
+                QMessageBox.warning(self, t(self.language, "error_title"), t(self.language, "field_out_of_range"))
+                return
+            changes[key] = str(value)
+
+        # memory values to cores.json (MB)
+        xms_mb = self._memory_to_mb(self.xmsLineEdit, self.xmsUnitComboBox, 256)
+        xmx_mb = self._memory_to_mb(self.xmxLineEdit, self.xmxUnitComboBox, 1024)
+        if xmx_mb < xms_mb:
+            QMessageBox.warning(self, t(self.language, "error_title"), t(self.language, "memory_invalid"))
+            return
+
+        try:
+            PropertiesCustomizer.set_properties(self.active_core, changes)
+            self._save_memory(xms_mb, xmx_mb)
+        except Exception as exc:
+            QMessageBox.warning(self, t(self.language, "error_title"), str(exc))
+            return
+
+        self.accept()
+
+    def _save_memory(self, xms_mb: int, xmx_mb: int):
+        unit_xms = self.xmsUnitComboBox.currentText()
+        unit_xmx = self.xmxUnitComboBox.currentText()
+        self.cores[str(self.active_core)]["xms"] = xms_mb
+        self.cores[str(self.active_core)]["xmx"] = xmx_mb
+        self.cores[str(self.active_core)]["xms_unit"] = unit_xms
+        self.cores[str(self.active_core)]["xmx_unit"] = unit_xmx
+        with self.cores_file.open("w", encoding="utf-8") as file:
+            json.dump(self.cores, file, ensure_ascii=False, indent=4)
+
+
+def run_demo():
+    import sys
+
+    app = QApplication(sys.argv)
+    w = ServerSettingsWindow()
+    w.show()
+    sys.exit(app.exec_())
+
+
+__all__ = ["ServerSettingsWindow"]

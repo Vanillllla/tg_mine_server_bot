@@ -230,6 +230,10 @@ class MyApp(QMainWindow):
             self.error_output({'from_process': "GUI", "data": 'core_folder_not_selected'})
 
     def start_server(self):
+        if not self.settings.get("active_core"):
+            QMessageBox.warning(self, t(self.language, "error_title"), t(self.language, "active_core_not_selected"))
+            self.show_server_status(False)
+            return
         if self.server_is_active:
             self.conn.send({"to_process": "server", "from_process": "gui", "command": "set_server_status", "data": False})
             self.show_server_status(False)
