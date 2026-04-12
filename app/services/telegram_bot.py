@@ -10,7 +10,7 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup
+from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from anyio import to_process
 from aiogram.filters import StateFilter
 
@@ -23,10 +23,25 @@ VANILLA = os.getenv("VANILLA")
 
 class BotKeyboards:
     @staticmethod
-    def user_main() -> ReplyKeyboardMarkup:
+    def get_keyboard(status: int = 0, server_status: bool = False,
+                     menu: str = "main_menu") -> ReplyKeyboardMarkup:
+        if status == 0:
+            if menu == "main_menu":
+                return BotKeyboards.user_main(server_status)
+            elif menu == "settings":
+                return BotKeyboards.user_settings()
+        if status == 1:
+            if menu in {"main", "main_menu"}:
+                return BotKeyboards.admin_main(server_status)
+            elif menu == "settings":
+                return BotKeyboards.admin_settings()
+            elif menu == "console":
+                return BotKeyboards.admin_console()
+
+    @staticmethod
+    def user_main(server_status: bool = False) -> ReplyKeyboardMarkup:
         keyboard = [
-            [KeyboardButton(text="🚀 Запустить сервер")],
-            [KeyboardButton(text="👥 Онлайн на сервере")],
+            [KeyboardButton(text=("🚀 Запустить сервер" if not server_status else "👥 Онлайн на сервере"))],
             [KeyboardButton(text="⚙️ Мои настройки"), KeyboardButton(text="test")],
         ]
         return ReplyKeyboardMarkup(
@@ -46,12 +61,12 @@ class BotKeyboards:
         )
 
     @staticmethod
-    def admin_main() -> ReplyKeyboardMarkup:
+    def admin_main(server_status: bool = False) -> ReplyKeyboardMarkup:
         keyboard = [
-            [KeyboardButton(text="🚀 Запустить сервер"), KeyboardButton(text="🛑 Остановить сервер")],
-            [KeyboardButton(text="👥 Онлайн на сервере"), KeyboardButton(text="🔄 Перезапустить бота"),
-             KeyboardButton(text="💻 Консоль")],
-            [KeyboardButton(text="⚙️ Настройки"), KeyboardButton(text="test")],
+            [KeyboardButton(text="🟢 Запустить сервер 🟢") if not server_status else KeyboardButton(
+                text="🔴 Остановить сервер 🔴")],
+            [KeyboardButton(text="👥 Онлайн на сервере"), KeyboardButton(text="💻 Консоль")],
+            [KeyboardButton(text="⚙️ Настройки"), KeyboardButton(text="🔄 Перезапустить бота")],
         ]
         return ReplyKeyboardMarkup(
             keyboard=keyboard,
@@ -120,12 +135,12 @@ class Bott:
         self.vanilla = VANILLA if VANILLA else None
         self.pending = {}
         self._response_task = None
-        self.services_states = {"server_status": False}
+        self.server_info = {"status": False}
 
     async def _state_updater(self):
         msg = {"to_process": "server", "from_process": "bot", "command": "get_server_work_data", "data": ''}
         ans = await self.request(msg)
-        self.services_states.update(ans["data"])
+        self.server_info.update(ans["data"])
         time.sleep(5)
 
     async def request(self, data: dict, timeout: float = 90.0) -> dict:
@@ -170,11 +185,15 @@ class Bott:
 
     def _register_handlers(self):
         self.dp.message.register(self.start, Command("start"))
-        self.dp.message.register(self.start_server, F.text == "🚀 Запустить сервер",
+        self.dp.message.register(self.start_server, F.text.in_(["🚀 Запустить сервер", "🟢 Запустить сервер 🟢"]),
                                  StateFilter(States.user_main_menu, States.admin_main_menu))
-        self.dp.message.register(self.stop_server, F.text == "🛑 Остановить сервер", StateFilter(States.admin_main_menu))
+        self.dp.message.register(self.stop_server, F.text == "🔴 Остановить сервер 🔴",
+                                 StateFilter(States.admin_main_menu))
         self.dp.message.register(self.reload_bot, F.text == "🔄 Перезапустить бота", StateFilter(States.admin_main_menu))
-        self.dp.message.register(self.nonmess)
+        self.dp.message.register(self.chek_online, F.text == "👥 Онлайн на сервере", StateFilter(States.admin_main_menu, States.user_main_menu))
+        self.dp.message.register(self.nonmess_main_menu, StateFilter(States.user_main_menu, States.admin_main_menu))
+
+        self.dp.message.register(self.nonmess_no_auth)
 
     async def server_switch(self, message: Message, state: FSMContext):
         msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": True}
@@ -186,46 +205,69 @@ class Bott:
         ans = await self.request(msg)
         if "dabble_start_flag" in ans:
             if ans["dabble_start_flag"] == True:
-                self.services_states["server_status"] = True
-                await message.answer("Сервер уже запущен!", )
+                self.server_info["status"] = True
+                await message.answer("Сервер уже запущен!",
+                                     reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
+                                                                            server_status=self.server_info[
+                                                                                "status"]))
             elif ans["dabble_start_flag"] == False:
                 await message.answer("Сервер запускается...")
                 ans2 = await self.request(msg2)
-                await self.bot.send_message(chat_id=message.chat.id, text=f"Параметры запуска: {ans2["data"]}")
+                self.server_info["status"] = True
+                await self.bot.send_message(chat_id=message.chat.id,
+                                            text=f"Время запуска запуска: {ans2["data"]["launch_time_str"]}",
+                                            reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
+                                                                                   server_status=self.server_info[
+                                                                                       "status"]))
 
     async def stop_server(self, message: Message, state: FSMContext):
         msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": False}
-        ans = await self.request(msg)
-        await message.answer((
-                                 f"Сервер успешно остановлен! Время последнего сеанса: {"БУДЕТ ПОТОМ!" + " " + str(ans["data"])}" if
-                                 ans["data"] == False else "СЕРВЕР НЕУСПЕШНО НЕ ОСТАНОВЛЕН!!!!"))
+        msg2 = {"to_process": "server", "from_process": "bot", "command": "get_server_work_data", "data": ''}
+        ans2 = await self.request(msg2)
+        if ans2["data"]["status"] == False:
+            self.server_info["status"] = False
+            await message.answer(f"Сервер уже выключен!",
+                                 reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
+                                                                        server_status=self.server_info["status"]))
+        else:
+            ans = await self.request(msg)
+            self.server_info["status"] = False
+            await message.answer(f"Сервер остановлен! \nВремя последнего сеанса: {str(ans2["data"]["work_time_str"])}",
+                                 reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
+                                                                        server_status=self.server_info["status"]))
 
     async def reload_bot(self, message: Message, state: FSMContext):
         msg = {"to_process": "connector", "from_process": "bot", "command": "reload_bot", "data": ""}
         self.pipe_send(msg)
 
-    async def nonmess(self, message: Message, state: FSMContext):
-        await message.answer("Отправлена команда : " + message.text)
-        self.pipe_send(
-            {
-                "to_process": "server",
-                "from_process": "bot",
-                "command": "server_command",
-                "data": message.text,
-            }
-        )
+    async def chek_online(self, message: Message, state: FSMContext):
+        pass
+
+
+    async def nonmess_main_menu(self, message: Message):
+        await message.answer("Неизвестная команда",
+                reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
+                                                       server_status=self.server_info["status"]))
+
+    async def nonmess_no_auth(self, message: Message):
+        await message.answer("Введите /start для входа", reply_markup=ReplyKeyboardRemove())
 
     async def start(self, message: Message, state: FSMContext):
-        self.profile = {"status": 1 if str(message.from_user.id) == str(VANILLA) else 0, "userid": message.from_user.id}
-        if self.profile["status"] == 1:
+        self.profile_info = {"status": 1 if str(message.from_user.id) == str(VANILLA) else 0,
+                             "userid": message.from_user.id}
+
+        if self.profile_info["status"] == 1:
             await state.set_state(States.admin_main_menu)
             await message.answer(
-                f"Выберите действие: {self.profile}",
-                reply_markup=BotKeyboards.admin_main(),
+                f"Выберите действие: {self.profile_info, self.server_info}",
+                reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
+                                                       server_status=self.server_info["status"]),
             )
-        elif self.profile["status"] == 0:
+        elif self.profile_info["status"] == 0:
             await state.set_state(States.user_main_menu)
-            await message.answer("Выберите действие: ", reply_markup=BotKeyboards.user_main())
+            await message.answer("Выберите действие: ",
+                                 reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
+                                                                        server_status=self.server_info["status"]))
 
     async def run(self):
         try:

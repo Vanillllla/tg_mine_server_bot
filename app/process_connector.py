@@ -24,6 +24,8 @@ class ProcessConnector:
 
         with config_path("program_settings.json").open("r", encoding="utf-8") as file:
             self.settings = json.load(file)
+        self.debag_mode = self.settings["debag_mode"]
+
         self.main_parent_conn, self.main_child_conn = Pipe()
 
     def run(self):
@@ -43,7 +45,7 @@ class ProcessConnector:
             self.th_botRead = threading.Thread(target=self._read_from_bot, daemon=True)
             self.th_botRead.start()
         else:
-            print(self.bot_prefix, "Бот уже запущен!")
+            if self.debag_mode : print(self.bot_prefix, "Бот уже запущен!")
 
     def ui_start(self):
         if (self.ui_process is None) or (not self.ui_process.is_alive()):
@@ -54,7 +56,7 @@ class ProcessConnector:
             self.ui_process.start()
             threading.Thread(target=self._read_from_ui, daemon=True).start()
         else:
-            print("UI уже запущен!")
+            if self.debag_mode : print("UI уже запущен!")
 
     def server_start(self):
         if (self.server_process is None) or (not self.server_process.is_alive()):
@@ -64,12 +66,14 @@ class ProcessConnector:
             self.server_process = Process(target=run, args=(server_child_conn,), name="server_process", daemon=True)
             self.server_process.start()
             threading.Thread(target=self._read_from_server, daemon=True).start()
+        else:
+            if self.debag_mode : print("Server_manager уже запущен!")
 
     def _read_from_server(self):
         while True:
             try:
                 msg = self.server_parent_conn.recv()
-                print(self.server_prefix, msg)
+                if self.debag_mode : print(self.server_prefix, msg)
                 if msg["to_process"] == "connector":
                     self.main_child_conn.send(msg)
                 elif msg["to_process"] == "gui":
@@ -78,43 +82,43 @@ class ProcessConnector:
                     if self.bot_parent_conn:
                         self.bot_parent_conn.send(msg)
             except EOFError:
-                print(self.server_prefix, "Канал закрыт, завершаем чтение")
+                if self.debag_mode : print(self.server_prefix, "Канал закрыт, завершаем чтение")
                 break
             except Exception as exc:
-                print(self.error_prefix + self.server_prefix, f"Ошибка чтения из канала: {exc}")
+                if self.debag_mode : print(self.error_prefix + self.server_prefix, f"Ошибка чтения из канала: {exc}")
                 break
 
     def _read_from_ui(self):
         while True:
             try:
                 msg = self.ui_parent_conn.recv()
-                print(self.ui_prefix, msg)
+                if self.debag_mode : print(self.ui_prefix, msg)
                 if msg["to_process"] == "connector":
                     self.main_child_conn.send(msg)
                 elif msg["to_process"] == "server":
                     self.server_parent_conn.send(msg)
             except EOFError:
-                print(self.ui_prefix, "Канал закрыт, завершаем чтение")
+                if self.debag_mode : print(self.ui_prefix, "Канал закрыт, завершаем чтение")
                 self.main_child_conn.send({"command": "exit"})
                 break
             except Exception as exc:
-                print(self.ui_prefix, f"Ошибка чтения из канала: {exc}")
+                if self.debag_mode : print(self.ui_prefix, f"Ошибка чтения из канала: {exc}")
                 break
 
     def _read_from_bot(self):
         while True:
             try:
                 msg = self.bot_parent_conn.recv()
-                print(self.bot_prefix, msg)
+                if self.debag_mode : print(self.bot_prefix, msg)
                 if msg["to_process"] == "connector":
                     self.main_child_conn.send(msg)
                 elif msg["to_process"] == "server":
                     self.server_parent_conn.send(msg)
             except EOFError:
-                print(self.bot_prefix, "Канал закрыт, завершаем чтение")
+                if self.debag_mode : print(self.bot_prefix, "Канал закрыт, завершаем чтение")
                 break
             except Exception as exc:
-                print(self.error_prefix + self.bot_prefix, f"Ошибка чтения из канала: {exc}")
+                if self.debag_mode : print(self.error_prefix + self.bot_prefix, f"Ошибка чтения из канала: {exc}")
                 break
 
     def main_polling(self):
@@ -125,13 +129,13 @@ class ProcessConnector:
                     if (self.bot_process is None) or (not self.bot_process.is_alive()):
                         self.bot_start()
                         msg2 = {"to_process": "gui", "from_process": "connector", "command": "set_bot_status", "data": True}
-                        print(self.main_prefix, msg2)
+                        if self.debag_mode : print(self.main_prefix, msg2)
                         self.ui_parent_conn.send(msg2)
                     else:
                         self.bot_process.terminate()
                         self.th_botRead.join(timeout=1)
                         msg2 = {"to_process": "gui", "from_process": "connector", "command": "set_bot_status", "data": False}
-                        print(self.main_prefix, msg2)
+                        if self.debag_mode : print(self.main_prefix, msg2)
                         self.ui_parent_conn.send(msg2)
                 elif msg["command"] == "reload_bot":
                     self.bot_process.terminate()
@@ -141,11 +145,11 @@ class ProcessConnector:
                         self.bot_process.join(timeout=1)
                     msg2 = {"to_process": "gui", "from_process": "connector", "command": "set_bot_status",
                             "data": False}
-                    print(self.main_prefix, msg2)
+                    if self.debag_mode : print(self.main_prefix, msg2)
                     self.ui_parent_conn.send(msg2)
                     self.bot_start()
                     msg3 = {"to_process": "gui", "from_process": "connector", "command": "set_bot_status", "data": True}
-                    print(self.main_prefix, msg3)
+                    if self.debag_mode : print(self.main_prefix, msg3)
                     self.ui_parent_conn.send(msg3)
 
                 elif msg["command"] == "get_bot_status":
@@ -155,7 +159,7 @@ class ProcessConnector:
                             "command": "set_bot_status",
                             "data": self.bot_process.is_alive() if self.bot_process else False,
                         }
-                    print(self.main_prefix, msg2)
+                    if self.debag_mode : print(self.main_prefix, msg2)
                     self.ui_parent_conn.send(msg2)
                 elif msg["command"] == "restart":
                     pass
@@ -164,10 +168,10 @@ class ProcessConnector:
                         {"to_process": "server", "from_process": "gui", "command": "set_server_status", "data": False})
                     sys.exit()
             except EOFError:
-                print(self.main_prefix, "Канал закрыт, завершаем чтение")
+                if self.debag_mode : print(self.main_prefix, "Канал закрыт, завершаем чтение")
                 break
             except Exception as exc:
-                print(self.error_prefix + self.main_prefix, f"Ошибка чтения из канала: {exc}")
+                if self.debag_mode : print(self.error_prefix + self.main_prefix, f"Ошибка чтения из канала: {exc}")
                 break
 
 
