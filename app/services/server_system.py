@@ -24,6 +24,7 @@ class ServerSystem:
         self.last_start_duration = None
         self.start_error = ""
         self.server_work_started_at = None
+        self.current_core_id = ""
 
         self.server_host = "127.0.0.1"
         self.server_port = 25565
@@ -187,6 +188,98 @@ class ServerSystem:
         with self.conn_send_lock:
             self.conn.send(payload)
 
+    @staticmethod
+    def _write_varint(value: int) -> bytes:
+        out = bytearray()
+        while True:
+            part = value & 0x7F
+            value >>= 7
+            if value:
+                part |= 0x80
+            out.append(part)
+            if not value:
+                break
+        return bytes(out)
+
+    @staticmethod
+    def _read_exact(sock: socket.socket, count: int) -> bytes:
+        data = bytearray()
+        while len(data) < count:
+            chunk = sock.recv(count - len(data))
+            if not chunk:
+                raise ConnectionError("socket_closed")
+            data.extend(chunk)
+        return bytes(data)
+
+    def _read_varint_socket(self, sock: socket.socket) -> int:
+        value = 0
+        shift = 0
+        for _ in range(5):
+            byte = self._read_exact(sock, 1)[0]
+            value |= (byte & 0x7F) << shift
+            if not (byte & 0x80):
+                return value
+            shift += 7
+        raise ValueError("varint_too_big")
+
+    @staticmethod
+    def _read_varint_buffer(buf: bytes, start: int = 0):
+        value = 0
+        shift = 0
+        idx = start
+        for _ in range(5):
+            byte = buf[idx]
+            value |= (byte & 0x7F) << shift
+            idx += 1
+            if not (byte & 0x80):
+                return value, idx
+            shift += 7
+        raise ValueError("varint_too_big")
+
+    def _query_minecraft_version(self, host: str, port: int, timeout: float = 3.0):
+        try:
+            host_bytes = host.encode("utf-8")
+            with socket.create_connection((host, port), timeout=timeout) as sock:
+                sock.settimeout(timeout)
+
+                # Handshake (next state = status)
+                handshake_payload = (
+                    self._write_varint(0)
+                    + self._write_varint(754)
+                    + self._write_varint(len(host_bytes))
+                    + host_bytes
+                    + int(port).to_bytes(2, "big")
+                    + self._write_varint(1)
+                )
+                sock.sendall(self._write_varint(len(handshake_payload)) + handshake_payload)
+
+                # Status request packet
+                sock.sendall(self._write_varint(1) + self._write_varint(0))
+
+                packet_len = self._read_varint_socket(sock)
+                packet_data = self._read_exact(sock, packet_len)
+                packet_id, idx = self._read_varint_buffer(packet_data, 0)
+                if packet_id != 0:
+                    return None
+                json_len, idx = self._read_varint_buffer(packet_data, idx)
+                raw_json = packet_data[idx: idx + json_len].decode("utf-8", errors="replace")
+                payload = json.loads(raw_json)
+                return payload.get("version", {}).get("name")
+        except Exception:
+            return None
+
+    @staticmethod
+    def _save_minecraft_version(core_id: str, version: str):
+        if not core_id:
+            return
+        with config_path("cores.json").open("r", encoding="utf-8") as file:
+            cores_all = json.load(file)
+        if core_id not in cores_all:
+            return
+        cores_all[core_id]["minecraft_version"] = version
+        with config_path("cores.json").open("w", encoding="utf-8") as file:
+            json.dump(cores_all, file, ensure_ascii=False, indent=4)
+
     def run(self):
         self._read_from_connector()
 
@@ -272,6 +365,7 @@ class ServerSystem:
                 self.is_starting = False
                 self.last_start_duration = 0.0
                 self.start_error = "core_file_not_found_or_selected"
+                self.current_core_id = ""
 
             self._send({"to_process": "gui", "from_process": "server", "command": "error_out",
                         "data": "core_file_not_found_or_selected"})
@@ -279,6 +373,7 @@ class ServerSystem:
             return
 
         core_info = core_list[settings["active_core"]]
+        self.current_core_id = str(settings["active_core"])
         core = Path(core_info["core_folder"]) / (f"{settings['active_core']}_{core_info['name']}")
         full_core_path = core.absolute()
         server_directory = full_core_path.parent
@@ -323,6 +418,7 @@ class ServerSystem:
                 self.is_starting = False
                 self.last_start_duration = 0.0
                 self.start_error = f"start_server_failed: {exc}"
+                self.current_core_id = ""
 
             self._send(
                 {
@@ -379,6 +475,7 @@ class ServerSystem:
 
         with self.state_lock:
             self.server_work_started_at = None
+            self.current_core_id = ""
             if was_starting:
                 self.is_starting = False
                 if self.last_start_started_at is not None and self.last_start_duration is None:
@@ -475,6 +572,22 @@ class ServerSystem:
             else:
                 tail_text = "\n".join(self.startup_log_tail).strip()
                 self.start_error = tail_text if tail_text else "server_start_timeout_or_crash"
+
+        if ok and self.is_running() and self.current_core_id:
+            version = self._query_minecraft_version(self.server_host, self.server_port)
+            if version:
+                try:
+                    self._save_minecraft_version(self.current_core_id, version)
+                    self._send(
+                        {
+                            "to_process": "gui",
+                            "from_process": "server",
+                            "command": "set_server_version",
+                            "data": {"core_id": self.current_core_id, "minecraft_version": version},
+                        }
+                    )
+                except Exception:
+                    pass
 
         self._flush_pending_work_data_requests()
 

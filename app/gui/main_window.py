@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import threading
+import time
 from pathlib import Path
 
 os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
@@ -31,6 +32,7 @@ class MyApp(QMainWindow):
         self.conn = conn
         self.bot_is_active = False
         self.server_is_active = False
+        self.server_start_time = None
 
         uic.loadUi(ui_path("main_ui.ui"), self)
         self.setWindowIcon(QIcon(icon_path("icon.ico")))
@@ -82,6 +84,9 @@ class MyApp(QMainWindow):
         self.console_input.returnPressed.connect(self.send_server_command)
         self.console_send_button.clicked.connect(self.send_server_command)
 
+        self.online_timer = QTimer()
+        self.online_timer.timeout.connect(self.update_online_time)
+
         self.pipe_message.connect(self.handle_pipe_message)
         threading.Thread(target=self.pipe_read, daemon=True).start()
 
@@ -104,6 +109,11 @@ class MyApp(QMainWindow):
             self.bot_indicator(msg["data"])
         elif msg["command"] == "set_server_status":
             self.show_server_status(msg["data"])
+        elif msg["command"] == "set_server_version":
+            data = msg.get("data", {})
+            active_core = str(self.settings.get("active_core", ""))
+            if active_core and str(data.get("core_id", "")) == active_core:
+                self.versionLabel.setText(str(data.get("minecraft_version", "")))
         elif msg["command"] == "error_out":
             self.error_output(msg)
         elif msg["command"] == "server_log":
@@ -162,8 +172,7 @@ class MyApp(QMainWindow):
 
         if self.coreSelectBox.count() > 0:
             self.coreSelectBox.setItemText(0, t(lang, "core_select_placeholder"))
-        if self.versionLabel.text() in ("Появится позже :3", "Will be available later :3"):
-            self.versionLabel.setText(t(lang, "version_placeholder"))
+        self._set_version_label(self.settings.get("active_core", ""))
 
         self.bot_indicator(self.bot_is_active)
         self.show_server_status(self.server_is_active)
@@ -210,14 +219,33 @@ class MyApp(QMainWindow):
         self.conn.send({"to_process": "connector", "from_process": "gui", "command": "get_bot_status", "data": ""})
 
     def show_server_status(self, is_active):
+        previous = self.server_is_active
         self.server_is_active = is_active
         if is_active:
             self.startServerButton.setText(t(self.language, "server_stop"))
             self.startServerButton.setStyleSheet("color: #CC0000;")
+            if self.server_start_time is None:
+                self.server_start_time = time.time()
+            if not self.online_timer.isActive():
+                self.online_timer.start(1000)
         else:
             self.startServerButton.setText(t(self.language, "server_start"))
             self.startServerButton.setStyleSheet("color: #00CC00;")
+            self.online_timer.stop()
+            self.server_start_time = None
+            if hasattr(self, "versionLabel_3"):
+                self.versionLabel_3.setText(t(self.language, "server_offline_state"))
         self._update_tray_labels()
+
+    def update_online_time(self):
+        if self.server_start_time is None:
+            return
+        elapsed = int(time.time() - self.server_start_time)
+        hours = elapsed // 3600
+        minutes = (elapsed % 3600) // 60
+        seconds = elapsed % 60
+        if hasattr(self, "versionLabel_3"):
+            self.versionLabel_3.setText(f"{hours:02d}:{minutes:02d}:{seconds:02d}")
 
     def open_folder(self):
         with config_path("cores.json").open("r", encoding="utf-8") as file:
@@ -251,9 +279,11 @@ class MyApp(QMainWindow):
             self.coreSelectBox.addItem(f"{core_id}_{core['name']}")
             if self.settings["use_last_active_core"] and str(core_id) == self.settings["active_core"]:
                 self.coreSelectBox.setCurrentIndex(int(core_id))
+                self._set_version_label(str(core_id))
 
         if not self.settings["use_last_active_core"]:
             self.settings["active_core"] = ""
+            self.versionLabel.setText("")
 
         with self.settings_file.open("w", encoding="utf-8") as file:
             json.dump(self.settings, file, indent=4, ensure_ascii=False)
@@ -263,8 +293,13 @@ class MyApp(QMainWindow):
             selected_core = self.coreSelectBox.currentText()
             core_id = self.manager.core_available(selected_core)
             self.coreLabel.setText(selected_core)
-            self.versionLabel.setText(t(self.language, "version_placeholder"))
+            self._set_version_label(core_id)
             self.settings["active_core"] = core_id
+            with self.settings_file.open("w", encoding="utf-8") as file:
+                json.dump(self.settings, file, indent=4, ensure_ascii=False)
+        else:
+            self.settings["active_core"] = ""
+            self.versionLabel.setText("")
             with self.settings_file.open("w", encoding="utf-8") as file:
                 json.dump(self.settings, file, indent=4, ensure_ascii=False)
 
@@ -315,6 +350,19 @@ class MyApp(QMainWindow):
         self.language = normalize_language(self.settings.get("language", "ru"))
         self.apply_theme()
         self.apply_localization()
+
+    def _set_version_label(self, core_id):
+        if not core_id:
+            self.versionLabel.setText("")
+            return
+        try:
+            with config_path("cores.json").open("r", encoding="utf-8") as file:
+                cores = json.load(file)
+            info = cores.get(str(core_id), {})
+            version = info.get("minecraft_version", "")
+            self.versionLabel.setText(str(version) if version else "")
+        except Exception:
+            self.versionLabel.setText("")
 
     def open_github(self):
         QDesktopServices.openUrl(QUrl("https://github.com/Vanillllla/tg_mine_server_bot"))

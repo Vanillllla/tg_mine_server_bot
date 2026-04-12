@@ -6,7 +6,7 @@
     "telegram_bot_token": "",
     "use_modern_style": true,
     "use_last_active_core": false,
-    "active_core": "2",
+    "active_core": "1",
     "language": "ru",
     "debag_mode": false
 }

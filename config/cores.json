@@ -7,7 +7,10 @@
         "core_folder": "C:\\Users\\ivanm\\PycharmProjects\\tg_mine_server_bot\\Servers\\2_server_server1710",
         "eula_accept": false,
         "jave_version": "",
-        "java_path": ""
+        "java_path": "",
+        "xms_unit": "MB",
+        "xmx_unit": "GB",
+        "minecraft_version": "1.7.10"
     },
     "2": {
         "name": "magma-1-12-2.jar",
