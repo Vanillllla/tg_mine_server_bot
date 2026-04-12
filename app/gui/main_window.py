@@ -148,6 +148,8 @@ class MyApp(QMainWindow):
         self.label_3.setText(t(lang, "server_players"))
         self.label_4.setText(t(lang, "server_online_time"))
         self.settingsServerButton.setText(t(lang, "server_settings"))
+        self.openfolderButton.setText(t(lang, "server_open_folder"))
+        self.corelistButton.setText(t(lang, "core_list_button"))
 
         self.consoleGroupBox.setTitle(t(lang, "console_title"))
         self.console_input.setPlaceholderText(t(lang, "console_placeholder"))
