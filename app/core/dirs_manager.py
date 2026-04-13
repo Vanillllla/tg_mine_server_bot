@@ -1,5 +1,6 @@
 import json
 import shutil
+from pathlib import Path
 
 from app.core.paths import CONFIG_DIR, DOWNLOADS_DIR, SERVERS_DIR, config_path
 
@@ -67,3 +68,21 @@ class DirsManager:
             print(exc)
             return exc
         return core_id
+
+    @staticmethod
+    def delete_core(core_id: str) -> bool:
+        cores_file = config_path("cores.json")
+        with cores_file.open("r", encoding="utf-8") as file:
+            cores = json.load(file)
+
+        core_id = str(core_id)
+
+        if core_id not in cores:
+            return False
+
+        shutil.rmtree(cores[core_id]["core_folder"])
+
+        del cores[core_id]
+        with cores_file.open("w", encoding="utf-8") as file:
+            json.dump(cores, file, ensure_ascii=False, indent=4)
+        return True

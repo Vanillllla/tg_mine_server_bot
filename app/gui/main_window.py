@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QMessageBox, QSyst
 
 from app.core.dirs_manager import DirsManager
 from app.core.paths import config_path, icon_path, ui_path
+from app.gui.cores_list_window import CoresListWindow
 from app.gui.i18n import normalize_language, t
 from app.gui.server_settings_window import ServerSettingsWindow
 from app.gui.settings_window import SettingsWindow
@@ -28,6 +29,7 @@ class MyApp(QMainWindow):
         self.upload_window = None
         self.settings_window = None
         self.server_settings_window = None
+        self.cores_list_window = None
         self.manager = DirsManager()
         self.conn = conn
         self.bot_is_active = False
@@ -80,6 +82,7 @@ class MyApp(QMainWindow):
         self.action_GitHub.triggered.connect(self.open_github)
         self.bot_control_button.clicked.connect(self.start_bot)
         self.openfolderButton.clicked.connect(self.open_folder)
+        self.corelistButton.clicked.connect(self.open_cores_list_window)
 
         self.console_output.setMaximumBlockCount(3000)
         self.console_input.returnPressed.connect(self.send_server_command)
@@ -292,26 +295,30 @@ class MyApp(QMainWindow):
     #
     #     with self.settings_file.open("w", encoding="utf-8") as file:
     #         json.dump(self.settings, file, indent=4, ensure_ascii=False)
-
     def load_cores_to_combobox(self):
-        """Загружает список ядер из папки downloads_cores в комбобокс"""
         self.coreSelectBox.clear()
-        self.coreSelectBox.addItem("Выберите ядро")
+        self.coreSelectBox.addItem(t(self.language, "core_select_placeholder"))
         with config_path("cores.json").open("r", encoding="utf-8") as file:
             core_list = json.load(file)
-        listik = {}
-        for i in core_list:
-            listik[i] = core_list[i]["name"]
-        for i in listik:
-            self.coreSelectBox.addItem(f"{i}_{listik[f"{i}"]}")
-            if self.settings["use_last_active_core"] and str(i) == self.settings["active_core"]:
-                self.coreSelectBox.setCurrentIndex(int(i))
-                self.on_core_selected(int(i))
-        if not self.settings["use_last_active_core"]:
-            self.settings["active_core"] = ""
+
+        active_core = str(self.settings.get("active_core", ""))
+        selected_index = 0
+        for core_id, core_data in core_list.items():
+            self.coreSelectBox.addItem(f"{core_id}_{core_data.get('name', '')}")
+            if self.settings.get("use_last_active_core") and str(core_id) == active_core:
+                selected_index = self.coreSelectBox.count() - 1
+
+        if selected_index > 0:
+            self.coreSelectBox.setCurrentIndex(selected_index)
+            self._set_version_label(active_core)
+        else:
+            if not self.settings.get("use_last_active_core") or (active_core and active_core not in core_list):
+                self.settings["active_core"] = ""
+            if self.settings.get("active_core", "") == "":
+                self.versionLabel.setText("")
+
         with self.settings_file.open("w", encoding="utf-8") as file:
             json.dump(self.settings, file, indent=4, ensure_ascii=False)
-
 
     def on_core_selected(self, index):
         if index > 0:
@@ -351,6 +358,20 @@ class MyApp(QMainWindow):
         self.upload_window.exec_()
         self.apply_theme()
         self.apply_localization()
+        self.load_cores_to_combobox()
+
+    def open_cores_list_window(self):
+        self.cores_list_window = CoresListWindow(self)
+        self.cores_list_window.coresChanged.connect(self.on_core_deleted)
+        self.cores_list_window.exec_()
+
+    def on_core_deleted(self, core_id: str):
+        if str(self.settings.get("active_core", "")) == str(core_id):
+            self.settings["active_core"] = ""
+            self.coreLabel.setText("")
+            self.versionLabel.setText("")
+            with self.settings_file.open("w", encoding="utf-8") as file:
+                json.dump(self.settings, file, indent=4, ensure_ascii=False)
         self.load_cores_to_combobox()
 
     def open_server_settings_window(self):
