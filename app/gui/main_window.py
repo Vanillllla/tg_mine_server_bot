@@ -67,6 +67,7 @@ class MyApp(QMainWindow):
         self.status_timer.timeout.connect(self.update_bot_status)
         self.status_timer.start(5000)
 
+        self.load_cores_to_combobox()
         self.coreSelectBox.currentIndexChanged.connect(self.on_core_selected)
         self.startServerButton.clicked.connect(self.start_server)
         self.settingsServerButton.clicked.connect(self.open_server_settings_window)
@@ -90,7 +91,7 @@ class MyApp(QMainWindow):
         self.pipe_message.connect(self.handle_pipe_message)
         threading.Thread(target=self.pipe_read, daemon=True).start()
 
-        self.load_cores_to_combobox()
+        # self.load_cores_to_combobox()
         self.bot_indicator(False)
         self.show_server_status(False)
         self.apply_localization()
@@ -170,9 +171,9 @@ class MyApp(QMainWindow):
 
         self._update_tray_labels()
 
-        if self.coreSelectBox.count() > 0:
-            self.coreSelectBox.setItemText(0, t(lang, "core_select_placeholder"))
-        self._set_version_label(self.settings.get("active_core", ""))
+        # if self.coreSelectBox.count() > 0:
+        #     self.coreSelectBox.setItemText(0, t(lang, "core_select_placeholder"))
+        # self._set_version_label(self.settings.get("active_core", ""))
 
         self.bot_indicator(self.bot_is_active)
         self.show_server_status(self.server_is_active)
@@ -269,24 +270,48 @@ class MyApp(QMainWindow):
             self.conn.send({"to_process": "server", "from_process": "gui", "command": "set_server_status", "data": True})
             self.show_server_status(True)
 
+    # def load_cores_to_combobox(self):
+    #     self.coreSelectBox.clear()
+    #     self.coreSelectBox.addItem(t(self.language, "core_select_placeholder"))
+    #     with config_path("cores.json").open("r", encoding="utf-8") as file:
+    #         core_list = json.load(file)
+    #
+    #     for core_id, core in core_list.items():
+    #         self.coreSelectBox.addItem(f"{core_id}_{core['name']}")
+    #         print(core_id)
+    #         print(self.settings["use_last_active_core"])
+    #         print(self.settings["active_core"])
+    #         if self.settings["use_last_active_core"] and str(core_id) == self.settings["active_core"]:
+    #             print("ВЫБРАНО:", core_id)
+    #             self.coreSelectBox.setCurrentIndex(int(core_id)-1)
+    #             self._set_version_label(str(core_id))
+    #
+    #     if not self.settings["use_last_active_core"]:
+    #         # self.settings["active_core"] = ""
+    #         self.versionLabel.setText("")
+    #
+    #     with self.settings_file.open("w", encoding="utf-8") as file:
+    #         json.dump(self.settings, file, indent=4, ensure_ascii=False)
+
     def load_cores_to_combobox(self):
+        """Загружает список ядер из папки downloads_cores в комбобокс"""
         self.coreSelectBox.clear()
-        self.coreSelectBox.addItem(t(self.language, "core_select_placeholder"))
+        self.coreSelectBox.addItem("Выберите ядро")
         with config_path("cores.json").open("r", encoding="utf-8") as file:
             core_list = json.load(file)
-
-        for core_id, core in core_list.items():
-            self.coreSelectBox.addItem(f"{core_id}_{core['name']}")
-            if self.settings["use_last_active_core"] and str(core_id) == self.settings["active_core"]:
-                self.coreSelectBox.setCurrentIndex(int(core_id))
-                self._set_version_label(str(core_id))
-
+        listik = {}
+        for i in core_list:
+            listik[i] = core_list[i]["name"]
+        for i in listik:
+            self.coreSelectBox.addItem(f"{i}_{listik[f"{i}"]}")
+            if self.settings["use_last_active_core"] and str(i) == self.settings["active_core"]:
+                self.coreSelectBox.setCurrentIndex(int(i))
+                self.on_core_selected(int(i))
         if not self.settings["use_last_active_core"]:
             self.settings["active_core"] = ""
-            self.versionLabel.setText("")
-
         with self.settings_file.open("w", encoding="utf-8") as file:
             json.dump(self.settings, file, indent=4, ensure_ascii=False)
+
 
     def on_core_selected(self, index):
         if index > 0:

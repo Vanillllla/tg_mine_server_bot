@@ -1,37 +1,36 @@
 {
     "1": {
-        "name": "server1710.jar",
+        "name": "server.jar",
         "xms": 256,
-        "xmx": 2048,
+        "xmx": 1024,
         "core_name": "",
-        "core_folder": "C:\\Users\\ivanm\\PycharmProjects\\tg_mine_server_bot\\Servers\\2_server_server1710",
+        "core_folder": "C:\\Users\\ivanm\\PycharmProjects\\tg_mine_server_bot\\Servers\\1_server_server",
         "eula_accept": false,
         "jave_version": "",
         "java_path": "",
+        "minecraft_version": "1.7.10",
         "xms_unit": "MB",
-        "xmx_unit": "GB",
-        "minecraft_version": "1.7.10"
+        "xmx_unit": "GB"
     },
     "2": {
-        "name": "magma-1-12-2.jar",
+        "name": "server (2).jar",
         "xms": 256,
         "xmx": 2048,
         "core_name": "",
-        "core_folder": "C:\\Users\\ivanm\\PycharmProjects\\tg_mine_server_bot\\Servers\\2_server_magma-1-12-2",
+        "core_folder": "C:\\Users\\ivanm\\PycharmProjects\\tg_mine_server_bot\\Servers\\2_server_server (2)",
+        "eula_accept": false,
+        "jave_version": "",
+        "java_path": "",
+        "minecraft_version": "1.12.2"
+    },
+    "3": {
+        "name": "server (1).jar",
+        "xms": 256,
+        "xmx": 2048,
+        "core_name": "",
+        "core_folder": "C:\\Users\\ivanm\\PycharmProjects\\tg_mine_server_bot\\Servers\\3_server_server (1)",
         "eula_accept": false,
         "jave_version": "",
         "java_path": ""
-    },
-    "3": {
-        "name": "minecraft_server.1.16.5.jar",
-        "xms": 1024,
-        "xmx": 20480,
-        "core_name": "",
-        "core_folder": "C:\\Users\\ivanm\\PycharmProjects\\tg_mine_server_bot\\Servers\\3_server_magma-1-16-5",
-        "eula_accept": false,
-        "jave_version": "",
-        "java_path": "",
-        "xms_unit": "GB",
-        "xmx_unit": "GB"
     }
 }

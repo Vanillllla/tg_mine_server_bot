@@ -83,13 +83,13 @@ class ServerSystem:
                     self._try_toggle_rcon(msg.get("data"))
                 elif msg["command"] == "server_command":
                     self.send_commands(msg["data"])
-                elif msg["command"] == "server_rcon_commaand":
-                    response_text = self.handle_server_rcon_commaand(msg.get("data", ""))
+                elif msg["command"] == "server_rcon_command":
+                    response_text = self.handle_server_rcon_command(msg.get("data", ""))
                     self._send(
                         {
                             "to_process": msg.get("from_process"),
                             "from_process": "server",
-                            "command": "server_rcon_commaand",
+                            "command": "server_rcon_command",
                             "data": response_text,
                             "request_id": msg.get("request_id"),
                         }
@@ -356,9 +356,25 @@ class ServerSystem:
             response_id, _, response_body = self._read_rcon_packet(sock)
             if response_id == -1:
                 raise PermissionError("rcon_command_rejected")
-            return response_body
 
-    def handle_server_rcon_commaand(self, command: str) -> str:
+            response_parts = [response_body] if response_body else []
+            sock.settimeout(0.05)
+            while True:
+                try:
+                    next_response_id, _, next_response_body = self._read_rcon_packet(sock)
+                except socket.timeout:
+                    break
+
+                if next_response_id == -1:
+                    raise PermissionError("rcon_command_rejected")
+                if next_response_id != response_id:
+                    break
+                if next_response_body:
+                    response_parts.append(next_response_body)
+
+            return "\n".join(response_parts).replace("\r\n", "\n").replace("\r", "\n")
+
+    def handle_server_rcon_command(self, command: str) -> str:
         try:
             if not isinstance(command, str):
                 return "rcon_invalid_command_type"

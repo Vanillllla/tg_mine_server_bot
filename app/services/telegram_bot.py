@@ -5,6 +5,8 @@ import time
 import uuid
 from multiprocessing.connection import Connection
 from dotenv import load_dotenv
+from functools import wraps
+from aiogram.types import Message
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
@@ -20,6 +22,30 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 VANILLA = os.getenv("VANILLA")
 
+def send_rcon_command(func):
+    @wraps(func)
+    async def wrapper(self, message: Message, *args, **kwargs):
+        if self.server_info["status"] != 1:
+            await message.answer("Сервер выключен!")
+            return
+
+        command = await func(self, message, *args, **kwargs)
+
+        if not command:
+            await message.answer("Команда не задана")
+            return
+
+        msg = {
+            "to_process": "server",
+            "from_process": "bot",
+            "command": "server_rcon_command",
+            "data": command
+        }
+
+        ans = await self.request(msg)
+        await message.answer(str(ans["data"]))
+
+    return wrapper
 
 class BotKeyboards:
     @staticmethod
@@ -65,7 +91,7 @@ class BotKeyboards:
         keyboard = [
             [KeyboardButton(text="🟢 Запустить сервер 🟢") if not server_status else KeyboardButton(
                 text="🔴 Остановить сервер 🔴")],
-            [KeyboardButton(text="👥 Онлайн на сервере"), KeyboardButton(text="💻 Консоль")],
+            [KeyboardButton(text="👥 Онлайн на сервере"), KeyboardButton(text="📟 Консоль")],
             [KeyboardButton(text="⚙️ Настройки"), KeyboardButton(text="🔄 Перезапустить бота")],
         ]
         return ReplyKeyboardMarkup(
@@ -192,6 +218,7 @@ class Bott:
         self.dp.message.register(self.reload_bot, F.text == "🔄 Перезапустить бота", StateFilter(States.admin_main_menu))
         self.dp.message.register(self.chek_online, F.text == "👥 Онлайн на сервере",
                                  StateFilter(States.admin_main_menu, States.user_main_menu))
+        self.dp.message.register(self.console_mode, F.text == "📟 Консоль", StateFilter(States.admin_main_menu))
         self.dp.message.register(self.noname_main_menu, StateFilter(States.user_main_menu, States.admin_main_menu))
 
         self.dp.message.register(self.noname_no_auth)
@@ -214,12 +241,16 @@ class Bott:
             elif ans["dabble_start_flag"] == False:
                 await message.answer("Сервер запускается...")
                 ans2 = await self.request(msg2)
-                self.server_info["status"] = True
-                await self.bot.send_message(chat_id=message.chat.id,
-                                            text=f"Время запуска запуска: {ans2["data"]["launch_time_str"]}",
-                                            reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
-                                                                                   server_status=self.server_info[
-                                                                                       "status"]))
+                if ans2["data"]["start_error"] != '':
+                    self.server_info["status"] = False
+                    await  self.bot.send_message(message.chat.id, "Ошибка запуска :\n\n"+ans2["data"]["start_error"])
+                else:
+                    self.server_info["status"] = True
+                    await self.bot.send_message(chat_id=message.chat.id,
+                                                text=f"Время запуска запуска: {ans2["data"]["launch_time_str"]}",
+                                                reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
+                                                                                       server_status=self.server_info[
+                                                                                           "status"]))
 
     async def stop_server(self, message: Message, state: FSMContext):
         msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": False}
@@ -241,10 +272,13 @@ class Bott:
         msg = {"to_process": "connector", "from_process": "bot", "command": "reload_bot", "data": ""}
         self.pipe_send(msg)
 
+    @send_rcon_command
     async def chek_online(self, message: Message, state: FSMContext):
-        msg = {"to_process": "server", "from_process": "bot", "command": "server_command","data": "?"}
-        ans = await self.request(msg)
-        print(ans)
+        return "list"
+
+    @send_rcon_command
+    async def console_mode(self, message: Message, state: FSMContext):
+        return "help"
 
     async def noname_main_menu(self, message: Message):
         await message.answer("Неизвестная команда",
