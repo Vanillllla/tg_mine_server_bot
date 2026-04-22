@@ -5,3 +5,4 @@ Pyqt5-sip~=12.18.0
 aiofiles~=25.1.0
 python-dotenv~=1.2.2
 anyio~=4.13.0
+nvidia-ml-py3

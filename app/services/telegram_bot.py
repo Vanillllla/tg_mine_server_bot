@@ -6,8 +6,9 @@ import uuid
 from multiprocessing.connection import Connection
 from dotenv import load_dotenv
 from functools import wraps
-from aiogram.types import Message
+import psutil
 
+from aiogram.types import Message
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -21,6 +22,12 @@ from app.core.paths import config_path
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 VANILLA = os.getenv("VANILLA")
+
+try:
+    import pynvml  # pip install nvidia-ml-py3
+    _HAS_NVML = True
+except Exception:
+    _HAS_NVML = False
 
 def send_rcon_command(func):
     @wraps(func)
@@ -118,10 +125,9 @@ class BotKeyboards:
         )
 
         keyboard = [
-            [KeyboardButton(text="🧩 server.properties")],
-            [KeyboardButton(text="👤 Пользователи бота")],
-            [KeyboardButton(text="📊 Нагрузка сервера")],
-            [KeyboardButton(text=notify_button)],
+            [KeyboardButton(text="🧩 Server properties"), KeyboardButton(text="📊 Нагрузка сервера")],
+            # [KeyboardButton(text="👤 Пользователи бота")],
+            # [KeyboardButton(text=notify_button)],
             [KeyboardButton(text="⬅️ Назад")],
         ]
         return ReplyKeyboardMarkup(
@@ -216,11 +222,17 @@ class Bott:
         self.dp.message.register(self.stop_server, F.text == "🔴 Остановить сервер 🔴",
                                  StateFilter(States.admin_main_menu))
         self.dp.message.register(self.reload_bot, F.text == "🔄 Перезапустить бота", StateFilter(States.admin_main_menu))
+        self.dp.message.register(self.settings_open, F.text == "⚙️ Настройки", StateFilter(States.admin_main_menu))
+        # self.dp.message.register(self., F.text == "🧩 Server properties", StateFilter(States.admin_settings))
+        self.dp.message.register(self.workload, F.text == "📊 Нагрузка сервера", StateFilter(States.admin_settings))
+        self.dp.message.register(self.settings_close, F.text == "⬅️ Назад", StateFilter(States.admin_settings))
         self.dp.message.register(self.chek_online, F.text == "👥 Онлайн на сервере",
                                  StateFilter(States.admin_main_menu,     States.user_main_menu))
         self.dp.message.register(self.console_mode, F.text == "📟 Консоль", StateFilter(States.admin_main_menu))
         self.dp.message.register(self.noname_main_menu, StateFilter(States.user_main_menu, States.admin_main_menu))
+        self.dp.message.register(self.noname_settings_menu, StateFilter(States.admin_settings))
         self.dp.message.register(self.console_mode_write, StateFilter(States.admin_console))
+
 
         self.dp.message.register(self.noname_no_auth)
 
@@ -269,6 +281,62 @@ class Bott:
                                  reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
                                                                         server_status=self.server_info["status"]))
 
+    async def settings_open(self, message: Message, state: FSMContext):
+        await state.set_state(States.admin_settings)
+        await message.answer("Панель настроек : ", reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
+                                                                                          menu="settings"))
+
+    async def workload(self, message: Message, state: FSMContext):
+        # CPU "как в диспетчере задач" — за короткий интервал
+        cpu_percent = psutil.cpu_percent(interval=0.5)
+
+        # RAM
+        ram = psutil.virtual_memory()
+        ram_percent = ram.percent
+        ram_used_gb = ram.used / (1024 ** 3)
+        ram_total_gb = ram.total / (1024 ** 3)
+
+        # GPU (NVIDIA)
+        gpu_text = "GPU: недоступно (нет NVIDIA/драйвера/библиотеки pynvml)"
+        if _HAS_NVML:
+            try:
+                pynvml.nvmlInit()
+                handle = pynvml.nvmlDeviceGetHandleByIndex(0)  # первая видеокарта
+                util = pynvml.nvmlDeviceGetUtilizationRates(handle)
+                mem = pynvml.nvmlDeviceGetMemoryInfo(handle)
+                name = pynvml.nvmlDeviceGetName(handle)
+                if isinstance(name, bytes):
+                    name = name.decode("utf-8", errors="ignore")
+
+                gpu_percent = util.gpu
+                gpu_mem_percent = (mem.used / mem.total) * 100
+                gpu_mem_used_gb = mem.used / (1024 ** 3)
+                gpu_mem_total_gb = mem.total / (1024 ** 3)
+
+                gpu_text = (
+                    f"GPU ({name}): {gpu_percent:.1f}%\n"
+                    f"VRAM: {gpu_mem_used_gb:.1f}/{gpu_mem_total_gb:.1f} GB ({gpu_mem_percent:.1f}%)"
+                )
+            except Exception:
+                pass
+            finally:
+                try:
+                    pynvml.nvmlShutdown()
+                except Exception:
+                    pass
+
+        workload_text = (
+            f"📊 Нагрузка на сервер (текущий момент):\n"
+            f"🧠 CPU: {cpu_percent:.1f}%\n"
+            f"💾 RAM: {ram_used_gb:.1f}/{ram_total_gb:.1f} GB ({ram_percent:.1f}%)\n"
+            f"{gpu_text}"
+        )
+
+        await message.answer(workload_text)
+
+    async def settings_close(self, message: Message, state: FSMContext):
+        await self.start(message=message, state=state)
+
     async def reload_bot(self, message: Message, state: FSMContext):
         msg = {"to_process": "connector", "from_process": "bot", "command": "reload_bot", "data": ""}
         self.pipe_send(msg)
@@ -303,6 +371,9 @@ class Bott:
     @staticmethod
     async def noname_no_auth(message: Message):
         await message.answer("Введите /start для входа", reply_markup=ReplyKeyboardRemove())
+
+    async def noname_settings_menu(self, message: Message, state: FSMContext):
+        await message.answer("Неизвестная команда!")
 
     async def start(self, message: Message, state: FSMContext):
         self.profile_info = {"status": 1 if str(message.from_user.id) == str(VANILLA) else 0,
