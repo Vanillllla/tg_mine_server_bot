@@ -6,7 +6,6 @@ import uuid
 from multiprocessing.connection import Connection
 from dotenv import load_dotenv
 from functools import wraps
-import psutil
 
 from aiogram.types import Message
 from aiogram import Bot, Dispatcher, F
@@ -260,7 +259,7 @@ class Bott:
                 else:
                     self.server_info["status"] = True
                     await self.bot.send_message(chat_id=message.chat.id,
-                                                text=f"Время запуска запуска: {ans2["data"]["launch_time_str"]}",
+                                                text=f"Время запуска запуска: {ans2['data']['launch_time_str']}",
                                                 reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
                                                                                        server_status=self.server_info[
                                                                                            "status"]))
@@ -277,7 +276,7 @@ class Bott:
         else:
             ans = await self.request(msg)
             self.server_info["status"] = False
-            await message.answer(f"Сервер остановлен! \nВремя последнего сеанса: {str(ans2["data"]["work_time_str"])}",
+            await message.answer(f"Сервер остановлен! \nВремя последнего сеанса: {str(ans2['data']['work_time_str'])}",
                                  reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
                                                                         server_status=self.server_info["status"]))
 
@@ -287,14 +286,51 @@ class Bott:
                                                                                           menu="settings"))
 
     async def workload(self, message: Message, state: FSMContext):
-        # CPU "как в диспетчере задач" — за короткий интервал
-        cpu_percent = psutil.cpu_percent(interval=0.5)
+        msg = {"to_process": "server", "from_process": "bot", "command": "get_server_work_data", "data": ''}
+        ans = await self.request(msg)
+        work_data = ans.get("data", {}) if isinstance(ans, dict) else {}
 
-        # RAM
-        ram = psutil.virtual_memory()
-        ram_percent = ram.percent
-        ram_used_gb = ram.used / (1024 ** 3)
-        ram_total_gb = ram.total / (1024 ** 3)
+        system_metrics = work_data.get("system_metrics", {}) if isinstance(work_data, dict) else {}
+        process_metrics = work_data.get("server_process_metrics", {}) if isinstance(work_data, dict) else {}
+
+        sys_cpu = system_metrics.get("cpu_percent", "")
+        sys_ram_used = system_metrics.get("ram_used_gb", "")
+        sys_ram_total = system_metrics.get("ram_total_gb", "")
+        sys_ram_percent = system_metrics.get("ram_percent", "")
+
+        process_running = bool(process_metrics.get("is_running"))
+        proc_cpu = process_metrics.get("cpu_percent", "")
+        proc_ram_used = process_metrics.get("ram_rss_gb", "")
+        proc_ram_percent_sys = process_metrics.get("ram_percent_of_system", "")
+        proc_ram_percent_xmx = process_metrics.get("ram_percent_of_xmx", "")
+        proc_xmx = process_metrics.get("xmx_gb", "") or work_data.get("server_xmx_gb", "")
+
+        def _fmt_percent(value):
+            if isinstance(value, (int, float)):
+                return f"{value:.1f}%"
+            return "N/A"
+
+        def _fmt_gb(value):
+            if isinstance(value, (int, float)):
+                return f"{value:.2f}"
+            return "N/A"
+
+        cpu_line = f"🧠 CPU (система\\сервер): {_fmt_percent(sys_cpu)} \\ {_fmt_percent(proc_cpu) if process_running else 'N/A'}"
+
+        sys_ram_text = (
+            f"{_fmt_gb(sys_ram_used)}/{_fmt_gb(sys_ram_total)} GB ({_fmt_percent(sys_ram_percent)})"
+        )
+
+        if process_running:
+            if isinstance(proc_xmx, (int, float)) and proc_xmx > 0:
+                proc_ram_text = (
+                    f"{_fmt_gb(proc_ram_used)}/{_fmt_gb(proc_xmx)} GB "
+                    f"({_fmt_percent(proc_ram_percent_xmx)} от xmx, {_fmt_percent(proc_ram_percent_sys)} от RAM ПК)"
+                )
+            else:
+                proc_ram_text = f"{_fmt_gb(proc_ram_used)} GB ({_fmt_percent(proc_ram_percent_sys)} от RAM ПК)"
+        else:
+            proc_ram_text = "N/A (сервер выключен)"
 
         # GPU (NVIDIA)
         gpu_text = "GPU: недоступно (нет NVIDIA/драйвера/библиотеки pynvml)"
@@ -327,8 +363,8 @@ class Bott:
 
         workload_text = (
             f"📊 Нагрузка на сервер (текущий момент):\n"
-            f"🧠 CPU: {cpu_percent:.1f}%\n"
-            f"💾 RAM: {ram_used_gb:.1f}/{ram_total_gb:.1f} GB ({ram_percent:.1f}%)\n"
+            f"{cpu_line}\n"
+            f"💾 RAM (система\\сервер): {sys_ram_text} \\ {proc_ram_text}\n"
             f"{gpu_text}"
         )
 

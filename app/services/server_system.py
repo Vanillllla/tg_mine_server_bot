@@ -6,6 +6,8 @@ import time
 from collections import deque
 from pathlib import Path
 
+import psutil
+
 from app.core.paths import config_path
 
 
@@ -31,6 +33,8 @@ class ServerSystem:
 
         self.startup_log_tail = deque(maxlen=10)
         self.pending_work_data_requests = []
+        self.server_perf_initialized = False
+        self.process_perf_initialized = False
 
     def _try_toggle_rcon(self, value=True):
         try:
@@ -416,6 +420,9 @@ class ServerSystem:
         status = self.is_running()
         work_time = round(time.time() - server_work_started_at,
                           2) if status and server_work_started_at is not None else None
+        system_metrics = self._read_system_metrics()
+        xmx_mb = self._read_active_core_xmx_mb()
+        server_process_metrics = self._read_server_process_metrics(system_metrics.get("ram_total_bytes"), xmx_mb)
 
         return {
             "status": status,
@@ -427,7 +434,107 @@ class ServerSystem:
             "work_time": work_time if work_time is not None else "",
             "work_time_str": f"{work_time:.2f} sec" if work_time is not None else "",
             "start_error": start_error,
+            "server_xmx_mb": xmx_mb if xmx_mb is not None else "",
+            "server_xmx_gb": round(xmx_mb / 1024, 2) if xmx_mb is not None else "",
+            "system_metrics": system_metrics,
+            "server_process_metrics": server_process_metrics,
         }
+
+    def _read_system_metrics(self):
+        if not self.server_perf_initialized:
+            psutil.cpu_percent(interval=None)
+            self.server_perf_initialized = True
+
+        vm = psutil.virtual_memory()
+        return {
+            "cpu_percent": round(psutil.cpu_percent(interval=None), 2),
+            "ram_percent": round(vm.percent, 2),
+            "ram_used_gb": round(vm.used / (1024 ** 3), 2),
+            "ram_total_gb": round(vm.total / (1024 ** 3), 2),
+            "ram_total_bytes": vm.total,
+        }
+
+    @staticmethod
+    def _read_active_core_xmx_mb():
+        try:
+            with config_path("program_settings.json").open("r", encoding="utf-8") as file:
+                settings = json.load(file)
+            active_core = str(settings.get("active_core", ""))
+            if not active_core:
+                return None
+
+            with config_path("cores.json").open("r", encoding="utf-8") as file:
+                cores = json.load(file)
+
+            xmx = cores.get(active_core, {}).get("xmx")
+            if xmx is None:
+                return None
+
+            xmx_mb = int(xmx)
+            return xmx_mb if xmx_mb > 0 else None
+        except Exception:
+            return None
+
+    def _read_server_process_metrics(self, system_ram_total_bytes=None, xmx_mb=None):
+        if not self.is_running() or self.process is None:
+            return {
+                "is_running": False,
+                "pid": "",
+                "cpu_percent": "",
+                "ram_rss_mb": "",
+                "ram_rss_gb": "",
+                "ram_percent_of_system": "",
+                "ram_percent_of_xmx": "",
+                "xmx_mb": xmx_mb if xmx_mb is not None else "",
+                "xmx_gb": round(xmx_mb / 1024, 2) if xmx_mb is not None else "",
+            }
+
+        try:
+            proc = psutil.Process(self.process.pid)
+            if not self.process_perf_initialized:
+                proc.cpu_percent(interval=None)
+                self.process_perf_initialized = True
+
+            cpu_raw = proc.cpu_percent(interval=None)
+            cpu_count = psutil.cpu_count(logical=True) or 1
+            cpu_percent = round(cpu_raw / cpu_count, 2)
+
+            rss_bytes = proc.memory_info().rss
+            rss_mb = round(rss_bytes / (1024 ** 2), 2)
+            rss_gb = round(rss_bytes / (1024 ** 3), 2)
+
+            ram_percent_of_system = ""
+            if system_ram_total_bytes:
+                ram_percent_of_system = round((rss_bytes / system_ram_total_bytes) * 100, 2)
+
+            ram_percent_of_xmx = ""
+            if xmx_mb:
+                ram_percent_of_xmx = round((rss_mb / xmx_mb) * 100, 2)
+
+            return {
+                "is_running": True,
+                "pid": proc.pid,
+                "cpu_percent": cpu_percent,
+                "ram_rss_mb": rss_mb,
+                "ram_rss_gb": rss_gb,
+                "ram_percent_of_system": ram_percent_of_system,
+                "ram_percent_of_xmx": ram_percent_of_xmx,
+                "xmx_mb": xmx_mb if xmx_mb is not None else "",
+                "xmx_gb": round(xmx_mb / 1024, 2) if xmx_mb is not None else "",
+            }
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            self.process_perf_initialized = False
+            return {
+                "is_running": False,
+                "pid": "",
+                "cpu_percent": "",
+                "ram_rss_mb": "",
+                "ram_rss_gb": "",
+                "ram_percent_of_system": "",
+                "ram_percent_of_xmx": "",
+                "xmx_mb": xmx_mb if xmx_mb is not None else "",
+                "xmx_gb": round(xmx_mb / 1024, 2) if xmx_mb is not None else "",
+            }
 
     def _send_work_data_response(self, msg):
         data = msg.get("data")
@@ -530,6 +637,7 @@ class ServerSystem:
             )
             with self.state_lock:
                 self.server_work_started_at = time.time()
+            self.process_perf_initialized = False
         except Exception as exc:
             with self.state_lock:
                 self.is_starting = False
@@ -593,6 +701,7 @@ class ServerSystem:
         with self.state_lock:
             self.server_work_started_at = None
             self.current_core_id = ""
+            self.process_perf_initialized = False
             if was_starting:
                 self.is_starting = False
                 if self.last_start_started_at is not None and self.last_start_duration is None:
