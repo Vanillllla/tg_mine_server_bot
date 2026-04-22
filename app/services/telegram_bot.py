@@ -217,9 +217,10 @@ class Bott:
                                  StateFilter(States.admin_main_menu))
         self.dp.message.register(self.reload_bot, F.text == "🔄 Перезапустить бота", StateFilter(States.admin_main_menu))
         self.dp.message.register(self.chek_online, F.text == "👥 Онлайн на сервере",
-                                 StateFilter(States.admin_main_menu, States.user_main_menu))
+                                 StateFilter(States.admin_main_menu,     States.user_main_menu))
         self.dp.message.register(self.console_mode, F.text == "📟 Консоль", StateFilter(States.admin_main_menu))
         self.dp.message.register(self.noname_main_menu, StateFilter(States.user_main_menu, States.admin_main_menu))
+        self.dp.message.register(self.console_mode_write, StateFilter(States.admin_console))
 
         self.dp.message.register(self.noname_no_auth)
 
@@ -276,9 +277,23 @@ class Bott:
     async def chek_online(self, message: Message, state: FSMContext):
         return "list"
 
-    @send_rcon_command
+
     async def console_mode(self, message: Message, state: FSMContext):
-        return "help"
+        await state.set_state(States.admin_console)
+        await message.answer("Режим консоли:", reply_markup=BotKeyboards.get_keyboard(
+                                                                status=self.profile_info["status"],
+                                                                menu="console"))
+
+
+    async def console_mode_write(self, message: Message, state: FSMContext):
+        if message.text != "⬅️ Назад":
+            await self.console_mode_send(message, state)
+        else:
+            await self.start(message=message, state=state)
+
+    @send_rcon_command
+    async def console_mode_send(self, message: Message, state: FSMContext):
+        return str(message.text)
 
     async def noname_main_menu(self, message: Message):
         await message.answer("Неизвестная команда",
@@ -319,7 +334,7 @@ class Bott:
         except Exception as exc:
             print(f"Ошибка в боте: {exc}")
             import traceback
-
+            self.conn.send({"to_process": "GUI", "from_process": "bot", "command": "error_out","data": traceback.format_exc()})
             traceback.print_exc()
         finally:
             if self._response_task:

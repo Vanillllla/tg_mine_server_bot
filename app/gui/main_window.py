@@ -273,28 +273,6 @@ class MyApp(QMainWindow):
             self.conn.send({"to_process": "server", "from_process": "gui", "command": "set_server_status", "data": True})
             self.show_server_status(True)
 
-    # def load_cores_to_combobox(self):
-    #     self.coreSelectBox.clear()
-    #     self.coreSelectBox.addItem(t(self.language, "core_select_placeholder"))
-    #     with config_path("cores.json").open("r", encoding="utf-8") as file:
-    #         core_list = json.load(file)
-    #
-    #     for core_id, core in core_list.items():
-    #         self.coreSelectBox.addItem(f"{core_id}_{core['name']}")
-    #         print(core_id)
-    #         print(self.settings["use_last_active_core"])
-    #         print(self.settings["active_core"])
-    #         if self.settings["use_last_active_core"] and str(core_id) == self.settings["active_core"]:
-    #             print("ВЫБРАНО:", core_id)
-    #             self.coreSelectBox.setCurrentIndex(int(core_id)-1)
-    #             self._set_version_label(str(core_id))
-    #
-    #     if not self.settings["use_last_active_core"]:
-    #         # self.settings["active_core"] = ""
-    #         self.versionLabel.setText("")
-    #
-    #     with self.settings_file.open("w", encoding="utf-8") as file:
-    #         json.dump(self.settings, file, indent=4, ensure_ascii=False)
     def load_cores_to_combobox(self):
         self.coreSelectBox.clear()
         self.coreSelectBox.addItem(t(self.language, "core_select_placeholder"))
