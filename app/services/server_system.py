@@ -495,9 +495,8 @@ class ServerSystem:
                 proc.cpu_percent(interval=None)
                 self.process_perf_initialized = True
 
-            cpu_raw = proc.cpu_percent(interval=None)
-            cpu_count = psutil.cpu_count(logical=True) or 1
-            cpu_percent = round(cpu_raw / cpu_count, 2)
+            cpu_raw = proc.cpu_percent(interval=0.2)
+            cpu_percent = round(cpu_raw, 2)
 
             rss_bytes = proc.memory_info().rss
             rss_mb = round(rss_bytes / (1024 ** 2), 2)
