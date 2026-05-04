@@ -11,6 +11,10 @@ class DirsManager:
         DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)
         CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
+        from app.core.db import db
+
+        db.init()
+
         cores_file = config_path("cores.json")
         settings_file = config_path("program_settings.json")
 
