@@ -5,6 +5,8 @@ from app.core.paths import CONFIG_DIR, USERS_DB_PATH
 
 
 class UsersDB:
+    """Простой слой работы с таблицей Users в SQLite."""
+
     TABLE_NAME = "Users"
     COLUMN_NAMES = ["id", "status", "tg_id", "tg_nickname", "game_nickname"]
     COLUMN_TYPES = {
@@ -16,6 +18,7 @@ class UsersDB:
     }
 
     def init(self) -> None:
+        """Создать файл базы и таблицу Users, если их ещё нет."""
         CONFIG_DIR.mkdir(parents=True, exist_ok=True)
         with self._connect() as conn:
             conn.execute(
@@ -93,6 +96,12 @@ class UsersDB:
         return f"{column_name} = ?", (value,)
 
     def get(self, get_column: str, search_column: str, search_value: Any) -> Any:
+        """
+        Получить значение одного столбца из первой найденной строки.
+
+        Пример:
+            db.get("status", "tg_id", 123456789)
+        """
         try:
             self.init()
             if not self._check_column(get_column):
@@ -120,6 +129,12 @@ class UsersDB:
             return self._default_value(get_column)
 
     def getlist(self, search_column: str, search_value: Any) -> dict[str, Any]:
+        """
+        Получить первую найденную строку как словарь.
+
+        Пример:
+            db.getlist("tg_id", 123456789)
+        """
         try:
             self.init()
             if not self._check_column(search_column):
@@ -145,6 +160,12 @@ class UsersDB:
             return self._error("dict", str(exc))
 
     def getall(self) -> list[list[Any]]:
+        """
+        Получить всю таблицу Users.
+
+        Возвращает двумерный список без заголовков колонок.
+        Порядок колонок совпадает с getnames().
+        """
         try:
             self.init()
             with self._connect() as conn:
@@ -158,6 +179,7 @@ class UsersDB:
             return self._error("list", str(exc))
 
     def getnames(self) -> None:
+        """Напечатать индексы и имена колонок для результата getall()."""
         self.init()
         for index, column_name in enumerate(self.COLUMN_NAMES):
             print(f"{index} - {column_name}")
@@ -204,6 +226,18 @@ class UsersDB:
         return columns, values
 
     def set(self, *args: Any) -> int:
+        """
+        Создать новую строку в таблице Users.
+
+        Поддерживаемые форматы:
+            db.set("tg_id", "status", 123456789, 1)
+            db.set("tg_id", 123456789, "status", 1)
+
+        Пустые значения ("", None или отсутствие значения) записываются как пустые
+        значения подходящего типа. Для status по умолчанию используется 1.
+
+        Возвращает id созданной строки. При ошибке возвращает 0.
+        """
         try:
             self.init()
             columns, values = self._parse_set_args(args)
@@ -240,6 +274,14 @@ class UsersDB:
             return self._error("int", str(exc))
 
     def change(self, search_column: str, search_value: Any, change_column: str, change_value: Any) -> int:
+        """
+        Изменить значение одного столбца в строке, найденной по условию.
+
+        Пример:
+            db.change("tg_id", 123456789, "status", 2)
+
+        Возвращает количество изменённых строк. При ошибке возвращает 0.
+        """
         try:
             self.init()
             if not self._check_column(search_column):

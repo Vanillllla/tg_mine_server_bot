@@ -1,7 +1,6 @@
 import asyncio
 import json
 import os
-import time
 import uuid
 from multiprocessing.connection import Connection
 from dotenv import load_dotenv
@@ -9,6 +8,7 @@ from functools import wraps
 
 from aiogram.types import Message
 from aiogram import Bot, Dispatcher, F
+from aiogram.exceptions import TelegramNetworkError
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -17,6 +17,7 @@ from anyio import to_process
 from aiogram.filters import StateFilter
 
 from app.core.paths import config_path
+from app.core import db
 
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -169,10 +170,15 @@ class Bott:
         self.server_info = {"status": False}
 
     async def _state_updater(self):
-        msg = {"to_process": "server", "from_process": "bot", "command": "get_server_work_data", "data": ''}
-        ans = await self.request(msg)
-        self.server_info.update(ans["data"])
-        time.sleep(5)
+        while True:
+            try:
+                msg = {"to_process": "server", "from_process": "bot", "command": "get_server_work_data", "data": ''}
+                ans = await self.request(msg)
+                self.server_info.update(ans["data"])
+            except Exception as exc:
+                print(f"Ошибка обновления состояния сервера: {exc}")
+
+            await asyncio.sleep(5)
 
     async def request(self, data: dict, timeout: float = 90.0) -> dict:
         req_id = str(uuid.uuid4())
@@ -412,8 +418,15 @@ class Bott:
         await message.answer("Неизвестная команда!")
 
     async def start(self, message: Message, state: FSMContext):
-        self.profile_info = {"status": 1 if str(message.from_user.id) == str(VANILLA) else 0,
-                             "userid": message.from_user.id}
+        user_id = message.from_user.id
+        user = db.getlist("tg_id", user_id)
+        if not user:
+            user = db.set("tg_id", user_id, "status", 0)
+            db.insert("tg_id", user_id, "tg_nickname", 0)
+            user = db.getlist("tg_id", user_id)
+
+        self.profile_info = {"status": user["status"] if str(message.from_user.id) == str(VANILLA) else 0,
+                             "userid": message.from_user.id, "game_nickname": user["game_nickname"]}
 
         if self.profile_info["status"] == 1:
             await state.set_state(States.admin_main_menu)
@@ -434,7 +447,10 @@ class Bott:
             self._state_updater_task = asyncio.create_task(self._state_updater())
 
             print("Bot successfully started...")
-            await self.bot.send_message(1007806948, "Bot successfully started... /start")
+            try:
+                await self.bot.send_message(1007806948, "Bot successfully started... /start")
+            except TelegramNetworkError as exc:
+                print(f"Не удалось отправить стартовое сообщение в Telegram: {exc}")
 
             await self.dp.start_polling(self.bot)
 
@@ -446,6 +462,8 @@ class Bott:
         finally:
             if self._response_task:
                 self._response_task.cancel()
+            if getattr(self, "_state_updater_task", None):
+                self._state_updater_task.cancel()
             await self.bot.session.close()
             print("Бот остановлен")
 
