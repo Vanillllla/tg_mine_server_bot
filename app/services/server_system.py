@@ -35,6 +35,8 @@ class ServerSystem:
         self.pending_work_data_requests = []
         self.server_perf_initialized = False
         self.process_perf_initialized = False
+        self.online_monitor_thread = None
+        self.empty_server_since = None
 
     def _try_toggle_rcon(self, value=True):
         try:
@@ -251,7 +253,7 @@ class ServerSystem:
             shift += 7
         raise ValueError("varint_too_big")
 
-    def _query_minecraft_version(self, host: str, port: int, timeout: float = 3.0):
+    def _query_minecraft_status(self, host: str, port: int, timeout: float = 3.0):
         try:
             host_bytes = host.encode("utf-8")
             with socket.create_connection((host, port), timeout=timeout) as sock:
@@ -278,10 +280,76 @@ class ServerSystem:
                     return None
                 json_len, idx = self._read_varint_buffer(packet_data, idx)
                 raw_json = packet_data[idx: idx + json_len].decode("utf-8", errors="replace")
-                payload = json.loads(raw_json)
-                return payload.get("version", {}).get("name")
+                return json.loads(raw_json)
         except Exception:
             return None
+
+    def _query_minecraft_version(self, host: str, port: int, timeout: float = 3.0):
+        payload = self._query_minecraft_status(host, port, timeout=timeout)
+        if not isinstance(payload, dict):
+            return None
+        return payload.get("version", {}).get("name")
+
+    @staticmethod
+    def _read_online_shutdown_timeout_minutes():
+        try:
+            with config_path("program_settings.json").open("r", encoding="utf-8") as file:
+                settings = json.load(file)
+            value = settings.get("shutdown_if_empty_minutes", 0)
+            return max(int(value), 0)
+        except Exception:
+            return 0
+
+    def _read_online_players_count(self):
+        payload = self._query_minecraft_status(self.server_host, self.server_port)
+        if not isinstance(payload, dict):
+            return None
+        players = payload.get("players", {})
+        online = players.get("online")
+        try:
+            return max(int(online), 0)
+        except Exception:
+            return None
+
+    def _online_monitor_loop(self):
+        while True:
+            timeout_minutes = self._read_online_shutdown_timeout_minutes()
+            if timeout_minutes <= 0:
+                self.empty_server_since = None
+                time.sleep(30)
+                continue
+
+            with self.state_lock:
+                is_starting = self.is_starting
+
+            if is_starting or not self.is_running():
+                self.empty_server_since = None
+                time.sleep(30)
+                continue
+
+            online_players = self._read_online_players_count()
+            if online_players is None:
+                time.sleep(30)
+                continue
+
+            if online_players > 0:
+                self.empty_server_since = None
+                time.sleep(30)
+                continue
+
+            now = time.time()
+            if self.empty_server_since is None:
+                self.empty_server_since = now
+                time.sleep(30)
+                continue
+
+            if now - self.empty_server_since < timeout_minutes * 60:
+                time.sleep(30)
+                continue
+
+            self.stop_server()
+            self.empty_server_since = None
+            time.sleep(30)
 
     @staticmethod
     def _read_rcon_packet(sock: socket.socket):
@@ -402,6 +470,9 @@ class ServerSystem:
             json.dump(cores_all, file, ensure_ascii=False, indent=4)
 
     def run(self):
+        if self.online_monitor_thread is None or not self.online_monitor_thread.is_alive():
+            self.online_monitor_thread = threading.Thread(target=self._online_monitor_loop, daemon=True)
+            self.online_monitor_thread.start()
         self._read_from_connector()
 
     def _format_ts(self, ts):
@@ -418,6 +489,9 @@ class ServerSystem:
             server_work_started_at = self.server_work_started_at
 
         status = self.is_running()
+        online_players = None
+        if status and not is_starting:
+            online_players = self._read_online_players_count()
         work_time = round(time.time() - server_work_started_at,
                           2) if status and server_work_started_at is not None else None
         system_metrics = self._read_system_metrics()
@@ -433,6 +507,7 @@ class ServerSystem:
             "launch_time_str": f"{launch_time:.2f} sec" if launch_time is not None else "",
             "work_time": work_time if work_time is not None else "",
             "work_time_str": f"{work_time:.2f} sec" if work_time is not None else "",
+            "online_players": online_players if online_players is not None else "",
             "start_error": start_error,
             "server_xmx_mb": xmx_mb if xmx_mb is not None else "",
             "server_xmx_gb": round(xmx_mb / 1024, 2) if xmx_mb is not None else "",
@@ -701,6 +776,7 @@ class ServerSystem:
             self.server_work_started_at = None
             self.current_core_id = ""
             self.process_perf_initialized = False
+            self.empty_server_since = None
             if was_starting:
                 self.is_starting = False
                 if self.last_start_started_at is not None and self.last_start_duration is None:

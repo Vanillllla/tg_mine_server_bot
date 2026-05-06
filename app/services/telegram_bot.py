@@ -422,7 +422,7 @@ class Bott:
         user = db.getlist("tg_id", user_id)
         if not user:
             user = db.set("tg_id", user_id, "status", 0)
-            db.insert("tg_id", user_id, "tg_nickname", 0)
+            db.change("tg_id", user_id, "tg_nickname", 0)
             user = db.getlist("tg_id", user_id)
 
         self.profile_info = {"status": user["status"] if str(message.from_user.id) == str(VANILLA) else 0,

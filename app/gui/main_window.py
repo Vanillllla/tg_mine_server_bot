@@ -67,6 +67,7 @@ class MyApp(QMainWindow):
         self.status_timer = QTimer()
         self.status_timer.timeout.connect(self.update_server_status)
         self.status_timer.timeout.connect(self.update_bot_status)
+        self.status_timer.timeout.connect(self.request_server_work_data)
         self.status_timer.start(5000)
 
         self.load_cores_to_combobox()
@@ -99,6 +100,7 @@ class MyApp(QMainWindow):
         self.show_server_status(False)
         self.apply_localization()
         self._update_tray_labels()
+        self.request_server_work_data()
 
         self.tray_icon.show()
         self.show()
@@ -118,6 +120,8 @@ class MyApp(QMainWindow):
             active_core = str(self.settings.get("active_core", ""))
             if active_core and str(data.get("core_id", "")) == active_core:
                 self.versionLabel.setText(str(data.get("minecraft_version", "")))
+        elif msg["command"] == "set_server_work_data":
+            self.update_server_work_data(msg.get("data", {}))
         elif msg["command"] == "error_out":
             self.error_output(msg)
         elif msg["command"] == "server_log":
@@ -222,6 +226,9 @@ class MyApp(QMainWindow):
     def update_bot_status(self):
         self.conn.send({"to_process": "connector", "from_process": "gui", "command": "get_bot_status", "data": ""})
 
+    def request_server_work_data(self):
+        self.conn.send({"to_process": "server", "from_process": "gui", "command": "get_server_work_data", "data": ""})
+
     def show_server_status(self, is_active):
         previous = self.server_is_active
         self.server_is_active = is_active
@@ -230,6 +237,8 @@ class MyApp(QMainWindow):
             self.startServerButton.setStyleSheet("color: #CC0000;")
             if self.server_start_time is None:
                 self.server_start_time = time.time()
+            if hasattr(self, "versionLabel_2") and not previous:
+                self.versionLabel_2.setText("...")
             if not self.online_timer.isActive():
                 self.online_timer.start(1000)
         else:
@@ -237,9 +246,30 @@ class MyApp(QMainWindow):
             self.startServerButton.setStyleSheet("color: #00CC00;")
             self.online_timer.stop()
             self.server_start_time = None
+            if hasattr(self, "versionLabel_2"):
+                self.versionLabel_2.setText(t(self.language, "server_offline_state"))
             if hasattr(self, "versionLabel_3"):
                 self.versionLabel_3.setText(t(self.language, "server_offline_state"))
         self._update_tray_labels()
+
+    def update_server_work_data(self, data):
+        if not isinstance(data, dict):
+            return
+
+        is_running = bool(data.get("status"))
+        is_starting = bool(data.get("is_starting"))
+
+        if hasattr(self, "versionLabel_2"):
+            if is_running:
+                online_players = data.get("online_players", "")
+                self.versionLabel_2.setText(str(online_players) if online_players != "" else "0")
+            elif is_starting:
+                self.versionLabel_2.setText("...")
+            else:
+                self.versionLabel_2.setText(t(self.language, "server_offline_state"))
+
+        if hasattr(self, "versionLabel_3") and not is_running and not is_starting and self.server_start_time is None:
+            self.versionLabel_3.setText(t(self.language, "server_offline_state"))
 
     def update_online_time(self):
         if self.server_start_time is None:
@@ -288,11 +318,12 @@ class MyApp(QMainWindow):
 
         if selected_index > 0:
             self.coreSelectBox.setCurrentIndex(selected_index)
-            self._set_version_label(active_core)
+            self._set_active_core_display(active_core, self.coreSelectBox.itemText(selected_index))
         else:
             if not self.settings.get("use_last_active_core") or (active_core and active_core not in core_list):
                 self.settings["active_core"] = ""
             if self.settings.get("active_core", "") == "":
+                self.coreLabel.setText("")
                 self.versionLabel.setText("")
 
         with self.settings_file.open("w", encoding="utf-8") as file:
@@ -302,13 +333,13 @@ class MyApp(QMainWindow):
         if index > 0:
             selected_core = self.coreSelectBox.currentText()
             core_id = self.manager.core_available(selected_core)
-            self.coreLabel.setText(selected_core)
-            self._set_version_label(core_id)
+            self._set_active_core_display(core_id, selected_core)
             self.settings["active_core"] = core_id
             with self.settings_file.open("w", encoding="utf-8") as file:
                 json.dump(self.settings, file, indent=4, ensure_ascii=False)
         else:
             self.settings["active_core"] = ""
+            self.coreLabel.setText("")
             self.versionLabel.setText("")
             with self.settings_file.open("w", encoding="utf-8") as file:
                 json.dump(self.settings, file, indent=4, ensure_ascii=False)
@@ -387,6 +418,10 @@ class MyApp(QMainWindow):
             self.versionLabel.setText(str(version) if version else "")
         except Exception:
             self.versionLabel.setText("")
+
+    def _set_active_core_display(self, core_id, core_text):
+        self.coreLabel.setText(core_text or "")
+        self._set_version_label(core_id)
 
     def open_github(self):
         QDesktopServices.openUrl(QUrl("https://github.com/Vanillllla/tg_mine_server_bot"))
