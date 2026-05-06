@@ -161,7 +161,6 @@ class MyApp(QMainWindow):
         self.tray_exit_action.setText(t(lang, "tray_exit"))
 
         self.botStatusLabel.setText(t(lang, "bot_label"))
-        self.bot_control_button.setText(t(lang, "bot_start_button"))
 
         self.serverGroupBox.setTitle(t(lang, "server_group"))
         self.label.setText(t(lang, "server_core"))
@@ -202,6 +201,7 @@ class MyApp(QMainWindow):
         self.bot_is_active = is_active
         if is_active:
             self.botStatusLabel_ind.setText(t(self.language, "bot_on"))
+            self.bot_control_button.setText(t(self.language, "bot_stop_button"))
             self.botStatusLabel_ind.setStyleSheet(
                 "background-color: transparent;"
                 "color: #8dff77;"
@@ -211,6 +211,7 @@ class MyApp(QMainWindow):
             )
         else:
             self.botStatusLabel_ind.setText(t(self.language, "bot_off"))
+            self.bot_control_button.setText(t(self.language, "bot_start_button"))
             self.botStatusLabel_ind.setStyleSheet(
                 "background-color: transparent;"
                 "color: #ff7d7d;"
