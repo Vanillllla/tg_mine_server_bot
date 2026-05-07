@@ -434,12 +434,13 @@ class Bott:
         user_id = message.from_user.id
         user = db.getlist("tg_id", user_id)
         if not user:
-            user = db.set("tg_id", user_id, "status", 0)
+            user = db.set("tg_id", "status", "language", user_id, 0, "ru")
             db.change("tg_id", user_id, "tg_nickname", 0)
             user = db.getlist("tg_id", user_id)
 
         self.profile_info = {"status": user["status"] if str(message.from_user.id) == str(VANILLA) else 0,
-                             "userid": message.from_user.id, "game_nickname": user["game_nickname"]}
+                             "userid": message.from_user.id, "game_nickname": user["game_nickname"],
+                             "language": user["language"]}
 
         if self.profile_info["status"] == 1:
             await state.set_state(States.admin_main_menu)

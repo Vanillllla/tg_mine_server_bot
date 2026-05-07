@@ -8,13 +8,14 @@ class UsersDB:
     """Простой слой работы с таблицей Users в SQLite."""
 
     TABLE_NAME = "Users"
-    COLUMN_NAMES = ["id", "status", "tg_id", "tg_nickname", "game_nickname"]
+    COLUMN_NAMES = ["id", "status", "tg_id", "tg_nickname", "game_nickname", "language"]
     COLUMN_TYPES = {
         "id": int,
         "status": int,
         "tg_id": int,
         "tg_nickname": str,
         "game_nickname": str,
+        "language": str,
     }
 
     def init(self) -> None:
@@ -28,11 +29,22 @@ class UsersDB:
                     status INTEGER DEFAULT 1,
                     tg_id INTEGER UNIQUE,
                     tg_nickname TEXT DEFAULT '',
-                    game_nickname TEXT DEFAULT ''
+                    game_nickname TEXT DEFAULT '',
+                    language TEXT DEFAULT 'ru'
                 )
                 """
             )
+            self._migrate(conn)
             conn.commit()
+
+    def _migrate(self, conn: sqlite3.Connection) -> None:
+        existing_columns = {
+            row["name"]
+            for row in conn.execute(f"PRAGMA table_info({self.TABLE_NAME})").fetchall()
+        }
+
+        if "language" not in existing_columns:
+            conn.execute(f"ALTER TABLE {self.TABLE_NAME} ADD COLUMN language TEXT DEFAULT 'ru'")
 
     @staticmethod
     def _connect() -> sqlite3.Connection:
@@ -41,6 +53,9 @@ class UsersDB:
         return conn
 
     def _default_value(self, column_name: str) -> Any:
+        if column_name == "language":
+            return "ru"
+
         column_type = self.COLUMN_TYPES.get(column_name, str)
         if column_type is int:
             return 0
