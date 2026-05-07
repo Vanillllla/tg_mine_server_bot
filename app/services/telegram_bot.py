@@ -310,6 +310,7 @@ class Bott:
         proc_ram_percent_sys = process_metrics.get("ram_percent_of_system", "")
         proc_ram_percent_xmx = process_metrics.get("ram_percent_of_xmx", "")
         proc_xmx = process_metrics.get("xmx_gb", "") or work_data.get("server_xmx_gb", "")
+        server_tps = work_data.get("server_tps", "") if isinstance(work_data, dict) else ""
 
         def _fmt_percent(value):
             if isinstance(value, (int, float)):
@@ -337,6 +338,17 @@ class Bott:
                 proc_ram_text = f"{_fmt_gb(proc_ram_used)} GB ({_fmt_percent(proc_ram_percent_sys)} от RAM ПК)"
         else:
             proc_ram_text = "N/A (сервер выключен)"
+
+        if process_running:
+            if isinstance(server_tps, dict) and isinstance(server_tps.get("value"), (int, float)):
+                tps_text = (
+                    f"{server_tps['value']:.2f} "
+                    f"({server_tps.get('ticks', 'N/A')} ticks / {server_tps.get('seconds', 'N/A')} sec)"
+                )
+            else:
+                tps_text = "N/A (замер ещё не завершён)"
+        else:
+            tps_text = "N/A (сервер выключен)"
 
         # GPU (NVIDIA)
         gpu_text = "GPU: недоступно (нет NVIDIA/драйвера/библиотеки pynvml)"
@@ -371,6 +383,7 @@ class Bott:
             f"📊 Нагрузка на сервер (текущий момент):\n"
             f"{cpu_line}\n"
             f"💾 RAM (система\\сервер): {sys_ram_text} \\ {proc_ram_text}\n"
+            f"⏱️ TPS: {tps_text}\n"
             f"{gpu_text}"
         )
 

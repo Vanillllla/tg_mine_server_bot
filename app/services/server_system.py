@@ -1,4 +1,5 @@
 import json
+import re
 import socket
 import subprocess
 import threading
@@ -37,6 +38,11 @@ class ServerSystem:
         self.process_perf_initialized = False
         self.online_monitor_thread = None
         self.empty_server_since = None
+        self.tps_measurement_thread = None
+        self.tps_measurement_lock = threading.Lock()
+        self.tps_measurement_in_progress = False
+        self.last_tps_data = None
+        self.last_tps_measured_at = 0.0
 
     def _try_toggle_rcon(self, value=True):
         try:
@@ -311,6 +317,79 @@ class ServerSystem:
         except Exception:
             return None
 
+    def _reset_tps_cache(self):
+        with self.tps_measurement_lock:
+            self.tps_measurement_in_progress = False
+            self.tps_measurement_thread = None
+        with self.state_lock:
+            self.last_tps_data = None
+            self.last_tps_measured_at = 0.0
+
+    @staticmethod
+    def _parse_debug_tps_response(response: str):
+        if not isinstance(response, str):
+            return None
+
+        cleaned = re.sub(r"§.", "", response).strip()
+        match = re.search(
+            r"Stopped debug profiling after\s+([0-9]+(?:\.[0-9]+)?)\s+seconds\s+\((\d+)\s+ticks\)",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+        if not match:
+            return None
+
+        seconds = float(match.group(1))
+        ticks = int(match.group(2))
+        if seconds <= 0:
+            return None
+
+        return {
+            "value": round(ticks / seconds, 2),
+            "seconds": round(seconds, 3),
+            "ticks": ticks,
+            "raw": cleaned,
+        }
+
+    def _measure_server_tps(self, sample_seconds: float = 10.0):
+        parsed = None
+
+        try:
+            self.execute_rcon_command("debug start", timeout=3.0)
+            time.sleep(sample_seconds)
+            response = self.execute_rcon_command("debug stop", timeout=3.0)
+            parsed = self._parse_debug_tps_response(response)
+        except Exception:
+            parsed = None
+        finally:
+            with self.state_lock:
+                self.last_tps_data = parsed
+                self.last_tps_measured_at = time.time() if parsed else 0.0
+            with self.tps_measurement_lock:
+                self.tps_measurement_in_progress = False
+                self.tps_measurement_thread = None
+
+    def _ensure_tps_measurement(self, force: bool = False):
+        if not self.is_running() or self.process is None:
+            return
+
+        with self.state_lock:
+            has_fresh_sample = (
+                self.last_tps_data is not None
+                and self.last_tps_measured_at > 0
+                and (time.time() - self.last_tps_measured_at) < 30
+            )
+
+        with self.tps_measurement_lock:
+            if self.tps_measurement_in_progress:
+                return
+            if has_fresh_sample and not force:
+                return
+
+            self.tps_measurement_in_progress = True
+            self.tps_measurement_thread = threading.Thread(target=self._measure_server_tps, daemon=True)
+            self.tps_measurement_thread.start()
+
     def _online_monitor_loop(self):
         while True:
             timeout_minutes = self._read_online_shutdown_timeout_minutes()
@@ -487,11 +566,13 @@ class ServerSystem:
             launch_time = self.last_start_duration
             start_error = self.start_error
             server_work_started_at = self.server_work_started_at
+            cached_tps = self.last_tps_data
 
         status = self.is_running()
         online_players = None
         if status and not is_starting:
             online_players = self._read_online_players_count()
+            self._ensure_tps_measurement()
         work_time = round(time.time() - server_work_started_at,
                           2) if status and server_work_started_at is not None else None
         system_metrics = self._read_system_metrics()
@@ -508,6 +589,7 @@ class ServerSystem:
             "work_time": work_time if work_time is not None else "",
             "work_time_str": f"{work_time:.2f} sec" if work_time is not None else "",
             "online_players": online_players if online_players is not None else "",
+            "server_tps": cached_tps if cached_tps is not None else "",
             "start_error": start_error,
             "server_xmx_mb": xmx_mb if xmx_mb is not None else "",
             "server_xmx_gb": round(xmx_mb / 1024, 2) if xmx_mb is not None else "",
@@ -657,6 +739,7 @@ class ServerSystem:
             self.last_start_duration = None
             self.start_error = ""
             self.startup_log_tail.clear()
+        self._reset_tps_cache()
 
         if settings["active_core"] == "":
             with self.state_lock:
@@ -784,6 +867,7 @@ class ServerSystem:
                 if not self.start_error:
                     tail_text = "\n".join(self.startup_log_tail).strip()
                     self.start_error = tail_text if tail_text else "startup_stopped"
+        self._reset_tps_cache()
 
         if was_starting:
             self._flush_pending_work_data_requests()
@@ -889,6 +973,7 @@ class ServerSystem:
                     )
                 except Exception:
                     pass
+            self._ensure_tps_measurement(force=True)
 
         self._flush_pending_work_data_requests()
 
