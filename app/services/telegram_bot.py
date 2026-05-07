@@ -2,22 +2,20 @@ import asyncio
 import json
 import os
 import uuid
-from multiprocessing.connection import Connection
-from dotenv import load_dotenv
 from functools import wraps
+from multiprocessing.connection import Connection
 
-from aiogram.types import Message
-from aiogram import Bot, Dispatcher, F
+from aiogram import Bot, Dispatcher
 from aiogram.exceptions import TelegramNetworkError
-from aiogram.filters import Command
+from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup, ReplyKeyboardRemove
-from anyio import to_process
-from aiogram.filters import StateFilter
+from aiogram.types import Message, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from dotenv import load_dotenv
 
-from app.core.paths import config_path
 from app.core import db
+from app.core.paths import config_path
+from app.services.bot_ui import build_keyboard, get_message, is_action_text, normalize_locale
 
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -25,28 +23,29 @@ VANILLA = os.getenv("VANILLA")
 
 try:
     import pynvml  # pip install nvidia-ml-py3
+
     _HAS_NVML = True
 except Exception:
     _HAS_NVML = False
+
 
 def send_rcon_command(func):
     @wraps(func)
     async def wrapper(self, message: Message, *args, **kwargs):
         if self.server_info["status"] != 1:
-            await message.answer("Сервер выключен!")
+            await message.answer(self._msg(message, "server_off"))
             return
 
         command = await func(self, message, *args, **kwargs)
-
         if not command:
-            await message.answer("Команда не задана")
+            await message.answer(self._msg(message, "command_not_set"))
             return
 
         msg = {
             "to_process": "server",
             "from_process": "bot",
             "command": "server_rcon_command",
-            "data": command
+            "data": command,
         }
 
         ans = await self.request(msg)
@@ -54,98 +53,20 @@ def send_rcon_command(func):
 
     return wrapper
 
+
 class BotKeyboards:
     @staticmethod
-    def get_keyboard(status: int = 0, server_status: bool = False,
-                     menu: str = "main_menu") -> ReplyKeyboardMarkup:
-        if status == 0:
-            if menu == "main_menu":
-                return BotKeyboards.user_main(server_status)
-            elif menu == "settings":
-                return BotKeyboards.user_settings()
-        if status == 1:
-            if menu in {"main", "main_menu"}:
-                return BotKeyboards.admin_main(server_status)
-            elif menu == "settings":
-                return BotKeyboards.admin_settings()
-            elif menu == "console":
-                return BotKeyboards.admin_console()
-
-    @staticmethod
-    def user_main(server_status: bool = False) -> ReplyKeyboardMarkup:
-        keyboard = [
-            [KeyboardButton(text=("🚀 Запустить сервер" if not server_status else "👥 Онлайн на сервере"))],
-            [KeyboardButton(text="⚙️ Мои настройки"), KeyboardButton(text="test")],
-        ]
-        return ReplyKeyboardMarkup(
-            keyboard=keyboard,
-            resize_keyboard=True
-        )
-
-    @staticmethod
-    def user_settings() -> ReplyKeyboardMarkup:
-        keyboard = [
-            [KeyboardButton(text="👤 Профиль")],
-            [KeyboardButton(text="⬅️ Назад")],
-        ]
-        return ReplyKeyboardMarkup(
-            keyboard=keyboard,
-            resize_keyboard=True
-        )
-
-    @staticmethod
-    def admin_main(server_status: bool = False) -> ReplyKeyboardMarkup:
-        keyboard = [
-            [KeyboardButton(text="🟢 Запустить сервер 🟢") if not server_status else KeyboardButton(
-                text="🔴 Остановить сервер 🔴")],
-            [KeyboardButton(text="👥 Онлайн на сервере"), KeyboardButton(text="📟 Консоль")],
-            [KeyboardButton(text="⚙️ Настройки"), KeyboardButton(text="🔄 Перезапустить бота")],
-        ]
-        return ReplyKeyboardMarkup(
-            keyboard=keyboard,
-            resize_keyboard=True
-        )
-
-    @staticmethod
-    def admin_console() -> ReplyKeyboardMarkup:
-        keyboard = [
-            [KeyboardButton(text="⬅️ Назад")],
-        ]
-        return ReplyKeyboardMarkup(
-            keyboard=keyboard,
-            resize_keyboard=True
-        )
-
-    @staticmethod
-    def admin_settings(notifications_enabled: bool = True) -> ReplyKeyboardMarkup:
-        notify_button = (
-            "🟢 Выключить уведомления о запуске"
-            if notifications_enabled
-            else "🔴 Включить уведомления о запуске"
-        )
-
-        keyboard = [
-            [KeyboardButton(text="🧩 Server properties"), KeyboardButton(text="📊 Нагрузка сервера")],
-            # [KeyboardButton(text="👤 Пользователи бота")],
-            # [KeyboardButton(text=notify_button)],
-            [KeyboardButton(text="⬅️ Назад")],
-        ]
-        return ReplyKeyboardMarkup(
-            keyboard=keyboard,
-            resize_keyboard=True
-        )
-
-    @staticmethod
-    def admin_users() -> ReplyKeyboardMarkup:
-        keyboard = [
-            [KeyboardButton(text="📋 Список пользователей")],
-            [KeyboardButton(text="➕ Добавить пользователя"), KeyboardButton(text="➖ Удалить пользователя")],
-            [KeyboardButton(text="🔒 Права доступа")],
-            [KeyboardButton(text="⬅️ Назад")],
-        ]
-        return ReplyKeyboardMarkup(
-            keyboard=keyboard,
-            resize_keyboard=True
+    def get_keyboard(
+        status: int = 0,
+        server_status: bool = False,
+        menu: str = "main_menu",
+        locale: str = "ru",
+    ) -> ReplyKeyboardMarkup | None:
+        return build_keyboard(
+            status=status,
+            server_status=server_status,
+            menu=menu,
+            locale=locale,
         )
 
 
@@ -163,16 +84,64 @@ class Bott:
         self.bot = Bot(token=token)
         self.conn = conn
         self.dp = Dispatcher()
-        self._register_handlers()
         self.vanilla = VANILLA if VANILLA else None
         self.pending = {}
+        self.user_locales = {}
         self._response_task = None
         self.server_info = {"status": False}
+        self._register_handlers()
+
+    @staticmethod
+    def _button_filter(action_id: str):
+        def _filter(message: Message) -> bool:
+            return is_action_text(action_id, getattr(message, "text", None))
+
+        return _filter
+
+    def _set_user_locale(self, user_id: int, tg_language_code: str | None):
+        self.user_locales[user_id] = normalize_locale(tg_language_code)
+
+    def _resolve_locale(self, message: Message) -> str:
+        user_id = message.from_user.id if message.from_user else None
+        if user_id is not None and user_id in self.user_locales:
+            return self.user_locales[user_id]
+
+        tg_language_code = message.from_user.language_code if message.from_user else None
+        locale = normalize_locale(tg_language_code)
+        if user_id is not None:
+            self.user_locales[user_id] = locale
+        return locale
+
+    def _msg(self, message: Message, key: str, **kwargs) -> str:
+        return get_message(self._resolve_locale(message), key, **kwargs)
+
+    def _keyboard(
+        self,
+        message: Message,
+        status: int,
+        server_status: bool = False,
+        menu: str = "main_menu",
+    ) -> ReplyKeyboardMarkup | None:
+        return BotKeyboards.get_keyboard(
+            status=status,
+            server_status=server_status,
+            menu=menu,
+            locale=self._resolve_locale(message),
+        )
+
+    @staticmethod
+    def _is_action(message: Message, action_id: str) -> bool:
+        return is_action_text(action_id, getattr(message, "text", None))
 
     async def _state_updater(self):
         while True:
             try:
-                msg = {"to_process": "server", "from_process": "bot", "command": "get_server_work_data", "data": ''}
+                msg = {
+                    "to_process": "server",
+                    "from_process": "bot",
+                    "command": "get_server_work_data",
+                    "data": "",
+                }
                 ans = await self.request(msg)
                 self.server_info.update(ans["data"])
             except Exception as exc:
@@ -222,22 +191,53 @@ class Bott:
 
     def _register_handlers(self):
         self.dp.message.register(self.start, Command("start"))
-        self.dp.message.register(self.start_server, F.text.in_(["🚀 Запустить сервер", "🟢 Запустить сервер 🟢"]),
-                                 StateFilter(States.user_main_menu, States.admin_main_menu))
-        self.dp.message.register(self.stop_server, F.text == "🔴 Остановить сервер 🔴",
-                                 StateFilter(States.admin_main_menu))
-        self.dp.message.register(self.reload_bot, F.text == "🔄 Перезапустить бота", StateFilter(States.admin_main_menu))
-        self.dp.message.register(self.settings_open, F.text == "⚙️ Настройки", StateFilter(States.admin_main_menu))
-        # self.dp.message.register(self., F.text == "🧩 Server properties", StateFilter(States.admin_settings))
-        self.dp.message.register(self.workload, F.text == "📊 Нагрузка сервера", StateFilter(States.admin_settings))
-        self.dp.message.register(self.settings_close, F.text == "⬅️ Назад", StateFilter(States.admin_settings))
-        self.dp.message.register(self.chek_online, F.text == "👥 Онлайн на сервере",
-                                 StateFilter(States.admin_main_menu,     States.user_main_menu))
-        self.dp.message.register(self.console_mode, F.text == "📟 Консоль", StateFilter(States.admin_main_menu))
-        self.dp.message.register(self.noname_main_menu, StateFilter(States.user_main_menu, States.admin_main_menu))
+        self.dp.message.register(
+            self.start_server,
+            self._button_filter("start_server"),
+            StateFilter(States.user_main_menu, States.admin_main_menu),
+        )
+        self.dp.message.register(
+            self.stop_server,
+            self._button_filter("stop_server"),
+            StateFilter(States.admin_main_menu),
+        )
+        self.dp.message.register(
+            self.reload_bot,
+            self._button_filter("reload_bot"),
+            StateFilter(States.admin_main_menu),
+        )
+        self.dp.message.register(
+            self.settings_open,
+            self._button_filter("admin_settings"),
+            StateFilter(States.admin_main_menu),
+        )
+        # self.dp.message.register(self., self._button_filter("server_properties"), StateFilter(States.admin_settings))
+        self.dp.message.register(
+            self.workload,
+            self._button_filter("workload"),
+            StateFilter(States.admin_settings),
+        )
+        self.dp.message.register(
+            self.settings_close,
+            self._button_filter("back"),
+            StateFilter(States.admin_settings),
+        )
+        self.dp.message.register(
+            self.chek_online,
+            self._button_filter("online"),
+            StateFilter(States.admin_main_menu, States.user_main_menu),
+        )
+        self.dp.message.register(
+            self.console_mode,
+            self._button_filter("console"),
+            StateFilter(States.admin_main_menu),
+        )
+        self.dp.message.register(
+            self.noname_main_menu,
+            StateFilter(States.user_main_menu, States.admin_main_menu),
+        )
         self.dp.message.register(self.noname_settings_menu, StateFilter(States.admin_settings))
         self.dp.message.register(self.console_mode_write, StateFilter(States.admin_console))
-
 
         self.dp.message.register(self.noname_no_auth)
 
@@ -247,52 +247,81 @@ class Bott:
 
     async def start_server(self, message: Message, state: FSMContext):
         msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": True}
-        msg2 = {"to_process": "server", "from_process": "bot", "command": "get_server_work_data", "data": ''}
+        msg2 = {"to_process": "server", "from_process": "bot", "command": "get_server_work_data", "data": ""}
         ans = await self.request(msg)
+
         if "dabble_start_flag" in ans:
-            if ans["dabble_start_flag"] == True:
+            if ans["dabble_start_flag"] is True:
                 self.server_info["status"] = True
-                await message.answer("Сервер уже запущен!",
-                                     reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
-                                                                            server_status=self.server_info[
-                                                                                "status"]))
-            elif ans["dabble_start_flag"] == False:
-                await message.answer("Сервер запускается...")
+                await message.answer(
+                    self._msg(message, "server_already_running"),
+                    reply_markup=self._keyboard(
+                        message=message,
+                        status=self.profile_info["status"],
+                        server_status=self.server_info["status"],
+                    ),
+                )
+            elif ans["dabble_start_flag"] is False:
+                await message.answer(self._msg(message, "server_starting"))
                 ans2 = await self.request(msg2)
-                if ans2["data"]["start_error"] != '':
+                if ans2["data"]["start_error"] != "":
                     self.server_info["status"] = False
-                    await  self.bot.send_message(message.chat.id, "Ошибка запуска :\n\n"+ans2["data"]["start_error"])
+                    await self.bot.send_message(
+                        message.chat.id,
+                        self._msg(message, "start_error_prefix") + ans2["data"]["start_error"],
+                    )
                 else:
                     self.server_info["status"] = True
-                    await self.bot.send_message(chat_id=message.chat.id,
-                                                text=f"Время запуска запуска: {ans2['data']['launch_time_str']}",
-                                                reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
-                                                                                       server_status=self.server_info[
-                                                                                           "status"]))
+                    await self.bot.send_message(
+                        chat_id=message.chat.id,
+                        text=self._msg(message, "start_time", launch_time=ans2["data"]["launch_time_str"]),
+                        reply_markup=self._keyboard(
+                            message=message,
+                            status=self.profile_info["status"],
+                            server_status=self.server_info["status"],
+                        ),
+                    )
 
     async def stop_server(self, message: Message, state: FSMContext):
         msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": False}
-        msg2 = {"to_process": "server", "from_process": "bot", "command": "get_server_work_data", "data": ''}
+        msg2 = {"to_process": "server", "from_process": "bot", "command": "get_server_work_data", "data": ""}
         ans2 = await self.request(msg2)
-        if ans2["data"]["status"] == False:
+
+        if ans2["data"]["status"] is False:
             self.server_info["status"] = False
-            await message.answer(f"Сервер уже выключен!",
-                                 reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
-                                                                        server_status=self.server_info["status"]))
+            await message.answer(
+                self._msg(message, "server_already_off"),
+                reply_markup=self._keyboard(
+                    message=message,
+                    status=self.profile_info["status"],
+                    server_status=self.server_info["status"],
+                ),
+            )
         else:
-            ans = await self.request(msg)
+            await self.request(msg)
             self.server_info["status"] = False
-            await message.answer(f"Сервер остановлен! \nВремя последнего сеанса: {str(ans2['data']['work_time_str'])}",
-                                 reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
-                                                                        server_status=self.server_info["status"]))
+            await message.answer(
+                self._msg(message, "server_stopped", work_time=str(ans2["data"]["work_time_str"])),
+                reply_markup=self._keyboard(
+                    message=message,
+                    status=self.profile_info["status"],
+                    server_status=self.server_info["status"],
+                ),
+            )
 
     async def settings_open(self, message: Message, state: FSMContext):
         await state.set_state(States.admin_settings)
-        await message.answer("Панель настроек : ", reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
-                                                                                          menu="settings"))
+        await message.answer(
+            self._msg(message, "settings_panel"),
+            reply_markup=self._keyboard(
+                message=message,
+                status=self.profile_info["status"],
+                menu="settings",
+            ),
+        )
 
     async def workload(self, message: Message, state: FSMContext):
-        msg = {"to_process": "server", "from_process": "bot", "command": "get_server_work_data", "data": ''}
+        msg = {"to_process": "server", "from_process": "bot", "command": "get_server_work_data", "data": ""}
         ans = await self.request(msg)
         work_data = ans.get("data", {}) if isinstance(ans, dict) else {}
 
@@ -322,22 +351,34 @@ class Bott:
                 return f"{value:.2f}"
             return "N/A"
 
-        cpu_line = f"🧠 CPU (система\\сервер): {_fmt_percent(sys_cpu)} \\ {_fmt_percent(proc_cpu) if process_running else 'N/A'}"
-
-        sys_ram_text = (
-            f"{_fmt_gb(sys_ram_used)}/{_fmt_gb(sys_ram_total)} GB ({_fmt_percent(sys_ram_percent)})"
+        cpu_line = self._msg(
+            message,
+            "cpu_line",
+            sys_cpu=_fmt_percent(sys_cpu),
+            proc_cpu=_fmt_percent(proc_cpu) if process_running else "N/A",
         )
+
+        sys_ram_text = f"{_fmt_gb(sys_ram_used)}/{_fmt_gb(sys_ram_total)} GB ({_fmt_percent(sys_ram_percent)})"
 
         if process_running:
             if isinstance(proc_xmx, (int, float)) and proc_xmx > 0:
-                proc_ram_text = (
-                    f"{_fmt_gb(proc_ram_used)}/{_fmt_gb(proc_xmx)} GB "
-                    f"({_fmt_percent(proc_ram_percent_xmx)} от xmx, {_fmt_percent(proc_ram_percent_sys)} от RAM ПК)"
+                proc_ram_text = self._msg(
+                    message,
+                    "ram_server_part",
+                    used=_fmt_gb(proc_ram_used),
+                    total=_fmt_gb(proc_xmx),
+                    pct=_fmt_percent(proc_ram_percent_xmx),
+                    sys_pct=_fmt_percent(proc_ram_percent_sys),
                 )
             else:
-                proc_ram_text = f"{_fmt_gb(proc_ram_used)} GB ({_fmt_percent(proc_ram_percent_sys)} от RAM ПК)"
+                proc_ram_text = self._msg(
+                    message,
+                    "ram_server_part_short",
+                    used=_fmt_gb(proc_ram_used),
+                    sys_pct=_fmt_percent(proc_ram_percent_sys),
+                )
         else:
-            proc_ram_text = "N/A (сервер выключен)"
+            proc_ram_text = self._msg(message, "na_server_off")
 
         if process_running:
             if isinstance(server_tps, dict) and isinstance(server_tps.get("value"), (int, float)):
@@ -346,12 +387,11 @@ class Bott:
                     f"({server_tps.get('ticks', 'N/A')} ticks / {server_tps.get('seconds', 'N/A')} sec)"
                 )
             else:
-                tps_text = "N/A (замер ещё не завершён)"
+                tps_text = self._msg(message, "na_measure_pending")
         else:
-            tps_text = "N/A (сервер выключен)"
+            tps_text = self._msg(message, "na_server_off")
 
-        # GPU (NVIDIA)
-        gpu_text = "GPU: недоступно (нет NVIDIA/драйвера/библиотеки pynvml)"
+        gpu_text = self._msg(message, "gpu_unavailable")
         if _HAS_NVML:
             try:
                 pynvml.nvmlInit()
@@ -364,8 +404,8 @@ class Bott:
 
                 gpu_percent = util.gpu
                 gpu_mem_percent = (mem.used / mem.total) * 100
-                gpu_mem_used_gb = mem.used / (1024 ** 3)
-                gpu_mem_total_gb = mem.total / (1024 ** 3)
+                gpu_mem_used_gb = mem.used / (1024**3)
+                gpu_mem_total_gb = mem.total / (1024**3)
 
                 gpu_text = (
                     f"GPU ({name}): {gpu_percent:.1f}%\n"
@@ -380,10 +420,10 @@ class Bott:
                     pass
 
         workload_text = (
-            f"📊 Нагрузка на сервер (текущий момент):\n"
+            f"{self._msg(message, 'workload_header')}\n"
             f"{cpu_line}\n"
-            f"💾 RAM (система\\сервер): {sys_ram_text} \\ {proc_ram_text}\n"
-            f"⏱️ TPS: {tps_text}\n"
+            f"{self._msg(message, 'ram_line', sys_ram=sys_ram_text, proc_ram=proc_ram_text)}\n"
+            f"{self._msg(message, 'tps_line', tps=tps_text)}\n"
             f"{gpu_text}"
         )
 
@@ -400,16 +440,19 @@ class Bott:
     async def chek_online(self, message: Message, state: FSMContext):
         return "list"
 
-
     async def console_mode(self, message: Message, state: FSMContext):
         await state.set_state(States.admin_console)
-        await message.answer("Режим консоли:", reply_markup=BotKeyboards.get_keyboard(
-                                                                status=self.profile_info["status"],
-                                                                menu="console"))
-
+        await message.answer(
+            self._msg(message, "console_mode"),
+            reply_markup=self._keyboard(
+                message=message,
+                status=self.profile_info["status"],
+                menu="console",
+            ),
+        )
 
     async def console_mode_write(self, message: Message, state: FSMContext):
-        if message.text != "⬅️ Назад":
+        if not self._is_action(message, "back"):
             await self.console_mode_send(message, state)
         else:
             await self.start(message=message, state=state)
@@ -419,16 +462,20 @@ class Bott:
         return str(message.text)
 
     async def noname_main_menu(self, message: Message):
-        await message.answer("Неизвестная команда",
-                             reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
-                                                                    server_status=self.server_info["status"]))
+        await message.answer(
+            self._msg(message, "unknown_command"),
+            reply_markup=self._keyboard(
+                message=message,
+                status=self.profile_info["status"],
+                server_status=self.server_info["status"],
+            ),
+        )
 
-    @staticmethod
-    async def noname_no_auth(message: Message):
-        await message.answer("Введите /start для входа", reply_markup=ReplyKeyboardRemove())
+    async def noname_no_auth(self, message: Message):
+        await message.answer(self._msg(message, "enter_start"), reply_markup=ReplyKeyboardRemove())
 
     async def noname_settings_menu(self, message: Message, state: FSMContext):
-        await message.answer("Неизвестная команда!")
+        await message.answer(self._msg(message, "unknown_command_ex"))
 
     async def start(self, message: Message, state: FSMContext):
         user_id = message.from_user.id
@@ -438,21 +485,34 @@ class Bott:
             db.change("tg_id", user_id, "tg_nickname", 0)
             user = db.getlist("tg_id", user_id)
 
-        self.profile_info = {"status": user["status"] if str(message.from_user.id) == str(VANILLA) else 0,
-                             "userid": message.from_user.id, "game_nickname": user["game_nickname"]}
+        self._set_user_locale(user_id, message.from_user.language_code if message.from_user else None)
+
+        self.profile_info = {
+            "status": user["status"] if str(message.from_user.id) == str(VANILLA) else 0,
+            "userid": message.from_user.id,
+            "game_nickname": user["game_nickname"],
+        }
 
         if self.profile_info["status"] == 1:
             await state.set_state(States.admin_main_menu)
             await message.answer(
-                f"Выберите действие: {self.profile_info, self.server_info}",
-                reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
-                                                       server_status=self.server_info["status"]),
+                self._msg(message, "choose_action_admin", profile_and_server=(self.profile_info, self.server_info)),
+                reply_markup=self._keyboard(
+                    message=message,
+                    status=self.profile_info["status"],
+                    server_status=self.server_info["status"],
+                ),
             )
         elif self.profile_info["status"] == 0:
             await state.set_state(States.user_main_menu)
-            await message.answer("Выберите действие: ",
-                                 reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
-                                                                        server_status=self.server_info["status"]))
+            await message.answer(
+                self._msg(message, "choose_action_user"),
+                reply_markup=self._keyboard(
+                    message=message,
+                    status=self.profile_info["status"],
+                    server_status=self.server_info["status"],
+                ),
+            )
 
     async def run(self):
         try:
@@ -470,7 +530,15 @@ class Bott:
         except Exception as exc:
             print(f"Ошибка в боте: {exc}")
             import traceback
-            self.conn.send({"to_process": "GUI", "from_process": "bot", "command": "error_out","data": traceback.format_exc()})
+
+            self.conn.send(
+                {
+                    "to_process": "GUI",
+                    "from_process": "bot",
+                    "command": "error_out",
+                    "data": traceback.format_exc(),
+                }
+            )
             traceback.print_exc()
         finally:
             if self._response_task:
