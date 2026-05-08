@@ -5,7 +5,7 @@
     "flag": "\uD83C\uDDF7\uD83C\uDDFA"
   },
 
-  "buttons": {
+  "button": {
     "login_user": "👤 Войти как пользователь",
     "login_admin": "🛡 Войти как админ",
 
@@ -16,7 +16,7 @@
     "back": "⬅️ Назад"
   },
 
-  "messages": {
+  "message": {
     "choose_language": "Выбери язык:",
     "choose_login": "Выбери режим входа:",
     "user_login_success": "Ты вошёл как пользователь.",

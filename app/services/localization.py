@@ -169,7 +169,7 @@ class Locales:
         return self.get_language_buttons(), self.get_language_buttons_map()
 
 
-    def get_button_key_by_text(
+    def get_button_key(
         self,
         button_text: str,
         language_code: str | None = None

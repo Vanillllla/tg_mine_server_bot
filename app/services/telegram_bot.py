@@ -4,7 +4,7 @@ import os
 import uuid
 from multiprocessing.connection import Connection
 
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.utils.keyboard import InlineKeyboardBuilder, KeyboardBuilder
 from dotenv import load_dotenv
 from functools import wraps
 
@@ -21,8 +21,9 @@ from aiogram.filters import StateFilter
 from app.core.paths import config_path
 from app.core import db
 from app.services.localization import Locales
+from app.services.keyboards import Keyboard
 
-
+kb = Keyboard()
 loc = Locales(default_language="ru")
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -77,7 +78,7 @@ class Bott:
         self._register_handlers()
         self.vanilla = VANILLA if VANILLA else None
         self.pending = {}
-        self.profile_info = {}
+        self.profile_info = {"reg": False}
         self._response_task = None
         self.server_info = {"status": False}
 
@@ -162,12 +163,17 @@ class Bott:
         self.dp.message.register(self.actions_filter)
 
     async def actions_filter(self, message: Message, state: FSMContext):
-        # if message.text == loc.get_text("", self.profile_info["language"]):
-        #     print(123)
-        if self.profile_info["status"] == 1:
-            pass
-        elif self.profile_info["status"] == 0:
-            pass
+        if self.profile_info["reg"] :
+            action = loc.get_button_key(message.text, self.profile_info["language"])
+            if action:
+                if self.profile_info["status"] == 1:
+                    if action:
+
+                        pass
+                elif self.profile_info["status"] == 0:
+                    pass
+            else:
+                await self.start(message, state)
         else:
             await self.start(message, state)
 
@@ -392,21 +398,17 @@ class Bott:
             await self.language(message, state)
         self.profile_info = {"status": user["status"] if str(message.from_user.id) == str(VANILLA) else 0,
                              "userid": message.from_user.id, "game_nickname": user["game_nickname"],
-                             "language": user["language"]}
-
+                             "language": user["language"], "reg": True}
         if self.profile_info["status"] == 1:
             await state.set_state(States.admin_main_menu)
             await message.answer(
                 f"Выберите действие: {self.profile_info, self.server_info}",
-                # reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
-                                                      # server_status=self.server_info["status"]),
-            )
+                reply_markup=kb.get_keyboard("main_menu", self.profile_info, self.server_info))
         elif self.profile_info["status"] == 0:
             await state.set_state(States.user_main_menu)
-            await message.answer("Выберите действие: ",
-                                 # reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
-                                                                     #   server_status=self.server_info["status"])
-            )
+            await message.answer(
+           "Выберите действие: ",
+                reply_markup=kb.get_keyboard("main_menu", self.profile_info, self.server_info))
 
     async def run(self):
         try:
