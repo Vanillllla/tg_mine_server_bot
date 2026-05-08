@@ -28,7 +28,7 @@ class Keyboard:
                     else loc.get_text("button.stop_server", self.language))],
                     [KeyboardButton(text=loc.get_text("button.fast_command", self.language)),
                      KeyboardButton(text=loc.get_text("button.chek_online", self.language))],
-                    [KeyboardButton(text=loc.get_text("button.status", self.language)),
+                    [KeyboardButton(text=loc.get_text("button.workload", self.language)),
                      KeyboardButton(text=loc.get_text("button.settings", self.language))],
                     [KeyboardButton(text=loc.get_text("button.reload_bot", self.language)),]
                 ], resize_keyboard=True
