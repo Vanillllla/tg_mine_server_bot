@@ -217,7 +217,7 @@ class Locales:
             with open(file_path, "r", encoding="utf-8") as file:
                 data = json.load(file)
 
-            buttons = data.get("buttons", {})
+            buttons = data.get("button", {})
 
             self._button_keys_cache[language_code] = {
                 str(button_text): button_key

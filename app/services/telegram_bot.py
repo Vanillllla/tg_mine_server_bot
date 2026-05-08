@@ -167,61 +167,60 @@ class Bott:
             action = loc.get_button_key(message.text, self.profile_info["language"])
             if action:
                 if self.profile_info["status"] == 1:
-                    if action:
-
-                        pass
+                    if action == "reload_bot":
+                        await self.reload_bot(message, state)
+                    elif action == "start_server":
+                        await self.start_server(message, state)
+                    elif  action == "stop_server":
+                        await self.stop_server(message, state)
                 elif self.profile_info["status"] == 0:
                     pass
+                else:
+                    await message.answer("Чяво блять?!!! Как это нахуй сюда ты произошло?!!!")
             else:
-                await self.start(message, state)
+                await message.answer("Неизвестная команда!")
         else:
-            await self.start(message, state)
+            await message.answer("Вы не зарегистрированы! Введите /start")
 
     # async def server_switch(self, message: Message, state: FSMContext):
     #     msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": True}
     #     self.pipe_send(msg)
     #
-    # async def start_server(self, message: Message, state: FSMContext):
-    #     msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": True}
-    #     msg2 = {"to_process": "server", "from_process": "bot", "command": "get_server_work_data", "data": ''}
-    #     ans = await self.request(msg)
-    #     if "dabble_start_flag" in ans:
-    #         if ans["dabble_start_flag"] == True:
-    #             self.server_info["status"] = True
-    #             await message.answer("Сервер уже запущен!",
-    #                                  reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
-    #                                                                         server_status=self.server_info[
-    #                                                                             "status"]))
-    #         elif ans["dabble_start_flag"] == False:
-    #             await message.answer("Сервер запускается...")
-    #             ans2 = await self.request(msg2)
-    #             if ans2["data"]["start_error"] != '':
-    #                 self.server_info["status"] = False
-    #                 await  self.bot.send_message(message.chat.id, "Ошибка запуска :\n\n"+ans2["data"]["start_error"])
-    #             else:
-    #                 self.server_info["status"] = True
-    #                 await self.bot.send_message(chat_id=message.chat.id,
-    #                                             text=f"Время запуска запуска: {ans2['data']['launch_time_str']}",
-    #                                             reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
-    #                                                                                    server_status=self.server_info[
-    #                                                                                        "status"]))
-    #
-    # async def stop_server(self, message: Message, state: FSMContext):
-    #     msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": False}
-    #     msg2 = {"to_process": "server", "from_process": "bot", "command": "get_server_work_data", "data": ''}
-    #     ans2 = await self.request(msg2)
-    #     if ans2["data"]["status"] == False:
-    #         self.server_info["status"] = False
-    #         await message.answer(f"Сервер уже выключен!",
-    #                              reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
-    #                                                                     server_status=self.server_info["status"]))
-    #     else:
-    #         ans = await self.request(msg)
-    #         self.server_info["status"] = False
-    #         await message.answer(f"Сервер остановлен! \nВремя последнего сеанса: {str(ans2['data']['work_time_str'])}",
-    #                              reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
-    #                                                                     server_status=self.server_info["status"]))
-    #
+    async def start_server(self, message: Message, state: FSMContext):
+        msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": True}
+        msg2 = {"to_process": "server", "from_process": "bot", "command": "get_server_work_data", "data": ''}
+        ans = await self.request(msg)
+        if "dabble_start_flag" in ans:
+            if ans["dabble_start_flag"] == True:
+                self.server_info["status"] = True
+                await message.answer("Сервер уже запущен!",
+                                     reply_markup=kb.get_keyboard("main_menu", self.profile_info, self.server_info))
+            elif ans["dabble_start_flag"] == False:
+                await message.answer("Сервер запускается...")
+                ans2 = await self.request(msg2)
+                if ans2["data"]["start_error"] != '':
+                    self.server_info["status"] = False
+                    await  self.bot.send_message(message.chat.id, "Ошибка запуска :\n\n"+ans2["data"]["start_error"])
+                else:
+                    self.server_info["status"] = True
+                    await self.bot.send_message(chat_id=message.chat.id,
+                                                text=f"Время запуска запуска: {ans2['data']['launch_time_str']}",
+                                                reply_markup=kb.get_keyboard("main_menu", self.profile_info, self.server_info))
+
+    async def stop_server(self, message: Message, state: FSMContext):
+        msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": False}
+        msg2 = {"to_process": "server", "from_process": "bot", "command": "get_server_work_data", "data": ''}
+        ans2 = await self.request(msg2)
+        if ans2["data"]["status"] == False:
+            self.server_info["status"] = False
+            await message.answer(f"Сервер уже выключен!",
+                                 reply_markup=kb.get_keyboard("main_menu", self.profile_info, self.server_info))
+        else:
+            ans = await self.request(msg)
+            self.server_info["status"] = False
+            await message.answer(f"Сервер остановлен! \nВремя последнего сеанса: {str(ans2['data']['work_time_str'])}",
+                                 reply_markup=kb.get_keyboard("main_menu", self.profile_info, self.server_info))
+
     # async def settings_open(self, message: Message, state: FSMContext):
     #     await state.set_state(States.admin_settings)
     #     await message.answer("Панель настроек : ", reply_markup=BotKeyboards.get_keyboard(status=self.profile_info["status"],
@@ -327,11 +326,11 @@ class Bott:
     #
     # async def settings_close(self, message: Message, state: FSMContext):
     #     await self.start(message=message, state=state)
-    #
-    # async def reload_bot(self, message: Message, state: FSMContext):
-    #     msg = {"to_process": "connector", "from_process": "bot", "command": "reload_bot", "data": ""}
-    #     self.pipe_send(msg)
-    #
+
+    async def reload_bot(self, message: Message, state: FSMContext):
+        msg = {"to_process": "connector", "from_process": "bot", "command": "reload_bot", "data": ""}
+        self.pipe_send(msg)
+
     # @send_rcon_command
     # async def chek_online(self, message: Message, state: FSMContext):
     #     return "list"
