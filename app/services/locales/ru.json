@@ -12,10 +12,25 @@
     "start_server": "🚀 Запустить сервер",
     "stop_server": "🛑 Остановить сервер",
     "workload": "📊 Нагрузка сервера",
-    "chek_online": "👥 Посмотреть онлайн",
+    "check_online": "👥 Посмотреть онлайн",
     "reload_bot": "\uD83D\uDD04 Перезапустить бота",
-    "settings": "⚙️ Настройки",
-    "back": "⬅️ Назад"
+    "settings": "️\uFE0F Настройки",
+    "dop_settings": "Далее",
+    "nick_set": "Указать никнейм",
+    "server_properties": "Server Properties",
+    "console_mode": "\uD83D\uDCDF Консоль сервера",
+    "notification_settings": "",
+    "users_settings": "\uD83D\uDC65 Пользователи",
+    "fast_command_settings": "",
+    "help_settings": "",
+    "help": "❓ Помощь",
+    "fast_command": "\uD83D\uDD25 Быстрые команды",
+    "back": "Назад",
+    "exit": "Выйти",
+    "add_adm": "",
+    "del_adm": "",
+    "block_user": "",
+    "unblock_user": ""
   },
 
   "message": {

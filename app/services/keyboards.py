@@ -27,26 +27,40 @@ class Keyboard:
                     [KeyboardButton(text=loc.get_text("button.start_server", self.language) if not self.state
                     else loc.get_text("button.stop_server", self.language))],
                     [KeyboardButton(text=loc.get_text("button.fast_command", self.language)),
-                     KeyboardButton(text=loc.get_text("button.chek_online", self.language))],
+                     KeyboardButton(text=loc.get_text("button.check_online", self.language))],
                     [KeyboardButton(text=loc.get_text("button.workload", self.language)),
                      KeyboardButton(text=loc.get_text("button.settings", self.language))],
                     [KeyboardButton(text=loc.get_text("button.reload_bot", self.language)),]
                 ], resize_keyboard=True
             )
-        elif self.status == 2:
+        elif self.status == 0:
             return ReplyKeyboardMarkup(
                 keyboard=[
                     [KeyboardButton(text=loc.get_text("button.start_server", self.language))],
-                    [KeyboardButton(text=loc.get_text("button.status", self.language)),
+                    [KeyboardButton(text=loc.get_text("button.check_online", self.language)),
                      KeyboardButton(text=loc.get_text("button.settings", self.language))],
-
                 ]
             )
-        def settings_menu() -> ReplyKeyboardMarkup:
-            if self.status:
-                return ReplyKeyboardMarkup(
-
-                )
+    def settings_menu(self) -> ReplyKeyboardMarkup:
+        if self.status == 1:
             return ReplyKeyboardMarkup(
-
+                keyboard=[
+                    [KeyboardButton(text=loc.get_text("button.console", self.language)),
+                     KeyboardButton(text=loc.get_text("button.users_settings", self.language))],
+                    [KeyboardButton(text=loc.get_text("button.notification_settings", self.language)),
+                     KeyboardButton(text=loc.get_text("button.nick_set", self.language))],
+                    [KeyboardButton(text=loc.get_text("button.exit", self.language)),
+                     KeyboardButton(text=loc.get_text("button.next", self.language))],
+                ]
             )
+
+
+
+
+
+
+
+
+
+
+
