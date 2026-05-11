@@ -147,7 +147,11 @@ class Bott:
     async def actions_filter(self, message: Message, state: FSMContext):
         if self.profile_info["reg"] :
             action = loc.get_button_key(message.text, self.profile_info["language"])
+
             if action:
+                if action == "exit":
+                    await self.start(message, state)
+
                 if self.profile_info["status"] == 1:
                     if action == "reload_bot":
                         await self.reload_bot(message, state)
@@ -159,17 +163,30 @@ class Bott:
                         await self.workload(message, state)
                     elif action == "chek_online":
                         await self.chek_online(message, state)
+                    elif action == "settings_menu":
+                        await message.answer("Настройки: ", kb.get_keyboard("settings_menu1", self.profile_info, self.server_info))
+                    elif action == "next_settings_menu":
+                        await message.answer("Доп. настройки: ", kb.get_keyboard("settings_menu2", self.profile_info, self.server_info))
+                    elif action == "back":
+                        await message.answer("Настройки: ", kb.get_keyboard("settings_menu1", self.profile_info, self.server_info))
 
+                    else:
+                        await message.answer("Неизвестная команда!")
                 elif self.profile_info["status"] == 0:
                     if action == "start_server":
                         await self.start_server(message, state)
+                    elif action == "chek_online":
+                        await self.chek_online(message, state)
 
+                    else:
+                        await message.answer("Неизвестная команда!")
                 else:
                     await message.answer("Чяво блять?!!! Как это нахуй сюда ты произошло?!!!")
             else:
                 await message.answer("Неизвестная команда!")
         else:
             await message.answer("Вы не зарегистрированы! Введите /start")
+        return
 
     async def start_server(self, message: Message, state: FSMContext):
         msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": True}
@@ -315,22 +332,22 @@ class Bott:
         return "list"
 
 
-    # async def console_mode(self, message: Message, state: FSMContext):
-    #     await state.set_state(States.admin_console)
-    #     await message.answer("Режим консоли:", reply_markup=BotKeyboards.get_keyboard(
-    #                                                             status=self.profile_info["status"],
-    #                                                             menu="console"))
-    #
-    #
-    # async def console_mode_write(self, message: Message, state: FSMContext):
-    #     if message.text != "⬅️ Назад":
-    #         await self.console_mode_send(message, state)
-    #     else:
-    #         await self.start(message=message, state=state)
-    #
-    # @send_rcon_command
-    # async def console_mode_send(self, message: Message, state: FSMContext):
-    #     return str(message.text)
+    async def console_mode(self, message: Message, state: FSMContext):
+        await state.set_state(States.admin_console)
+        await message.answer("Режим консоли:", reply_markup=BotKeyboards.get_keyboard(
+                                                                status=self.profile_info["status"],
+                                                                menu="console"))
+
+
+    async def console_mode_write(self, message: Message, state: FSMContext):
+        if message.text != "⬅️ Назад":
+            await self.console_mode_send(message, state)
+        else:
+            await self.start(message=message, state=state)
+
+    @send_rcon_command
+    async def console_mode_send(self, message: Message, state: FSMContext):
+        return str(message.text)
 
     async def language(self, message: Message, state: FSMContext):
         text, text2  = loc.get_languages_data()
