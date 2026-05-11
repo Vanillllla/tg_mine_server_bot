@@ -6,7 +6,6 @@ import threading
 import time
 from collections import deque
 from pathlib import Path
-
 import psutil
 
 from app.core.paths import config_path
