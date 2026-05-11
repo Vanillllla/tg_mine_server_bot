@@ -493,6 +493,23 @@ class ServerSystem:
             raise ValueError("rcon_password_not_set")
         return host, port, password
 
+    @staticmethod
+    def _normalize_rcon_response(response_text: str) -> str:
+        normalized = (
+            response_text
+            .replace("\r\n", "\n")
+            .replace("\r", "\n")
+            .replace("\u2028", "\n")
+            .replace("\u2029", "\n")
+            .replace("\x0b", "\n")
+            .replace("\x0c", "\n")
+        )
+
+        if "\n" not in normalized and normalized.count("/") > 1:
+            normalized = re.sub(r"(?<!\()(?<=\S)/(?=[A-Za-z])", "\n/", normalized)
+
+        return normalized
+
     def execute_rcon_command(self, command: str, timeout: float = 5.0) -> str:
         host, port, password = self._get_rcon_params_from_active_core()
         with socket.create_connection((host, port), timeout=timeout) as sock:
@@ -523,7 +540,7 @@ class ServerSystem:
                 if next_response_body:
                     response_parts.append(next_response_body)
 
-            return "\n".join(response_parts).replace("\r\n", "\n").replace("\r", "\n")
+            return self._normalize_rcon_response("\n".join(response_parts))
 
     def handle_server_rcon_command(self, command: str) -> str:
         try:

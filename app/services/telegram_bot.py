@@ -148,55 +148,58 @@ class Bott:
 
     async def actions_filter(self, message: Message, state: FSMContext):
         if self.profile_info["reg"]:
-            if state == States.admin_console:
+            if await state.get_state() == States.admin_console.state:
                 if loc.get_button_key(message.text, self.profile_info["language"]) == "exit":
-                    self.start(message, state)
-                await self.console_mode_write(message, state)
-            action = loc.get_button_key(message.text, self.profile_info["language"])
-            if action:
-                if action == "exit":
                     await self.start(message, state)
-
-                if self.profile_info["status"] == 1:
-                    if action == "reload_bot":
-                        await self.reload_bot(message, state)
-                    elif action == "start_server":
-                        await self.start_server(message, state)
-                    elif action == "stop_server":
-                        await self.stop_server(message, state)
-                    elif action == "workload":
-                        await self.workload(message, state)
-                    elif action == "chek_online":
-                        await self.chek_online(message, state)
-                    elif action == "settings_menu":
-                        await message.answer("Настройки: ",
-                                             reply_markup=kb.get_keyboard("settings_menu1", self.profile_info,
-                                                                          self.server_info))
-                    elif action == "next_settings_menu":
-                        await message.answer("Доп. настройки: ",
-                                             reply_markup=kb.get_keyboard("settings_menu2", self.profile_info,
-                                                                          self.server_info))
-                    elif action == "back":
-                        await message.answer("Настройки: ",
-                                             reply_markup=kb.get_keyboard("settings_menu1", self.profile_info,
-                                                                          self.server_info))
-                    elif action == "console_mode":
-                        await self.console_mode(message, state)
-
-                    else:
-                        await message.answer("Неизвестная команда!")
-                elif self.profile_info["status"] == 0:
-                    if action == "start_server":
-                        await self.start_server(message, state)
-                    elif action == "chek_online":
-                        await self.chek_online(message, state)
-
-                    else:
-                        await message.answer("Неизвестная команда!")
                 else:
-                    await message.answer("Чяво блять?!!! Как это нахуй сюда ты произошло?!!!")
+                    await self.console_mode_send(message, state)
+                return
             else:
-                await message.answer("Неизвестная команда!")
+                action = loc.get_button_key(message.text, self.profile_info["language"])
+                if action:
+                    if action == "exit":
+                        await self.start(message, state)
+
+                    if self.profile_info["status"] == 1:
+                        if action == "reload_bot":
+                            await self.reload_bot(message, state)
+                        elif action == "start_server":
+                            await self.start_server(message, state)
+                        elif action == "stop_server":
+                            await self.stop_server(message, state)
+                        elif action == "workload":
+                            await self.workload(message, state)
+                        elif action == "chek_online":
+                            await self.chek_online(message, state)
+                        elif action == "settings_menu":
+                            await message.answer("Настройки: ",
+                                                 reply_markup=kb.get_keyboard("settings_menu1", self.profile_info,
+                                                                              self.server_info))
+                        elif action == "next_settings_menu":
+                            await message.answer("Доп. настройки: ",
+                                                 reply_markup=kb.get_keyboard("settings_menu2", self.profile_info,
+                                                                              self.server_info))
+                        elif action == "back":
+                            await message.answer("Настройки: ",
+                                                 reply_markup=kb.get_keyboard("settings_menu1", self.profile_info,
+                                                                              self.server_info))
+                        elif action == "console_mode":
+                            await self.console_mode(message, state)
+
+                        else:
+                            await message.answer("Неизвестная команда!")
+                    elif self.profile_info["status"] == 0:
+                        if action == "start_server":
+                            await self.start_server(message, state)
+                        elif action == "chek_online":
+                            await self.chek_online(message, state)
+
+                        else:
+                            await message.answer("Неизвестная команда!")
+                    else:
+                        await message.answer("Чяво блять?!!! Как это нахуй сюда ты произошло?!!!")
+                else:
+                    await message.answer("Неизвестная команда!")
         else:
             await message.answer("Вы не зарегистрированы! Введите /start")
         return
@@ -347,12 +350,6 @@ class Bott:
         await state.set_state(States.admin_console)
         await message.answer("Режим консоли:",
                              reply_markup=kb.get_keyboard("console_mode", self.profile_info, self.server_info))
-
-    async def console_mode_write(self, message: Message, state: FSMContext):
-        if message.text != "⬅️ Назад":
-            await self.console_mode_send(message, state)
-        else:
-            await self.start(message=message, state=state)
 
     @send_rcon_command
     async def console_mode_send(self, message: Message, state: FSMContext):
