@@ -31,9 +31,11 @@ VANILLA = os.getenv("VANILLA")
 
 try:
     import pynvml  # pip install nvidia-ml-py3
+
     _HAS_NVML = True
 except Exception:
     _HAS_NVML = False
+
 
 def send_rcon_command(func):
     @wraps(func)
@@ -145,9 +147,12 @@ class Bott:
         self.dp.message.register(self.actions_filter)
 
     async def actions_filter(self, message: Message, state: FSMContext):
-        if self.profile_info["reg"] :
+        if self.profile_info["reg"]:
+            if state == States.admin_console:
+                if loc.get_button_key(message.text, self.profile_info["language"]) == "exit":
+                    self.start(message, state)
+                await self.console_mode_write(message, state)
             action = loc.get_button_key(message.text, self.profile_info["language"])
-
             if action:
                 if action == "exit":
                     await self.start(message, state)
@@ -157,18 +162,26 @@ class Bott:
                         await self.reload_bot(message, state)
                     elif action == "start_server":
                         await self.start_server(message, state)
-                    elif  action == "stop_server":
+                    elif action == "stop_server":
                         await self.stop_server(message, state)
                     elif action == "workload":
                         await self.workload(message, state)
                     elif action == "chek_online":
                         await self.chek_online(message, state)
                     elif action == "settings_menu":
-                        await message.answer("Настройки: ", kb.get_keyboard("settings_menu1", self.profile_info, self.server_info))
+                        await message.answer("Настройки: ",
+                                             reply_markup=kb.get_keyboard("settings_menu1", self.profile_info,
+                                                                          self.server_info))
                     elif action == "next_settings_menu":
-                        await message.answer("Доп. настройки: ", kb.get_keyboard("settings_menu2", self.profile_info, self.server_info))
+                        await message.answer("Доп. настройки: ",
+                                             reply_markup=kb.get_keyboard("settings_menu2", self.profile_info,
+                                                                          self.server_info))
                     elif action == "back":
-                        await message.answer("Настройки: ", kb.get_keyboard("settings_menu1", self.profile_info, self.server_info))
+                        await message.answer("Настройки: ",
+                                             reply_markup=kb.get_keyboard("settings_menu1", self.profile_info,
+                                                                          self.server_info))
+                    elif action == "console_mode":
+                        await self.console_mode(message, state)
 
                     else:
                         await message.answer("Неизвестная команда!")
@@ -202,12 +215,13 @@ class Bott:
                 ans2 = await self.request(msg2)
                 if ans2["data"]["start_error"] != '':
                     self.server_info["status"] = False
-                    await  self.bot.send_message(message.chat.id, "Ошибка запуска :\n\n"+ans2["data"]["start_error"])
+                    await  self.bot.send_message(message.chat.id, "Ошибка запуска :\n\n" + ans2["data"]["start_error"])
                 else:
                     self.server_info["status"] = True
                     await self.bot.send_message(chat_id=message.chat.id,
                                                 text=f"Время запуска запуска: {ans2['data']['launch_time_str']}",
-                                                reply_markup=kb.get_keyboard("main_menu", self.profile_info, self.server_info))
+                                                reply_markup=kb.get_keyboard("main_menu", self.profile_info,
+                                                                             self.server_info))
 
     async def stop_server(self, message: Message, state: FSMContext):
         msg = {"to_process": "server", "from_process": "bot", "command": "set_server_status", "data": False}
@@ -222,7 +236,6 @@ class Bott:
             self.server_info["status"] = False
             await message.answer(f"Сервер остановлен! \nВремя последнего сеанса: {str(ans2['data']['work_time_str'])}",
                                  reply_markup=kb.get_keyboard("main_menu", self.profile_info, self.server_info))
-
 
     async def workload(self, message: Message, state: FSMContext):
         msg = {"to_process": "server", "from_process": "bot", "command": "get_server_work_data", "data": ''}
@@ -322,7 +335,6 @@ class Bott:
 
         await message.answer(workload_text)
 
-
     async def reload_bot(self, message: Message, state: FSMContext):
         msg = {"to_process": "connector", "from_process": "bot", "command": "reload_bot", "data": ""}
         self.pipe_send(msg)
@@ -331,13 +343,10 @@ class Bott:
     async def chek_online(self, message: Message, state: FSMContext):
         return "list"
 
-
     async def console_mode(self, message: Message, state: FSMContext):
         await state.set_state(States.admin_console)
-        await message.answer("Режим консоли:", reply_markup=BotKeyboards.get_keyboard(
-                                                                status=self.profile_info["status"],
-                                                                menu="console"))
-
+        await message.answer("Режим консоли:",
+                             reply_markup=kb.get_keyboard("console_mode", self.profile_info, self.server_info))
 
     async def console_mode_write(self, message: Message, state: FSMContext):
         if message.text != "⬅️ Назад":
@@ -350,7 +359,7 @@ class Bott:
         return str(message.text)
 
     async def language(self, message: Message, state: FSMContext):
-        text, text2  = loc.get_languages_data()
+        text, text2 = loc.get_languages_data()
         builder = InlineKeyboardBuilder()
         for k, v in text2.items():
             builder.button(text=k, callback_data=f"lang:{v}")
@@ -369,13 +378,12 @@ class Bott:
 
         await callback.message.answer(f"Lang selected: {lang_key}")
 
-
     async def start(self, message: Message, state: FSMContext):
         user_id = message.from_user.id
         user_name = message.from_user.username
         user = db.getlist("tg_id", user_id)
         if not user:
-            user = db.set("tg_id", "tg_nickname", "status", "language",  user_id, user_name,0, "ru")
+            user = db.set("tg_id", "tg_nickname", "status", "language", user_id, user_name, 0, "ru")
             db.change("tg_id", user_id, "tg_nickname", 0)
             user = db.getlist("tg_id", user_id)
             await self.language(message, state)
@@ -390,7 +398,7 @@ class Bott:
         elif self.profile_info["status"] == 0:
             await state.set_state(States.user_main_menu)
             await message.answer(
-           "Выберите действие: ",
+                "Выберите действие: ",
                 reply_markup=kb.get_keyboard("main_menu", self.profile_info, self.server_info))
 
     async def run(self):
@@ -409,7 +417,8 @@ class Bott:
         except Exception as exc:
             print(f"Ошибка в боте: {exc}")
             import traceback
-            self.conn.send({"to_process": "GUI", "from_process": "bot", "command": "error_out","data": traceback.format_exc()})
+            self.conn.send(
+                {"to_process": "GUI", "from_process": "bot", "command": "error_out", "data": traceback.format_exc()})
             traceback.print_exc()
         finally:
             if self._response_task:

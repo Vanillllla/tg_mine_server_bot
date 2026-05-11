@@ -22,6 +22,8 @@ class Keyboard:
             return self.settings_menu1()
         elif menu == "settings_menu2":
             return self.settings_menu2()
+        elif menu == "console_mode":
+            return self.console_mode()
 
     def main_menu(self) -> ReplyKeyboardMarkup:
         if self.status == 1:
@@ -49,7 +51,7 @@ class Keyboard:
         if self.status == 1:
             return ReplyKeyboardMarkup(
                 keyboard=[
-                    [KeyboardButton(text=loc.get_text("button.console", self.language)),
+                    [KeyboardButton(text=loc.get_text("button.console_mode", self.language)),
                      KeyboardButton(text=loc.get_text("button.notification_settings", self.language))],
                     [KeyboardButton(text=loc.get_text("button.nick_set", self.language)),
                      KeyboardButton(text=loc.get_text("button.users_settings", self.language))],
@@ -79,6 +81,13 @@ class Keyboard:
                      KeyboardButton(text=loc.get_text("button.del_adm", self.language))],
                     [KeyboardButton(text=loc.get_text("button.block_user", self.language)),
                      KeyboardButton(text=loc.get_text("button.unblock_user", self.language))],
+                    [KeyboardButton(text=loc.get_text("button.exit", self.language)),]
+                ]
+            )
+    def console_mode(self) -> ReplyKeyboardMarkup:
+        if self.status == 1:
+            return ReplyKeyboardMarkup(
+                keyboard=[
                     [KeyboardButton(text=loc.get_text("button.exit", self.language)),]
                 ]
             )
