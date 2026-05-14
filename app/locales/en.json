@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "code": "en",
+    "name": "English"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "loading": "Loading..."
+  },
+  "pages": {
+    "dashboard": "Dashboard",
+    "servers": "Servers",
+    "console": "Console",
+    "files": "Files",
+    "properties": "server.properties"
+  },
+  "server": {
+    "start": "Start server",
+    "stop": "Stop server",
+    "restart": "Restart server",
+    "kill": "Kill process",
+    "status_off": "Server is off",
+    "status_starting": "Server is starting",
+    "status_running": "Server is running",
+    "status_error": "Server error"
+  },
+  "console": {
+    "title": "Server console",
+    "placeholder": "Enter server command...",
+    "send": "Send",
+    "clear": "Clear screen"
+  },
+  "errors": {
+    "permission_denied": "Permission denied.",
+    "unsafe_path": "Unsafe path.",
+    "server_not_running": "Server is not running.",
+    "active_server_not_selected": "Active server is not selected.",
+    "file_not_found": "File not found."
+  }
+}
+
