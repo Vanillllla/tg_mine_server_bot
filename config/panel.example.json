@@ -1,0 +1,17 @@
+{
+  "panel": {
+    "language": "ru",
+    "theme": "dark",
+    "debug_mode": false
+  },
+  "server": {
+    "active_server_id": "",
+    "use_last_active_server": true,
+    "shutdown_if_empty_minutes": 5
+  },
+  "telegram": {
+    "autostart": false,
+    "token_secret_id": "telegram_bot_token"
+  }
+}
+

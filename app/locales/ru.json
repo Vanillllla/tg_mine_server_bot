@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "code": "ru",
+    "name": "Русский"
+  },
+  "common": {
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "loading": "Загрузка..."
+  },
+  "pages": {
+    "dashboard": "Панель управления",
+    "servers": "Серверы",
+    "console": "Консоль",
+    "files": "Файлы",
+    "properties": "server.properties"
+  },
+  "server": {
+    "start": "Запустить сервер",
+    "stop": "Остановить сервер",
+    "restart": "Перезапустить сервер",
+    "kill": "Принудительно завершить",
+    "status_off": "Сервер выключен",
+    "status_starting": "Сервер запускается",
+    "status_running": "Сервер работает",
+    "status_error": "Ошибка сервера"
+  },
+  "console": {
+    "title": "Консоль сервера",
+    "placeholder": "Введите команду сервера...",
+    "send": "Отправить",
+    "clear": "Очистить экран"
+  },
+  "errors": {
+    "permission_denied": "Недостаточно прав.",
+    "unsafe_path": "Недопустимый путь.",
+    "server_not_running": "Сервер выключен.",
+    "active_server_not_selected": "Активный сервер не выбран.",
+    "file_not_found": "Файл не найден."
+  }
+}
+
