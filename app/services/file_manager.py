@@ -1,4 +1,5 @@
 import shutil
+from zipfile import ZIP_DEFLATED, ZipFile
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +20,8 @@ TEXT_EXTENSIONS = {
     ".toml",
     ".ini",
 }
+
+CLIENT_MODS_DIR = "client-mods"
 
 
 class FileManagerService:
@@ -108,6 +111,49 @@ class FileManagerService:
         target = self._resolve(server, str(Path(relative_path).parent / new_name))
         source.rename(target)
         return {"path": self._relative(self._root(server), target), "renamed": True}
+
+    def ensure_client_mods_dir(self, server: ServerInstance) -> dict[str, Any]:
+        target = self._resolve(server, CLIENT_MODS_DIR)
+        if target.exists() and not target.is_dir():
+            raise ValueError("client_mods_path_is_not_directory")
+        target.mkdir(parents=True, exist_ok=True)
+        return self.client_mods_info(server)
+
+    def client_mods_info(self, server: ServerInstance) -> dict[str, Any]:
+        target = self._resolve(server, CLIENT_MODS_DIR)
+        if not target.exists():
+            return {
+                "path": CLIENT_MODS_DIR,
+                "exists": False,
+                "files_count": 0,
+                "size": 0,
+            }
+        if not target.is_dir():
+            raise ValueError("client_mods_path_is_not_directory")
+
+        files = [path for path in target.rglob("*") if path.is_file()]
+        return {
+            "path": CLIENT_MODS_DIR,
+            "exists": True,
+            "files_count": len(files),
+            "size": sum(path.stat().st_size for path in files),
+        }
+
+    def write_client_mods_archive(self, server: ServerInstance, archive_path: Path) -> dict[str, Any]:
+        target = self._resolve(server, CLIENT_MODS_DIR)
+        if not target.exists():
+            target.mkdir(parents=True, exist_ok=True)
+        if not target.is_dir():
+            raise ValueError("client_mods_path_is_not_directory")
+
+        files_count = 0
+        with ZipFile(archive_path, mode="w", compression=ZIP_DEFLATED) as archive:
+            for path in sorted(target.rglob("*"), key=lambda item: item.as_posix().lower()):
+                if not path.is_file():
+                    continue
+                archive.write(path, path.relative_to(target).as_posix())
+                files_count += 1
+        return {"files_count": files_count, "size": archive_path.stat().st_size}
 
     @staticmethod
     def _root(server: ServerInstance) -> Path:
