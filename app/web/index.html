@@ -7,7 +7,27 @@
     <link rel="stylesheet" href="/assets/styles.css" />
   </head>
   <body>
-    <div class="app-shell">
+    <section id="auth-screen" class="auth-screen">
+      <form id="login-form" class="auth-card">
+        <div class="brand">
+          <span class="brand-mark">MC</span>
+          <div>
+            <strong>Minecraft Panel</strong>
+            <span>Admin access</span>
+          </div>
+        </div>
+        <div>
+          <p class="eyebrow">Вход</p>
+          <h1>Панель управления</h1>
+        </div>
+        <label>Логин <input name="username" autocomplete="username" placeholder="admin" required /></label>
+        <label>Пароль <input name="password" type="password" autocomplete="current-password" placeholder="change-me" required /></label>
+        <button class="btn primary" type="submit">Войти</button>
+        <p id="auth-message" class="auth-message"></p>
+      </form>
+    </section>
+
+    <div id="app-shell" class="app-shell" hidden>
       <aside class="sidebar">
         <div class="brand">
           <span class="brand-mark">MC</span>
@@ -18,13 +38,13 @@
         </div>
         <nav class="nav" aria-label="Основная навигация">
           <button class="nav-item active" data-view="dashboard">Dashboard</button>
-          <button class="nav-item" data-view="servers">Servers</button>
-          <button class="nav-item" data-view="console">Console</button>
-          <button class="nav-item" data-view="properties">Properties</button>
-          <button class="nav-item" data-view="files">Files</button>
-          <button class="nav-item" data-view="telegram">Telegram</button>
-          <button class="nav-item" data-view="users">Users</button>
-          <button class="nav-item" data-view="settings">Settings</button>
+          <button class="nav-item" data-view="servers" data-admin-only>Servers</button>
+          <button class="nav-item" data-view="console" data-admin-only>Console</button>
+          <button class="nav-item" data-view="properties" data-admin-only>Properties</button>
+          <button class="nav-item" data-view="files" data-admin-only>Files</button>
+          <button class="nav-item" data-view="telegram" data-admin-only>Telegram</button>
+          <button class="nav-item" data-view="users" data-admin-only>Users</button>
+          <button class="nav-item" data-view="settings" data-admin-only>Settings</button>
         </nav>
       </aside>
 
@@ -35,8 +55,10 @@
             <h1 id="page-title">Dashboard</h1>
           </div>
           <div class="topbar-status">
+            <span id="current-user-label" class="pill">-</span>
             <span id="active-server-label">Не выбран</span>
             <span id="server-status-pill" class="pill status-off">OFF</span>
+            <button id="logout-btn" class="btn small">Выйти</button>
           </div>
         </header>
 
@@ -52,9 +74,9 @@
               </div>
               <div class="actions">
                 <button id="start-btn" class="btn primary">Start</button>
-                <button id="stop-btn" class="btn">Stop</button>
-                <button id="restart-btn" class="btn">Restart</button>
-                <button id="kill-btn" class="btn danger">Kill</button>
+                <button id="stop-btn" class="btn" data-admin-only>Stop</button>
+                <button id="restart-btn" class="btn" data-admin-only>Restart</button>
+                <button id="kill-btn" class="btn danger" data-admin-only>Kill</button>
               </div>
               <div id="dashboard-summary" class="summary-grid"></div>
             </section>
@@ -70,7 +92,7 @@
             </section>
           </div>
 
-          <section class="panel">
+          <section class="panel" data-admin-only>
             <div class="panel-heading">
               <div>
                 <p class="eyebrow">Последние строки</p>
@@ -230,6 +252,29 @@
         </section>
 
         <section id="view-settings" class="view">
+          <section class="panel" data-admin-only>
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Invite access</p>
+                <h2>Ссылка для обычных пользователей</h2>
+              </div>
+              <div class="toolbar">
+                <button id="create-invite-btn" class="btn primary small">Создать новую</button>
+                <button id="revoke-invite-btn" class="btn danger small">Закрыть</button>
+              </div>
+            </div>
+            <div class="invite-box">
+              <div>
+                <span id="invite-status" class="pill status-off">OFF</span>
+                <p class="server-meta">Обычный пользователь сможет только запустить сервер и смотреть статус/метрики.</p>
+              </div>
+              <div class="invite-link-row">
+                <input id="invite-link" readonly placeholder="Ссылка не создана" />
+                <button id="copy-invite-btn" class="btn small" type="button">Copy</button>
+              </div>
+            </div>
+          </section>
+
           <section class="panel">
             <div class="panel-heading">
               <div>

@@ -1,8 +1,10 @@
 from typing import cast
 
-from fastapi import Request
+from fastapi import HTTPException, Request, status
 
 from app.core.settings import AppSettings
+from app.models.auth import AuthUser
+from app.services.auth import SESSION_COOKIE_NAME, AuthService
 from app.services.file_manager import FileManagerService
 from app.services.log_buffer import LogBuffer
 from app.services.minecraft_manager import MinecraftServerManager
@@ -37,3 +39,32 @@ def get_file_manager(request: Request) -> FileManagerService:
 
 def get_panel_settings_service(request: Request) -> PanelSettingsService:
     return cast(PanelSettingsService, request.app.state.panel_settings_service)
+
+
+def get_auth_service(request: Request) -> AuthService:
+    return cast(AuthService, request.app.state.auth_service)
+
+
+def get_current_user(request: Request) -> AuthUser:
+    token = request.cookies.get(SESSION_COOKIE_NAME)
+    user = get_auth_service(request).get_user_by_session_token(token)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="not_authenticated")
+    return user
+
+
+def require_permission(permission: str):
+    def dependency(request: Request) -> AuthUser:
+        user = get_current_user(request)
+        if not user.has_permission(permission):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission_denied")
+        return user
+
+    return dependency
+
+
+def require_admin(request: Request) -> AuthUser:
+    user = get_current_user(request)
+    if not user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission_denied")
+    return user

@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
-from app.api.deps import get_instance_service, get_manager, get_properties_service
+from app.api.deps import get_current_user, get_instance_service, get_manager, get_properties_service, require_permission
+from app.models.auth import AuthUser
 from app.models.properties import ServerPropertiesResponse, UpdateServerPropertiesRequest
 
 router = APIRouter(prefix="/api/servers/active/properties", tags=["properties"])
@@ -14,7 +15,10 @@ def _active_server(request: Request):
 
 
 @router.get("", response_model=ServerPropertiesResponse)
-async def read_active_properties(request: Request) -> ServerPropertiesResponse:
+async def read_active_properties(
+    request: Request,
+    current_user: AuthUser = Depends(require_permission("properties.view")),
+) -> ServerPropertiesResponse:
     return get_properties_service(request).read(_active_server(request))
 
 
@@ -22,9 +26,14 @@ async def read_active_properties(request: Request) -> ServerPropertiesResponse:
 async def update_active_properties(
     request: Request,
     payload: UpdateServerPropertiesRequest,
+    current_user: AuthUser = Depends(get_current_user),
 ) -> ServerPropertiesResponse:
     if get_manager(request).is_running():
         raise HTTPException(status_code=409, detail="properties_cannot_be_changed_while_running")
+    if payload.raw is not None and not current_user.has_permission("properties.raw_edit"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission_denied")
+    if payload.values is not None and not current_user.has_permission("properties.quick_edit"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission_denied")
     try:
         service = get_properties_service(request)
         server = _active_server(request)

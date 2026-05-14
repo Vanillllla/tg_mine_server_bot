@@ -17,6 +17,11 @@ DEFAULT_PANEL = {
     "java": {"default_runtime_id": "", "runtimes": []},
 }
 
+DEFAULT_AUTH = {
+    "invite": {"token": "", "created_at": None, "revoked_at": None},
+    "sessions": {},
+}
+
 
 @dataclass(frozen=True)
 class AppSettings:
@@ -51,6 +56,10 @@ class AppSettings:
     def servers_config_path(self) -> Path:
         return self.config_dir / "servers.json"
 
+    @property
+    def auth_config_path(self) -> Path:
+        return self.config_dir / "auth.json"
+
     def ensure_runtime_layout(self) -> None:
         for path in (
             self.config_dir,
@@ -69,6 +78,8 @@ class AppSettings:
             write_json_atomic(self.panel_config_path, DEFAULT_PANEL)
         if not self.servers_config_path.exists():
             write_json_atomic(self.servers_config_path, {})
+        if not self.auth_config_path.exists():
+            write_json_atomic(self.auth_config_path, DEFAULT_AUTH)
 
 
 @lru_cache(maxsize=1)
