@@ -64,12 +64,9 @@ def send_rcon_command(func):
 
 
 class States(StatesGroup):
-    user_main_menu = State()
-    user_dop_manu = State()
-    admin_main_menu = State()
-    admin_settings = State()
+    main_menu = State()
     admin_console = State()
-    admin_dop_manu = State()
+    nick_set = State()
 
 
 class Bott:
@@ -148,6 +145,9 @@ class Bott:
 
     async def actions_filter(self, message: Message, state: FSMContext):
         if self.profile_info["reg"]:
+            if await state.get_state() == States.nick_set.state:
+                await self.set_nick(message, state)
+                return
             if await state.get_state() == States.admin_console.state:
                 if loc.get_button_key(message.text, self.profile_info["language"]) == "exit":
                     await self.start(message, state)
@@ -171,6 +171,8 @@ class Bott:
                             await self.workload(message, state)
                         elif action == "chek_online":
                             await self.chek_online(message, state)
+                        elif action == "nick_set":
+                            await self.set_nick(message, state)
                         elif action == "settings_menu":
                             await message.answer("Настройки: ",
                                                  reply_markup=kb.get_keyboard("settings_menu1", self.profile_info,
@@ -355,6 +357,25 @@ class Bott:
     async def console_mode_send(self, message: Message, state: FSMContext):
         return str(message.text)
 
+    async def set_nick(self, message: Message, state: FSMContext):
+        if await state.get_state() == States.nick_set.state:
+            nick = (message.text or "").strip()
+            if not nick:
+                await message.answer("Ник не должен быть пустым. Введите ваш ник в майнкрафте:")
+                return
+
+            updated_rows = db.change("tg_id", message.from_user.id, "game_nickname", nick)
+            if updated_rows == 0:
+                await message.answer("Не удалось сохранить ник в базе данных.")
+                return
+
+            await message.answer(f"Ваш ник сохранён: {nick}")
+            await self.start(message, state)
+        else:
+            await message.answer("Введите ваш ник в майнкрафте : ")
+            await state.set_state(States.nick_set)
+
+
     async def language(self, message: Message, state: FSMContext):
         text, text2 = loc.get_languages_data()
         builder = InlineKeyboardBuilder()
@@ -388,12 +409,12 @@ class Bott:
                              "userid": message.from_user.id, "game_nickname": user["game_nickname"],
                              "language": user["language"], "reg": True}
         if self.profile_info["status"] == 1:
-            await state.set_state(States.admin_main_menu)
+            await state.set_state(States.main_menu)
             await message.answer(
                 f"Выберите действие: {self.profile_info, self.server_info}",
                 reply_markup=kb.get_keyboard("main_menu", self.profile_info, self.server_info))
         elif self.profile_info["status"] == 0:
-            await state.set_state(States.user_main_menu)
+            await state.set_state(States.main_menu)
             await message.answer(
                 "Выберите действие: ",
                 reply_markup=kb.get_keyboard("main_menu", self.profile_info, self.server_info))
