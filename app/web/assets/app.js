@@ -7,6 +7,10 @@ const state = {
   consoleItems: [],
   socket: null,
   filePath: "",
+  fileItems: [],
+  fileSearch: "",
+  fileViewMode: "list",
+  selectedFileItem: null,
   selectedFile: "",
   javaRuntimes: [],
   invite: null,
@@ -378,24 +382,10 @@ async function saveQuickProperties(event) {
 async function loadFiles(path = state.filePath) {
   const data = await api(`/api/servers/active/files?path=${encodeURIComponent(path)}`);
   state.filePath = data.path || "";
-  $("#files-path-title").textContent = `/${state.filePath}`;
-  $("#files-list").innerHTML =
-    data.items
-      .map((item) => `
-        <article class="file-row">
-          <div>
-            <strong>${item.type === "directory" ? "[DIR] " : ""}${escapeHtml(item.name)}</strong>
-            <div class="file-meta">${escapeHtml(item.path)} · ${item.type} · ${formatBytes(item.size)}</div>
-          </div>
-          <div class="row-actions">
-            ${item.type === "directory" ? `<button class="btn small" data-file-action="open" data-path="${escapeHtml(item.path)}">Открыть</button>` : ""}
-            ${item.editable ? `<button class="btn small" data-file-action="edit" data-path="${escapeHtml(item.path)}">Редактировать</button>` : ""}
-            ${item.type === "file" ? `<a class="btn small" href="/api/servers/active/files/download?path=${encodeURIComponent(item.path)}">Download</a>` : ""}
-            <button class="btn small" data-file-action="rename" data-path="${escapeHtml(item.path)}">Rename</button>
-            <button class="btn danger small" data-file-action="delete" data-path="${escapeHtml(item.path)}">Delete</button>
-          </div>
-        </article>`)
-      .join("") || '<p class="file-meta">Папка пустая.</p>';
+  state.fileItems = data.items || [];
+  state.selectedFileItem =
+    state.fileItems.find((item) => item.path === state.selectedFileItem?.path) || null;
+  renderFileBrowser();
 }
 
 async function openTextFile(path) {
@@ -403,6 +393,175 @@ async function openTextFile(path) {
   state.selectedFile = data.path;
   $("#editor-title").textContent = data.path;
   $("#file-editor").value = data.content;
+  const item = state.fileItems.find((candidate) => candidate.path === data.path);
+  if (item) {
+    state.selectedFileItem = item;
+    renderFileBrowser();
+  }
+}
+
+function renderFileBrowser() {
+  $("#files-path-title").textContent = state.filePath ? `/${state.filePath}` : "/";
+  renderFileBreadcrumbs();
+  renderFileRows();
+  renderFileDetails();
+  $$("[data-view-mode]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.viewMode === state.fileViewMode);
+  });
+}
+
+function renderFileBreadcrumbs() {
+  const parts = state.filePath ? state.filePath.split("/").filter(Boolean) : [];
+  let current = "";
+  const crumbs = [
+    '<button class="breadcrumb-button" type="button" data-path="">Файлы</button>',
+  ];
+  for (const part of parts) {
+    current = current ? `${current}/${part}` : part;
+    crumbs.push(
+      `<button class="breadcrumb-button" type="button" data-path="${escapeHtml(current)}">${escapeHtml(part)}</button>`,
+    );
+  }
+  $("#files-breadcrumbs").innerHTML = crumbs.join('<span class="breadcrumb-separator">/</span>');
+}
+
+function renderFileRows() {
+  const items = filteredFileItems();
+  const list = $("#files-list");
+  list.className = `file-list explorer-list ${state.fileViewMode}-mode`;
+  $(".file-list-header").hidden = state.fileViewMode !== "list";
+
+  if (!items.length) {
+    list.innerHTML = '<div class="file-empty">В этой папке ничего не найдено.</div>';
+    return;
+  }
+
+  list.innerHTML = items.map(renderFileRow).join("");
+}
+
+function renderFileRow(item) {
+  const selected = state.selectedFileItem?.path === item.path;
+  const iconClass = item.type === "directory" ? "folder" : "file";
+  return `
+    <article class="file-row ${selected ? "selected" : ""}" data-file-row data-path="${escapeHtml(item.path)}" tabindex="0">
+      <button class="file-name-cell" type="button" data-file-action="select" data-path="${escapeHtml(item.path)}">
+        <span class="file-icon ${iconClass}" aria-hidden="true"></span>
+        <span>
+          <strong>${escapeHtml(item.name)}</strong>
+          <span class="file-meta mobile-only">${fileTypeLabel(item)} · ${formatBytes(item.size)}</span>
+        </span>
+      </button>
+      <span class="file-type-col">${fileTypeLabel(item)}</span>
+      <span class="file-size-col">${item.type === "directory" ? "-" : formatBytes(item.size)}</span>
+      <span class="file-date-col">${formatFileDate(item.modified_at)}</span>
+      <div class="row-actions">
+        ${fileActionButtons(item)}
+      </div>
+    </article>`;
+}
+
+function fileActionButtons(item) {
+  const path = escapeHtml(item.path);
+  const buttons = [];
+  if (item.type === "directory") {
+    buttons.push(`<button class="btn small" data-file-action="open" data-path="${path}">Открыть</button>`);
+  }
+  if (item.editable) {
+    buttons.push(`<button class="btn small" data-file-action="edit" data-path="${path}">Edit</button>`);
+  }
+  if (item.type === "file") {
+    buttons.push(`<a class="btn small" href="${downloadUrl(item.path)}">Download</a>`);
+  }
+  buttons.push(`<button class="btn small" data-file-action="rename" data-path="${path}">Rename</button>`);
+  buttons.push(`<button class="btn danger small" data-file-action="delete" data-path="${path}">Delete</button>`);
+  return buttons.join("");
+}
+
+function renderFileDetails() {
+  const item = state.selectedFileItem;
+  $("#file-details-name").textContent = item?.name || "Ничего не выбрано";
+  $("#file-details-type").textContent = item ? fileTypeLabel(item) : "-";
+  $("#file-details-size").textContent = item && item.type === "file" ? formatBytes(item.size) : "-";
+  $("#file-details-path").textContent = item?.path || "-";
+  $("#file-details-modified").textContent = item ? formatFileDate(item.modified_at) : "-";
+
+  $("#file-details-open").disabled = !item;
+  $("#file-details-rename").disabled = !item;
+  $("#file-details-delete").disabled = !item;
+  $("#file-details-edit").hidden = !item?.editable;
+  $("#file-details-download").hidden = item?.type !== "file";
+  $("#file-details-download").href = item ? downloadUrl(item.path) : "#";
+}
+
+function filteredFileItems() {
+  const query = state.fileSearch.trim().toLowerCase();
+  const items = query
+    ? state.fileItems.filter((item) => item.name.toLowerCase().includes(query))
+    : state.fileItems;
+  return [...items].sort((left, right) => {
+    if (left.type !== right.type) return left.type === "directory" ? -1 : 1;
+    return left.name.localeCompare(right.name, "ru", { sensitivity: "base" });
+  });
+}
+
+function selectFileItem(path) {
+  state.selectedFileItem = state.fileItems.find((item) => item.path === path) || null;
+  renderFileBrowser();
+}
+
+async function openFileItem(item) {
+  if (!item) return;
+  if (item.type === "directory") {
+    await loadFiles(item.path);
+    return;
+  }
+  if (item.editable) {
+    await openTextFile(item.path);
+    return;
+  }
+  window.location.href = downloadUrl(item.path);
+}
+
+async function renameFileItem(item) {
+  if (!item) return;
+  const newName = prompt("Новое имя", item.name);
+  if (!newName || newName === item.name) return;
+  await api(`/api/servers/active/files?path=${encodeURIComponent(item.path)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ new_name: newName }),
+  });
+  await loadFiles();
+}
+
+async function deleteFileItem(item) {
+  if (!item || !confirm(`Удалить ${item.path}?`)) return;
+  await api(`/api/servers/active/files?path=${encodeURIComponent(item.path)}`, { method: "DELETE" });
+  if (state.selectedFileItem?.path === item.path) state.selectedFileItem = null;
+  await loadFiles();
+}
+
+function selectedFileItem() {
+  return state.selectedFileItem;
+}
+
+function fileItemByPath(path) {
+  return state.fileItems.find((item) => item.path === path) || null;
+}
+
+function fileTypeLabel(item) {
+  if (item.type === "directory") return "Папка";
+  return item.editable ? "Текстовый файл" : "Файл";
+}
+
+function formatFileDate(value) {
+  if (!value) return "-";
+  const date = new Date(Number(value) * 1000);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString();
+}
+
+function downloadUrl(path) {
+  return `/api/servers/active/files/download?path=${encodeURIComponent(path)}`;
 }
 
 function switchView(view) {
@@ -603,27 +762,63 @@ function bindEvents() {
   });
 
   $("#files-list").addEventListener("click", async (event) => {
-    const button = event.target.closest("button");
-    if (!button) return;
-    const path = button.dataset.path;
-    if (button.dataset.fileAction === "open") await loadFiles(path);
-    if (button.dataset.fileAction === "edit") await openTextFile(path);
-    if (button.dataset.fileAction === "delete" && confirm(`Удалить ${path}?`)) {
-      await api(`/api/servers/active/files?path=${encodeURIComponent(path)}`, { method: "DELETE" });
-      await loadFiles();
+    const action = event.target.closest("[data-file-action]");
+    if (action) {
+      const item = fileItemByPath(action.dataset.path);
+      if (action.dataset.fileAction === "select") selectFileItem(action.dataset.path);
+      if (action.dataset.fileAction === "open") await openFileItem(item);
+      if (action.dataset.fileAction === "edit") await openTextFile(action.dataset.path);
+      if (action.dataset.fileAction === "delete") await deleteFileItem(item);
+      if (action.dataset.fileAction === "rename") await renameFileItem(item);
+      return;
     }
-    if (button.dataset.fileAction === "rename") {
-      const newName = prompt("Новое имя");
-      if (newName) {
-        await api(`/api/servers/active/files?path=${encodeURIComponent(path)}`, {
-          method: "PATCH",
-          body: JSON.stringify({ new_name: newName }),
-        });
-        await loadFiles();
-      }
-    }
+
+    const row = event.target.closest("[data-file-row]");
+    if (row) selectFileItem(row.dataset.path);
+  });
+  $("#files-list").addEventListener("dblclick", async (event) => {
+    const row = event.target.closest("[data-file-row]");
+    if (!row) return;
+    await openFileItem(fileItemByPath(row.dataset.path));
+  });
+  $("#files-list").addEventListener("keydown", async (event) => {
+    if (event.key !== "Enter") return;
+    const row = event.target.closest("[data-file-row]");
+    if (!row) return;
+    await openFileItem(fileItemByPath(row.dataset.path));
+  });
+  $("#files-breadcrumbs").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-path]");
+    if (button) loadFiles(button.dataset.path).catch((error) => toast(error.message));
+  });
+  $("#files-refresh-btn").addEventListener("click", () => {
+    loadFiles().catch((error) => toast(error.message));
+  });
+  $("#files-search").addEventListener("input", (event) => {
+    state.fileSearch = event.target.value;
+    renderFileBrowser();
+  });
+  $$("[data-view-mode]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.fileViewMode = button.dataset.viewMode;
+      renderFileBrowser();
+    });
+  });
+  $("#file-details-open").addEventListener("click", () => {
+    openFileItem(selectedFileItem()).catch((error) => toast(error.message));
+  });
+  $("#file-details-edit").addEventListener("click", () => {
+    const item = selectedFileItem();
+    if (item) openTextFile(item.path).catch((error) => toast(error.message));
+  });
+  $("#file-details-rename").addEventListener("click", () => {
+    renameFileItem(selectedFileItem()).catch((error) => toast(error.message));
+  });
+  $("#file-details-delete").addEventListener("click", () => {
+    deleteFileItem(selectedFileItem()).catch((error) => toast(error.message));
   });
   $("#files-up-btn").addEventListener("click", () => {
+    if (!state.filePath) return;
     const parent = state.filePath.split("/").slice(0, -1).join("/");
     loadFiles(parent).catch((error) => toast(error.message));
   });

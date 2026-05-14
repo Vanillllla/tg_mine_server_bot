@@ -209,21 +209,76 @@
         </section>
 
         <section id="view-files" class="view">
-          <section class="panel">
-            <div class="panel-heading">
+          <section class="panel file-manager-panel">
+            <div class="file-manager-header">
               <div>
                 <p class="eyebrow">Файловый менеджер</p>
-                <h2 id="files-path-title">/</h2>
+                <h2 id="files-path-title">Файлы сервера</h2>
               </div>
               <div class="toolbar">
-                <button id="files-up-btn" class="btn small">Вверх</button>
+                <button id="files-refresh-btn" class="btn small" type="button" title="Обновить">↻</button>
+                <button id="files-up-btn" class="btn small" type="button" title="Вверх">↑</button>
                 <button id="mkdir-btn" class="btn small">Папка</button>
                 <label class="btn small file-button">Upload<input id="upload-input" type="file" hidden /></label>
               </div>
             </div>
-            <div id="files-list" class="file-list"></div>
+
+            <div class="file-command-row">
+              <nav id="files-breadcrumbs" class="file-breadcrumbs" aria-label="Путь"></nav>
+              <label class="search-field">
+                <span>Поиск</span>
+                <input id="files-search" autocomplete="off" placeholder="Имя файла или папки" />
+              </label>
+              <div class="segmented" aria-label="Вид">
+                <button id="files-list-view-btn" class="active" type="button" data-view-mode="list">Список</button>
+                <button id="files-grid-view-btn" type="button" data-view-mode="grid">Плитка</button>
+              </div>
+            </div>
+
+            <div class="file-browser-layout">
+              <section class="file-main-pane">
+                <div class="file-list-header">
+                  <span>Имя</span>
+                  <span>Тип</span>
+                  <span>Размер</span>
+                  <span>Изменён</span>
+                  <span></span>
+                </div>
+                <div id="files-list" class="file-list explorer-list"></div>
+              </section>
+
+              <aside class="file-details-pane">
+                <p class="eyebrow">Выбрано</p>
+                <h3 id="file-details-name">Ничего не выбрано</h3>
+                <dl class="file-details-list">
+                  <div>
+                    <dt>Тип</dt>
+                    <dd id="file-details-type">-</dd>
+                  </div>
+                  <div>
+                    <dt>Размер</dt>
+                    <dd id="file-details-size">-</dd>
+                  </div>
+                  <div>
+                    <dt>Путь</dt>
+                    <dd id="file-details-path">-</dd>
+                  </div>
+                  <div>
+                    <dt>Изменён</dt>
+                    <dd id="file-details-modified">-</dd>
+                  </div>
+                </dl>
+                <div class="file-details-actions">
+                  <button id="file-details-open" class="btn small" type="button">Открыть</button>
+                  <button id="file-details-edit" class="btn small" type="button">Редактировать</button>
+                  <a id="file-details-download" class="btn small" href="#">Download</a>
+                  <button id="file-details-rename" class="btn small" type="button">Rename</button>
+                  <button id="file-details-delete" class="btn danger small" type="button">Delete</button>
+                </div>
+              </aside>
+            </div>
           </section>
-          <section class="panel">
+          <section class="panel file-editor-panel">
             <div class="panel-heading">
               <div>
                 <p class="eyebrow">Текстовый файл</p>
