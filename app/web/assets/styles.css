@@ -419,7 +419,7 @@ h2 {
 .file-list-header,
 .file-row {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) 130px 110px 170px minmax(220px, auto);
+  grid-template-columns: minmax(220px, 1fr) 130px 110px 170px;
   gap: 12px;
   align-items: center;
 }
@@ -553,8 +553,7 @@ h2 {
 
 .file-list.grid-mode .file-type-col,
 .file-list.grid-mode .file-size-col,
-.file-list.grid-mode .file-date-col,
-.file-list.grid-mode .row-actions {
+.file-list.grid-mode .file-date-col {
   display: none;
 }
 
@@ -750,7 +749,8 @@ textarea {
   pointer-events: none;
 }
 
-.code-editor-wrap.json-mode .code-editor {
+.code-editor-wrap.json-mode .code-editor,
+.code-editor-wrap.properties-mode .code-editor {
   background: transparent;
   caret-color: var(--text);
   color: transparent;
@@ -774,6 +774,26 @@ textarea {
 
 .json-null {
   color: #ffb3ad;
+}
+
+.properties-comment {
+  color: #7f8a99;
+}
+
+.properties-key {
+  color: #7db7e8;
+}
+
+.properties-separator {
+  color: #d8dee9;
+}
+
+.properties-value {
+  color: #b7f4cb;
+}
+
+.properties-section {
+  color: #ffd990;
 }
 
 .placeholder {
@@ -880,7 +900,4 @@ textarea {
     display: block;
   }
 
-  .file-row .row-actions {
-    justify-content: flex-start;
-  }
 }
