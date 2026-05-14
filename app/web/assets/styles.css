@@ -26,11 +26,38 @@ body {
   color: var(--text);
 }
 
+[hidden] {
+  display: none !important;
+}
+
 button,
 input,
 select,
 textarea {
   font: inherit;
+}
+
+.auth-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.auth-card {
+  width: min(420px, 100%);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 22px;
+  display: grid;
+  gap: 16px;
+}
+
+.auth-message {
+  min-height: 20px;
+  color: var(--danger);
+  font-size: 13px;
 }
 
 .app-shell {
@@ -135,7 +162,8 @@ h2 {
 .topbar-status,
 .panel-heading,
 .toolbar,
-.actions {
+.actions,
+.invite-link-row {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -285,9 +313,14 @@ h2 {
 }
 
 .servers-list,
-.file-list {
+.file-list,
+.invite-box {
   display: grid;
   gap: 8px;
+}
+
+.invite-link-row {
+  align-items: stretch;
 }
 
 .server-row,
@@ -428,9 +461,11 @@ textarea {
   }
 
   .topbar,
+  .topbar-status,
   .panel-heading,
   .actions,
-  .toolbar {
+  .toolbar,
+  .invite-link-row {
     align-items: stretch;
     flex-direction: column;
   }

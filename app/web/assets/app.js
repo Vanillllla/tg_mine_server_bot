@@ -1,5 +1,6 @@
 const state = {
   activeView: "dashboard",
+  currentUser: null,
   servers: [],
   activeServer: null,
   workData: null,
@@ -8,6 +9,7 @@ const state = {
   filePath: "",
   selectedFile: "",
   javaRuntimes: [],
+  invite: null,
 };
 
 const quickPropertyFields = [
@@ -39,6 +41,14 @@ const dangerousCommands = new Set([
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
+function hasPermission(permission) {
+  return Boolean(state.currentUser?.permissions?.includes(permission));
+}
+
+function isAdmin() {
+  return state.currentUser?.role === "admin";
+}
+
 function toast(message) {
   const node = $("#toast");
   node.textContent = message;
@@ -48,6 +58,7 @@ function toast(message) {
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
+    credentials: "same-origin",
     headers: options.body instanceof FormData ? undefined : { "Content-Type": "application/json" },
     ...options,
   });
@@ -63,6 +74,47 @@ async function api(path, options = {}) {
   }
   if (response.status === 204) return null;
   return response.json();
+}
+
+function inviteTokenFromPath() {
+  const match = window.location.pathname.match(/^\/invite\/([^/]+)$/);
+  return match ? decodeURIComponent(match[1]) : "";
+}
+
+function showLogin(message = "") {
+  $("#auth-screen").hidden = false;
+  $("#app-shell").hidden = true;
+  $("#auth-message").textContent = message;
+}
+
+function showApp() {
+  $("#auth-screen").hidden = true;
+  $("#app-shell").hidden = false;
+}
+
+async function loadCurrentUser() {
+  const response = await api("/api/auth/me");
+  state.currentUser = response.user;
+}
+
+async function authenticateInviteIfPresent() {
+  const token = inviteTokenFromPath();
+  if (!token) return false;
+  await api("/api/auth/invite-login", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+  window.history.replaceState({}, "", "/");
+  return true;
+}
+
+function applyAccessRules() {
+  $$("[data-admin-only]").forEach((node) => {
+    node.hidden = !isAdmin();
+  });
+  if (!isAdmin() && state.activeView !== "dashboard") {
+    switchView("dashboard");
+  }
 }
 
 function statusClass(status) {
@@ -91,12 +143,25 @@ function formatBytes(size) {
 }
 
 async function refreshAll() {
-  await Promise.all([refreshServers(), refreshWorkData(), refreshJavaRuntimes()]);
+  const tasks = [refreshWorkData()];
+  if (isAdmin()) {
+    tasks.push(refreshServers(), refreshJavaRuntimes(), refreshInvite());
+  }
+  await Promise.all(tasks);
+  if (!isAdmin()) {
+    state.servers = [];
+    state.activeServer = state.workData?.active_server || null;
+    state.javaRuntimes = [];
+  }
+  applyAccessRules();
   renderHeader();
   renderDashboard();
-  renderServers();
-  renderJavaRuntimeSettings();
-  renderJavaSelects();
+  if (isAdmin()) {
+    renderServers();
+    renderJavaRuntimeSettings();
+    renderJavaSelects();
+    renderInviteSettings();
+  }
 }
 
 async function refreshServers() {
@@ -112,8 +177,15 @@ async function refreshJavaRuntimes() {
   state.javaRuntimes = await api("/api/settings/java-runtimes");
 }
 
+async function refreshInvite() {
+  state.invite = await api("/api/auth/invite");
+}
+
 function renderHeader() {
   const status = state.workData?.status || "OFF";
+  $("#current-user-label").textContent = state.currentUser
+    ? `${state.currentUser.username} · ${state.currentUser.role}`
+    : "-";
   $("#active-server-label").textContent = state.activeServer?.display_name || "Не выбран";
   setStatusPill($("#server-status-pill"), status);
 }
@@ -217,6 +289,15 @@ function renderJavaRuntimeSettings() {
       .join("") || '<p class="server-meta">Версии Java не настроены.</p>';
 }
 
+function renderInviteSettings() {
+  const invite = state.invite || { active: false };
+  setStatusPill($("#invite-status"), invite.active ? "RUNNING" : "OFF");
+  $("#invite-status").textContent = invite.active ? "ACTIVE" : "OFF";
+  $("#invite-link").value = invite.url || "";
+  $("#revoke-invite-btn").disabled = !invite.active;
+  $("#copy-invite-btn").disabled = !invite.active;
+}
+
 function formatLog(item) {
   const time = item.timestamp ? new Date(item.timestamp).toLocaleTimeString() : "";
   const stream = item.stream ? `[${item.stream}]` : "";
@@ -234,6 +315,7 @@ function renderConsole() {
 }
 
 function connectConsole() {
+  if (!hasPermission("console.view")) return;
   if (state.socket && state.socket.readyState < 2) return;
   const protocol = window.location.protocol === "https:" ? "wss" : "ws";
   state.socket = new WebSocket(`${protocol}://${window.location.host}/ws/servers/active/console`);
@@ -324,6 +406,9 @@ async function openTextFile(path) {
 }
 
 function switchView(view) {
+  if (view !== "dashboard" && !isAdmin()) {
+    view = "dashboard";
+  }
   state.activeView = view;
   $$(".view").forEach((node) => node.classList.toggle("active", node.id === `view-${view}`));
   $$(".nav-item").forEach((node) => node.classList.toggle("active", node.dataset.view === view));
@@ -350,6 +435,35 @@ function normalizeServerForm(form, formNode, defaultType) {
 }
 
 function bindEvents() {
+  $("#login-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    try {
+      const response = await api("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify(Object.fromEntries(form.entries())),
+      });
+      state.currentUser = response.user;
+      event.currentTarget.reset();
+      showApp();
+      await refreshAll();
+      if (hasPermission("console.view")) connectConsole();
+    } catch (error) {
+      showLogin(error.message);
+    }
+  });
+
+  $("#logout-btn").addEventListener("click", async () => {
+    await api("/api/auth/logout", { method: "POST" }).catch(() => null);
+    if (state.socket) state.socket.close();
+    state.currentUser = null;
+    state.servers = [];
+    state.activeServer = null;
+    state.workData = null;
+    state.consoleItems = [];
+    showLogin("");
+  });
+
   $$(".nav-item").forEach((button) => button.addEventListener("click", () => switchView(button.dataset.view)));
   $$("[data-view-jump]").forEach((button) => button.addEventListener("click", () => switchView(button.dataset.viewJump)));
 
@@ -417,6 +531,25 @@ function bindEvents() {
     renderJavaRuntimeSettings();
     renderJavaSelects();
     toast("Java добавлена");
+  });
+
+  $("#create-invite-btn").addEventListener("click", async () => {
+    state.invite = await api("/api/auth/invite", { method: "POST" });
+    renderInviteSettings();
+    toast("Invite-ссылка создана");
+  });
+
+  $("#revoke-invite-btn").addEventListener("click", async () => {
+    state.invite = await api("/api/auth/invite", { method: "DELETE" });
+    renderInviteSettings();
+    toast("Invite-ссылка закрыта");
+  });
+
+  $("#copy-invite-btn").addEventListener("click", async () => {
+    const link = $("#invite-link").value;
+    if (!link) return;
+    await navigator.clipboard.writeText(link);
+    toast("Ссылка скопирована");
   });
 
   $("#servers-list").addEventListener("click", async (event) => {
@@ -525,7 +658,22 @@ function bindEvents() {
   });
 }
 
+async function boot() {
+  const inviteMode = Boolean(inviteTokenFromPath());
+  try {
+    await authenticateInviteIfPresent();
+    await loadCurrentUser();
+    showApp();
+    await refreshAll();
+    if (hasPermission("console.view")) connectConsole();
+  } catch (error) {
+    if (inviteMode) window.history.replaceState({}, "", "/");
+    showLogin(inviteMode ? "Ссылка доступа закрыта или недействительна." : "");
+  }
+}
+
 bindEvents();
-refreshAll().catch((error) => toast(error.message));
-connectConsole();
-window.setInterval(() => refreshAll().catch(() => {}), 3000);
+boot();
+window.setInterval(() => {
+  if (state.currentUser) refreshAll().catch(() => {});
+}, 3000);

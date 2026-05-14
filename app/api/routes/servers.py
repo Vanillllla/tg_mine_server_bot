@@ -1,9 +1,10 @@
 from pathlib import Path
 from zipfile import BadZipFile, ZipFile, ZipInfo
 
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 
-from app.api.deps import get_instance_service, get_log_buffer, get_manager
+from app.api.deps import get_instance_service, get_log_buffer, get_manager, require_permission
+from app.models.auth import AuthUser
 from app.models.server import (
     ConsoleCommandRequest,
     CreateServerInstanceRequest,
@@ -12,6 +13,17 @@ from app.models.server import (
 )
 
 router = APIRouter(prefix="/api/servers", tags=["servers"])
+
+
+def _safe_active_server_payload(payload: dict | None, current_user: AuthUser) -> dict | None:
+    if payload is None or current_user.has_permission("servers.view"):
+        return payload
+    return {
+        "id": payload.get("id"),
+        "display_name": payload.get("display_name"),
+        "minecraft_version": payload.get("minecraft_version", ""),
+        "server_type": payload.get("server_type", ""),
+    }
 
 
 def _safe_archive_entries(archive: ZipFile) -> list[tuple[ZipInfo, Path]]:
@@ -80,12 +92,19 @@ def _extract_archive(archive: ZipFile, entries: list[tuple[ZipInfo, Path]], targ
 
 
 @router.get("", response_model=list[ServerInstance])
-async def list_servers(request: Request) -> list[ServerInstance]:
+async def list_servers(
+    request: Request,
+    current_user: AuthUser = Depends(require_permission("servers.view")),
+) -> list[ServerInstance]:
     return get_instance_service(request).list_servers()
 
 
 @router.post("", response_model=ServerInstance, status_code=status.HTTP_201_CREATED)
-async def create_server(request: Request, payload: CreateServerInstanceRequest) -> ServerInstance:
+async def create_server(
+    request: Request,
+    payload: CreateServerInstanceRequest,
+    current_user: AuthUser = Depends(require_permission("servers.create")),
+) -> ServerInstance:
     try:
         return get_instance_service(request).create_server(payload)
     except ValueError as exc:
@@ -104,6 +123,7 @@ async def create_server_from_uploaded_core(
     xmx_mb: int = Form(1024),
     eula_accept: bool = Form(False),
     core_file: UploadFile = File(...),
+    current_user: AuthUser = Depends(require_permission("files.upload_core")),
 ) -> ServerInstance:
     if not core_file.filename:
         raise HTTPException(status_code=400, detail="core_file_required")
@@ -158,6 +178,7 @@ async def create_server_from_archive(
     eula_accept: bool = Form(False),
     jar_file: str = Form(""),
     archive_file: UploadFile = File(...),
+    current_user: AuthUser = Depends(require_permission("servers.import")),
 ) -> ServerInstance:
     if not archive_file.filename or not archive_file.filename.lower().endswith(".zip"):
         raise HTTPException(status_code=400, detail="archive_file_must_be_zip")
@@ -205,12 +226,19 @@ async def create_server_from_archive(
 
 
 @router.get("/active", response_model=ServerInstance | None)
-async def get_active_server(request: Request) -> ServerInstance | None:
+async def get_active_server(
+    request: Request,
+    current_user: AuthUser = Depends(require_permission("servers.view")),
+) -> ServerInstance | None:
     return get_instance_service(request).get_active_server()
 
 
 @router.post("/{server_id}/activate", response_model=ServerInstance)
-async def activate_server(request: Request, server_id: str) -> ServerInstance:
+async def activate_server(
+    request: Request,
+    server_id: str,
+    current_user: AuthUser = Depends(require_permission("servers.activate")),
+) -> ServerInstance:
     manager = get_manager(request)
     if manager.is_running():
         raise HTTPException(
@@ -224,7 +252,11 @@ async def activate_server(request: Request, server_id: str) -> ServerInstance:
 
 
 @router.get("/{server_id}", response_model=ServerInstance)
-async def get_server(request: Request, server_id: str) -> ServerInstance:
+async def get_server(
+    request: Request,
+    server_id: str,
+    current_user: AuthUser = Depends(require_permission("servers.view")),
+) -> ServerInstance:
     try:
         return get_instance_service(request).get_server(server_id)
     except KeyError as exc:
@@ -236,6 +268,7 @@ async def update_server(
     request: Request,
     server_id: str,
     payload: UpdateServerInstanceRequest,
+    current_user: AuthUser = Depends(require_permission("servers.edit_launch_settings")),
 ) -> ServerInstance:
     try:
         return get_instance_service(request).update_server(server_id, payload)
@@ -246,7 +279,12 @@ async def update_server(
 
 
 @router.delete("/{server_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_server(request: Request, server_id: str, delete_files: bool = True) -> None:
+async def delete_server(
+    request: Request,
+    server_id: str,
+    delete_files: bool = True,
+    current_user: AuthUser = Depends(require_permission("servers.delete")),
+) -> None:
     if get_manager(request).is_running() and get_instance_service(request).active_server_id == server_id:
         raise HTTPException(status_code=409, detail="running_active_server_cannot_be_deleted")
     try:
@@ -256,7 +294,10 @@ async def delete_server(request: Request, server_id: str, delete_files: bool = T
 
 
 @router.post("/active/start")
-async def start_active_server(request: Request) -> dict:
+async def start_active_server(
+    request: Request,
+    current_user: AuthUser = Depends(require_permission("server.start")),
+) -> dict:
     try:
         await get_manager(request).start()
         return get_manager(request).get_status()
@@ -267,13 +308,19 @@ async def start_active_server(request: Request) -> dict:
 
 
 @router.post("/active/stop")
-async def stop_active_server(request: Request) -> dict:
+async def stop_active_server(
+    request: Request,
+    current_user: AuthUser = Depends(require_permission("server.stop")),
+) -> dict:
     await get_manager(request).stop()
     return get_manager(request).get_status()
 
 
 @router.post("/active/restart")
-async def restart_active_server(request: Request) -> dict:
+async def restart_active_server(
+    request: Request,
+    current_user: AuthUser = Depends(require_permission("server.restart")),
+) -> dict:
     try:
         await get_manager(request).restart()
         return get_manager(request).get_status()
@@ -282,33 +329,57 @@ async def restart_active_server(request: Request) -> dict:
 
 
 @router.post("/active/kill")
-async def kill_active_server(request: Request) -> dict:
+async def kill_active_server(
+    request: Request,
+    current_user: AuthUser = Depends(require_permission("server.kill")),
+) -> dict:
     await get_manager(request).kill()
     return get_manager(request).get_status()
 
 
 @router.get("/active/status")
-async def get_active_status(request: Request) -> dict:
+async def get_active_status(
+    request: Request,
+    current_user: AuthUser = Depends(require_permission("server.view_status")),
+) -> dict:
     return get_manager(request).get_status()
 
 
 @router.get("/active/work-data")
-async def get_active_work_data(request: Request) -> dict:
-    return get_manager(request).get_work_data()
+async def get_active_work_data(
+    request: Request,
+    current_user: AuthUser = Depends(require_permission("server.view_status")),
+) -> dict:
+    data = get_manager(request).get_work_data()
+    data["active_server"] = _safe_active_server_payload(data.get("active_server"), current_user)
+    if not current_user.has_permission("console.view"):
+        data["recent_logs"] = []
+    return data
 
 
 @router.get("/active/metrics")
-async def get_active_metrics(request: Request) -> dict:
+async def get_active_metrics(
+    request: Request,
+    current_user: AuthUser = Depends(require_permission("server.view_metrics")),
+) -> dict:
     return get_manager(request).get_metrics()
 
 
 @router.get("/active/logs/recent")
-async def get_recent_logs(request: Request, limit: int = 300) -> dict:
+async def get_recent_logs(
+    request: Request,
+    limit: int = 300,
+    current_user: AuthUser = Depends(require_permission("console.view")),
+) -> dict:
     return {"items": get_log_buffer(request).recent(limit=limit)}
 
 
 @router.post("/active/console/command")
-async def send_console_command(request: Request, payload: ConsoleCommandRequest) -> dict:
+async def send_console_command(
+    request: Request,
+    payload: ConsoleCommandRequest,
+    current_user: AuthUser = Depends(require_permission("console.send_command")),
+) -> dict:
     try:
         await get_manager(request).send_stdin_command(payload.command)
     except RuntimeError as exc:
