@@ -280,16 +280,6 @@
               </aside>
             </div>
           </section>
-          <section class="panel file-editor-panel">
-            <div class="panel-heading">
-              <div>
-                <p class="eyebrow">Текстовый файл</p>
-                <h2 id="editor-title">Файл не выбран</h2>
-              </div>
-              <button id="save-file-btn" class="btn primary small">Сохранить</button>
-            </div>
-            <textarea id="file-editor" class="code-editor" spellcheck="false"></textarea>
-          </section>
         </section>
 
         <section id="view-telegram" class="view">
@@ -360,6 +350,26 @@
           </section>
         </section>
       </main>
+    </div>
+
+    <div id="file-editor-modal" class="modal-backdrop" hidden>
+      <section class="modal file-editor-modal" role="dialog" aria-modal="true" aria-labelledby="editor-title">
+        <header class="modal-header">
+          <div>
+            <p class="eyebrow">Текстовый файл</p>
+            <h2 id="editor-title">Файл не выбран</h2>
+          </div>
+          <button id="close-file-editor-btn" class="btn small" type="button">Закрыть</button>
+        </header>
+        <div id="file-editor-wrap" class="code-editor-wrap">
+          <pre id="file-editor-highlight" class="code-highlight" aria-hidden="true"></pre>
+          <textarea id="file-editor" class="code-editor" spellcheck="false" wrap="off"></textarea>
+        </div>
+        <footer class="modal-actions">
+          <button id="save-file-btn" class="btn primary" type="button">Сохранить</button>
+          <button id="cancel-file-editor-btn" class="btn" type="button">Отмена</button>
+        </footer>
+      </section>
     </div>
 
     <div id="toast" class="toast" role="status"></div>

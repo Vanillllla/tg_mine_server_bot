@@ -395,13 +395,61 @@ async function loadFiles(path = state.filePath) {
 async function openTextFile(path) {
   const data = await api(`/api/servers/active/files/text?path=${encodeURIComponent(path)}`);
   state.selectedFile = data.path;
-  $("#editor-title").textContent = data.path;
-  $("#file-editor").value = data.content;
   const item = state.fileItems.find((candidate) => candidate.path === data.path);
   if (item) {
     state.selectedFileItem = item;
     renderFileBrowser();
   }
+  showFileEditor(data.path, data.content);
+}
+
+function showFileEditor(path, content) {
+  $("#editor-title").textContent = path;
+  $("#file-editor").value = content;
+  $("#file-editor-modal").hidden = false;
+  document.body.classList.add("modal-open");
+  updateEditorHighlight();
+  $("#file-editor").focus();
+}
+
+function closeFileEditor() {
+  $("#file-editor-modal").hidden = true;
+  document.body.classList.remove("modal-open");
+}
+
+function updateEditorHighlight() {
+  const editor = $("#file-editor");
+  const highlight = $("#file-editor-highlight");
+  const isJson = state.selectedFile.toLowerCase().endsWith(".json");
+  $("#file-editor-wrap").classList.toggle("json-mode", isJson);
+  if (!isJson) {
+    highlight.innerHTML = "";
+    return;
+  }
+  highlight.innerHTML = highlightJson(editor.value);
+  highlight.scrollTop = editor.scrollTop;
+  highlight.scrollLeft = editor.scrollLeft;
+}
+
+function highlightJson(value) {
+  const tokenRe =
+    /("(?:\\.|[^"\\])*"(?=\s*:))|("(?:\\.|[^"\\])*")|\b(true|false)\b|\b(null)\b|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g;
+  let result = "";
+  let lastIndex = 0;
+  value.replace(tokenRe, (token, key, string, boolean, nil, number, offset) => {
+    result += escapeHtml(value.slice(lastIndex, offset));
+    lastIndex = offset + token.length;
+    let className = "json-number";
+    if (key) className = "json-key";
+    if (string) className = "json-string";
+    if (boolean) className = "json-boolean";
+    if (nil) className = "json-null";
+    if (number) className = "json-number";
+    result += `<span class="${className}">${escapeHtml(token)}</span>`;
+    return token;
+  });
+  result += escapeHtml(value.slice(lastIndex));
+  return result || "\n";
 }
 
 function renderFileBrowser() {
@@ -448,7 +496,7 @@ function renderFileRow(item) {
   const iconClass = item.type === "directory" ? "folder" : "file";
   return `
     <article class="file-row ${selected ? "selected" : ""}" data-file-row data-path="${escapeHtml(item.path)}" tabindex="0">
-      <button class="file-name-cell" type="button" data-file-action="select" data-path="${escapeHtml(item.path)}">
+      <button class="file-name-cell" type="button" data-file-action="open" data-path="${escapeHtml(item.path)}">
         <span class="file-icon ${iconClass}" aria-hidden="true"></span>
         <span>
           <strong>${escapeHtml(item.name)}</strong>
@@ -489,6 +537,7 @@ function renderFileDetails() {
   $("#file-details-path").textContent = item?.path || "-";
   $("#file-details-modified").textContent = item ? formatFileDate(item.modified_at) : "-";
 
+  $("#file-details-open").hidden = item?.type !== "directory";
   $("#file-details-open").disabled = !item;
   $("#file-details-rename").disabled = !item;
   $("#file-details-delete").disabled = !item;
@@ -521,9 +570,7 @@ async function openFileItem(item) {
   }
   if (item.editable) {
     await openTextFile(item.path);
-    return;
   }
-  window.location.href = downloadUrl(item.path);
 }
 
 async function renameFileItem(item) {
@@ -788,7 +835,7 @@ function bindEvents() {
     }
 
     const row = event.target.closest("[data-file-row]");
-    if (row) selectFileItem(row.dataset.path);
+    if (row) await openFileItem(fileItemByPath(row.dataset.path));
   });
   $("#files-list").addEventListener("dblclick", async (event) => {
     const row = event.target.closest("[data-file-row]");
@@ -861,12 +908,23 @@ function bindEvents() {
     event.target.value = "";
     await loadFiles();
   });
+  $("#close-file-editor-btn").addEventListener("click", closeFileEditor);
+  $("#cancel-file-editor-btn").addEventListener("click", closeFileEditor);
+  $("#file-editor-modal").addEventListener("click", (event) => {
+    if (event.target.id === "file-editor-modal") closeFileEditor();
+  });
+  $("#file-editor").addEventListener("input", updateEditorHighlight);
+  $("#file-editor").addEventListener("scroll", updateEditorHighlight);
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !$("#file-editor-modal").hidden) closeFileEditor();
+  });
   $("#save-file-btn").addEventListener("click", async () => {
     if (!state.selectedFile) return toast("Файл не выбран");
     await api(`/api/servers/active/files/text?path=${encodeURIComponent(state.selectedFile)}`, {
       method: "PUT",
       body: JSON.stringify({ content: $("#file-editor").value }),
     });
+    await loadFiles();
     toast("Файл сохранен");
   });
 }
