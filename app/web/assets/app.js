@@ -226,6 +226,10 @@ function renderDashboard() {
 
   const logs = state.workData?.recent_logs || [];
   $("#recent-logs").textContent = logs.map(formatLog).join("\n");
+
+  const clientModsButton = $("#download-client-mods-btn");
+  clientModsButton.hidden = !hasPermission("client_mods.download");
+  clientModsButton.disabled = !active;
 }
 
 function renderServers() {
@@ -564,6 +568,15 @@ function downloadUrl(path) {
   return `/api/servers/active/files/download?path=${encodeURIComponent(path)}`;
 }
 
+function downloadClientModsArchive() {
+  const active = state.workData?.active_server || state.activeServer;
+  if (!active) {
+    toast("Активный сервер не выбран");
+    return;
+  }
+  window.location.href = "/api/servers/active/client-mods/archive";
+}
+
 function switchView(view) {
   if (view !== "dashboard" && !isAdmin()) {
     view = "dashboard";
@@ -627,6 +640,7 @@ function bindEvents() {
   $$("[data-view-jump]").forEach((button) => button.addEventListener("click", () => switchView(button.dataset.viewJump)));
 
   $("#start-btn").addEventListener("click", () => serverCommand("start").catch((error) => toast(error.message)));
+  $("#download-client-mods-btn").addEventListener("click", downloadClientModsArchive);
   $("#stop-btn").addEventListener("click", () => serverCommand("stop").catch((error) => toast(error.message)));
   $("#restart-btn").addEventListener("click", () => serverCommand("restart").catch((error) => toast(error.message)));
   $("#kill-btn").addEventListener("click", () => {
@@ -793,6 +807,10 @@ function bindEvents() {
   });
   $("#files-refresh-btn").addEventListener("click", () => {
     loadFiles().catch((error) => toast(error.message));
+  });
+  $("#client-mods-folder-btn").addEventListener("click", async () => {
+    await api("/api/servers/active/client-mods/ensure", { method: "POST" });
+    await loadFiles("client-mods");
   });
   $("#files-search").addEventListener("input", (event) => {
     state.fileSearch = event.target.value;
