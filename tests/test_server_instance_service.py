@@ -22,6 +22,7 @@ def test_create_server_sets_first_active(tmp_path: Path) -> None:
     assert server.id == "test_server"
     assert service.active_server_id == "test_server"
     assert service.get_active_server().id == "test_server"
+    assert (Path(server.server_dir) / "eula.txt").read_text(encoding="utf-8") == "eula=true\n"
 
 
 def test_rejects_server_dir_outside_root(tmp_path: Path) -> None:
@@ -43,3 +44,24 @@ def test_rejects_server_dir_outside_root(tmp_path: Path) -> None:
     else:
         raise AssertionError("outside server_dir was accepted")
 
+
+def test_delete_server_removes_files_when_requested(tmp_path: Path) -> None:
+    settings = AppSettings(panel_home=tmp_path / "mc-panel")
+    settings.ensure_runtime_layout()
+    service = ServerInstanceService(settings)
+
+    server = service.create_server(
+        CreateServerInstanceRequest(
+            id="test_server",
+            display_name="Test Server",
+            jar_file="server.jar",
+            eula_accept=True,
+        )
+    )
+    server_dir = Path(server.server_dir)
+    (server_dir / "server.jar").write_text("jar", encoding="utf-8")
+
+    service.delete_server("test_server")
+
+    assert not server_dir.exists()
+    assert service.get_active_server() is None

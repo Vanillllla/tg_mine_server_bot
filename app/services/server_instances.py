@@ -51,6 +51,7 @@ class ServerInstanceService:
         server_dir = server_dir.expanduser().resolve()
         self._ensure_server_dir_allowed(server_dir)
         server_dir.mkdir(parents=True, exist_ok=True)
+        self._write_eula_file(server_dir, payload.eula_accept)
 
         instance = ServerInstance(
             id=payload.id,
@@ -102,7 +103,7 @@ class ServerInstanceService:
         self._write_servers(servers)
         return self.get_server(server_id)
 
-    def delete_server(self, server_id: str, delete_files: bool = False) -> None:
+    def delete_server(self, server_id: str, delete_files: bool = True) -> None:
         server = self.get_server(server_id)
         servers = self._read_servers()
         del servers[server_id]
@@ -137,3 +138,8 @@ class ServerInstanceService:
             server_dir.relative_to(allowed_root)
         except ValueError as exc:
             raise ValueError("server_dir_must_be_inside_servers_root") from exc
+
+    @staticmethod
+    def _write_eula_file(server_dir: Path, accepted: bool) -> None:
+        if accepted:
+            (server_dir / "eula.txt").write_text("eula=true\n", encoding="utf-8")

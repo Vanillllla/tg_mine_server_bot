@@ -1,0 +1,531 @@
+const state = {
+  activeView: "dashboard",
+  servers: [],
+  activeServer: null,
+  workData: null,
+  consoleItems: [],
+  socket: null,
+  filePath: "",
+  selectedFile: "",
+  javaRuntimes: [],
+};
+
+const quickPropertyFields = [
+  ["motd", "MOTD", "text"],
+  ["server-port", "Port", "number"],
+  ["max-players", "Max players", "number"],
+  ["online-mode", "Online mode", "checkbox"],
+  ["gamemode", "Gamemode", "select", ["survival", "creative", "adventure", "spectator"]],
+  ["difficulty", "Difficulty", "select", ["peaceful", "easy", "normal", "hard"]],
+  ["pvp", "PVP", "checkbox"],
+  ["view-distance", "View distance", "number"],
+  ["simulation-distance", "Simulation distance", "number"],
+  ["enable-rcon", "RCON", "checkbox"],
+];
+
+const dangerousCommands = new Set([
+  "stop",
+  "op",
+  "deop",
+  "save-off",
+  "reload",
+  "ban",
+  "pardon",
+  "whitelist",
+  "difficulty",
+  "gamemode",
+]);
+
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => [...document.querySelectorAll(selector)];
+
+function toast(message) {
+  const node = $("#toast");
+  node.textContent = message;
+  node.classList.add("visible");
+  window.setTimeout(() => node.classList.remove("visible"), 3200);
+}
+
+async function api(path, options = {}) {
+  const response = await fetch(path, {
+    headers: options.body instanceof FormData ? undefined : { "Content-Type": "application/json" },
+    ...options,
+  });
+  if (!response.ok) {
+    let detail = response.statusText;
+    try {
+      const body = await response.json();
+      detail = body.detail || detail;
+    } catch {
+      // Keep HTTP status text.
+    }
+    throw new Error(detail);
+  }
+  if (response.status === 204) return null;
+  return response.json();
+}
+
+function statusClass(status) {
+  return `status-${String(status || "OFF").toLowerCase()}`;
+}
+
+function setStatusPill(node, status) {
+  node.className = `pill ${statusClass(status)}`;
+  node.textContent = status || "OFF";
+}
+
+function formatSeconds(value) {
+  if (!value) return "0s";
+  const seconds = Math.floor(value);
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const rest = seconds % 60;
+  return hours ? `${hours}h ${minutes}m` : `${minutes}m ${rest}s`;
+}
+
+function formatBytes(size) {
+  if (!Number.isFinite(size)) return "-";
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
+
+async function refreshAll() {
+  await Promise.all([refreshServers(), refreshWorkData(), refreshJavaRuntimes()]);
+  renderHeader();
+  renderDashboard();
+  renderServers();
+  renderJavaRuntimeSettings();
+  renderJavaSelects();
+}
+
+async function refreshServers() {
+  state.servers = await api("/api/servers");
+  state.activeServer = await api("/api/servers/active");
+}
+
+async function refreshWorkData() {
+  state.workData = await api("/api/servers/active/work-data");
+}
+
+async function refreshJavaRuntimes() {
+  state.javaRuntimes = await api("/api/settings/java-runtimes");
+}
+
+function renderHeader() {
+  const status = state.workData?.status || "OFF";
+  $("#active-server-label").textContent = state.activeServer?.display_name || "Не выбран";
+  setStatusPill($("#server-status-pill"), status);
+}
+
+function metric(label, value) {
+  return `<div class="metric"><span>${label}</span><strong>${value ?? "-"}</strong></div>`;
+}
+
+function renderDashboard() {
+  const active = state.workData?.active_server || state.activeServer;
+  const status = state.workData?.status || "OFF";
+  $("#dashboard-server-name").textContent = active?.display_name || "Сервер не выбран";
+  setStatusPill($("#dashboard-status"), status);
+  $("#dashboard-summary").innerHTML = [
+    metric("ID", active?.id || "-"),
+    metric("Версия", active?.minecraft_version || "-"),
+    metric("Тип", active?.server_type || "-"),
+    metric("Uptime", formatSeconds(state.workData?.uptime_seconds)),
+    metric("PID", state.workData?.pid || "-"),
+    metric("Jar", active?.jar_file || "-"),
+  ].join("");
+
+  const metrics = state.workData?.metrics || {};
+  const system = metrics.system || {};
+  const proc = metrics.process || {};
+  $("#metrics-grid").innerHTML = [
+    metric("CPU VM", system.available ? `${system.cpu_percent}%` : "-"),
+    metric("RAM VM", system.available ? `${system.ram_percent}%` : "-"),
+    metric("RAM used", system.available ? `${system.ram_used_mb} MB` : "-"),
+    metric("Java RAM", proc.is_running ? `${proc.ram_rss_mb} MB` : "-"),
+    metric("Java CPU", proc.is_running ? `${proc.cpu_percent}%` : "-"),
+    metric("Process", proc.is_running ? "RUNNING" : "OFF"),
+  ].join("");
+
+  const logs = state.workData?.recent_logs || [];
+  $("#recent-logs").textContent = logs.map(formatLog).join("\n");
+}
+
+function renderServers() {
+  const activeId = state.activeServer?.id;
+  $("#servers-list").innerHTML =
+    state.servers
+      .map((server) => {
+        const active = server.id === activeId;
+        return `
+          <article class="server-row">
+            <div>
+              <strong>${escapeHtml(server.display_name)}</strong>
+              ${active ? '<span class="pill status-running">Активен</span>' : ""}
+              <div class="server-meta">${escapeHtml(server.id)} · ${escapeHtml(server.server_type || "custom")} · ${escapeHtml(server.minecraft_version || "version?")} · ${escapeHtml(server.jar_file)}</div>
+            </div>
+            <div class="row-actions">
+              <button class="btn small" data-action="activate" data-id="${escapeHtml(server.id)}" ${active ? "disabled" : ""}>Активировать</button>
+              <button class="btn small" data-action="edit" data-id="${escapeHtml(server.id)}">Настроить</button>
+              <button class="btn small" data-action="files" data-id="${escapeHtml(server.id)}">Файлы</button>
+              <button class="btn danger small" data-action="delete" data-id="${escapeHtml(server.id)}">Удалить</button>
+            </div>
+          </article>`;
+      })
+      .join("") || `<p class="server-meta">Серверы пока не созданы.</p>`;
+}
+
+function defaultJavaPath() {
+  return state.javaRuntimes.find((runtime) => runtime.is_default)?.path || "java";
+}
+
+function renderJavaSelects() {
+  const options = state.javaRuntimes
+    .map((runtime) => {
+      const label = runtime.is_default ? `${runtime.display_name} (default)` : runtime.display_name;
+      return `<option value="${escapeHtml(runtime.path)}">${escapeHtml(label)}</option>`;
+    })
+    .join("");
+  $$("[data-java-select]").forEach((select) => {
+    const previous = select.value || defaultJavaPath();
+    select.innerHTML = options || '<option value="java">System java from PATH</option>';
+    select.value = state.javaRuntimes.some((runtime) => runtime.path === previous)
+      ? previous
+      : defaultJavaPath();
+  });
+}
+
+function renderJavaRuntimeSettings() {
+  const node = $("#java-runtime-list");
+  if (!node) return;
+  node.innerHTML =
+    state.javaRuntimes
+      .map(
+        (runtime) => `
+          <article class="server-row">
+            <div>
+              <strong>${escapeHtml(runtime.display_name)}</strong>
+              ${runtime.is_default ? '<span class="pill status-running">Default</span>' : ""}
+              <div class="server-meta">${escapeHtml(runtime.id)} · ${escapeHtml(runtime.path)}</div>
+            </div>
+            <div class="row-actions">
+              <button class="btn small" data-java-action="default" data-id="${escapeHtml(runtime.id)}" ${runtime.is_default ? "disabled" : ""}>По умолчанию</button>
+            </div>
+          </article>`,
+      )
+      .join("") || '<p class="server-meta">Версии Java не настроены.</p>';
+}
+
+function formatLog(item) {
+  const time = item.timestamp ? new Date(item.timestamp).toLocaleTimeString() : "";
+  const stream = item.stream ? `[${item.stream}]` : "";
+  return `${time} ${stream} ${item.line || ""}`.trim();
+}
+
+function renderConsole() {
+  const filter = $("#log-filter").value;
+  const lines = state.consoleItems
+    .filter((item) => !filter || String(item.line || "").includes(filter))
+    .map(formatLog);
+  const node = $("#console-output");
+  node.textContent = lines.join("\n");
+  if ($("#autoscroll").checked) node.scrollTop = node.scrollHeight;
+}
+
+function connectConsole() {
+  if (state.socket && state.socket.readyState < 2) return;
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  state.socket = new WebSocket(`${protocol}://${window.location.host}/ws/servers/active/console`);
+  state.socket.addEventListener("message", (event) => {
+    const item = JSON.parse(event.data);
+    state.consoleItems.push(item);
+    state.consoleItems = state.consoleItems.slice(-1000);
+    renderConsole();
+  });
+  state.socket.addEventListener("close", () => window.setTimeout(connectConsole, 2500));
+}
+
+async function serverCommand(action) {
+  const result = await api(`/api/servers/active/${action}`, { method: "POST" });
+  state.workData = { ...state.workData, ...result };
+  await refreshAll();
+}
+
+async function loadProperties() {
+  const data = await api("/api/servers/active/properties");
+  $("#raw-properties").value = data.raw || "";
+  renderPropertiesForm(data.values || {});
+}
+
+function renderPropertiesForm(values) {
+  $("#properties-form").innerHTML = quickPropertyFields
+    .map(([key, label, type, options]) => {
+      const value = values[key] ?? "";
+      if (type === "checkbox") {
+        return `<label class="checkbox-row"><input name="${key}" type="checkbox" ${value === "true" ? "checked" : ""} /> ${label}</label>`;
+      }
+      if (type === "select") {
+        return `<label>${label}<select name="${key}">${options.map((item) => `<option value="${item}" ${item === value ? "selected" : ""}>${item}</option>`).join("")}</select></label>`;
+      }
+      return `<label>${label}<input name="${key}" type="${type}" value="${escapeHtml(value)}" /></label>`;
+    })
+    .join("") + '<button class="btn primary" type="submit">Сохранить быстрые настройки</button>';
+}
+
+async function saveQuickProperties(event) {
+  event.preventDefault();
+  const form = new FormData(event.currentTarget);
+  const values = {};
+  for (const [key, , type] of quickPropertyFields) {
+    if (type === "checkbox") {
+      values[key] = event.currentTarget.elements[key].checked;
+    } else {
+      const value = String(form.get(key) || "").trim();
+      if (value) values[key] = value;
+    }
+  }
+  const data = await api("/api/servers/active/properties", {
+    method: "PUT",
+    body: JSON.stringify({ values }),
+  });
+  $("#raw-properties").value = data.raw || "";
+  toast("server.properties сохранен");
+}
+
+async function loadFiles(path = state.filePath) {
+  const data = await api(`/api/servers/active/files?path=${encodeURIComponent(path)}`);
+  state.filePath = data.path || "";
+  $("#files-path-title").textContent = `/${state.filePath}`;
+  $("#files-list").innerHTML =
+    data.items
+      .map((item) => `
+        <article class="file-row">
+          <div>
+            <strong>${item.type === "directory" ? "[DIR] " : ""}${escapeHtml(item.name)}</strong>
+            <div class="file-meta">${escapeHtml(item.path)} · ${item.type} · ${formatBytes(item.size)}</div>
+          </div>
+          <div class="row-actions">
+            ${item.type === "directory" ? `<button class="btn small" data-file-action="open" data-path="${escapeHtml(item.path)}">Открыть</button>` : ""}
+            ${item.editable ? `<button class="btn small" data-file-action="edit" data-path="${escapeHtml(item.path)}">Редактировать</button>` : ""}
+            ${item.type === "file" ? `<a class="btn small" href="/api/servers/active/files/download?path=${encodeURIComponent(item.path)}">Download</a>` : ""}
+            <button class="btn small" data-file-action="rename" data-path="${escapeHtml(item.path)}">Rename</button>
+            <button class="btn danger small" data-file-action="delete" data-path="${escapeHtml(item.path)}">Delete</button>
+          </div>
+        </article>`)
+      .join("") || '<p class="file-meta">Папка пустая.</p>';
+}
+
+async function openTextFile(path) {
+  const data = await api(`/api/servers/active/files/text?path=${encodeURIComponent(path)}`);
+  state.selectedFile = data.path;
+  $("#editor-title").textContent = data.path;
+  $("#file-editor").value = data.content;
+}
+
+function switchView(view) {
+  state.activeView = view;
+  $$(".view").forEach((node) => node.classList.toggle("active", node.id === `view-${view}`));
+  $$(".nav-item").forEach((node) => node.classList.toggle("active", node.dataset.view === view));
+  $("#page-title").textContent = $(`.nav-item[data-view="${view}"]`)?.textContent || "Panel";
+  if (view === "console") connectConsole();
+  if (view === "properties") loadProperties().catch((error) => toast(error.message));
+  if (view === "files") loadFiles().catch((error) => toast(error.message));
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function normalizeServerForm(form, formNode, defaultType) {
+  form.set("xms_mb", String(Number(form.get("xms_mb") || 512)));
+  form.set("xmx_mb", String(Number(form.get("xmx_mb") || 1024)));
+  form.set("eula_accept", formNode.elements.eula_accept.checked ? "true" : "false");
+  form.set("server_type", String(form.get("server_type") || defaultType));
+  form.set("java_path", String(form.get("java_path") || defaultJavaPath()));
+}
+
+function bindEvents() {
+  $$(".nav-item").forEach((button) => button.addEventListener("click", () => switchView(button.dataset.view)));
+  $$("[data-view-jump]").forEach((button) => button.addEventListener("click", () => switchView(button.dataset.viewJump)));
+
+  $("#start-btn").addEventListener("click", () => serverCommand("start").catch((error) => toast(error.message)));
+  $("#stop-btn").addEventListener("click", () => serverCommand("stop").catch((error) => toast(error.message)));
+  $("#restart-btn").addEventListener("click", () => serverCommand("restart").catch((error) => toast(error.message)));
+  $("#kill-btn").addEventListener("click", () => {
+    if (confirm("Принудительно завершить процесс сервера?")) {
+      serverCommand("kill").catch((error) => toast(error.message));
+    }
+  });
+
+  $("#create-server-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    normalizeServerForm(form, event.currentTarget, "custom");
+    await api("/api/servers/upload-core", { method: "POST", body: form });
+    event.currentTarget.reset();
+    await refreshAll();
+    toast("Сервер создан");
+  });
+
+  $("#import-server-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    normalizeServerForm(form, event.currentTarget, "forge");
+    await api("/api/servers/import-archive", { method: "POST", body: form });
+    event.currentTarget.reset();
+    await refreshAll();
+    toast("Сервер импортирован");
+  });
+
+  $("#reload-java-btn").addEventListener("click", () => {
+    refreshJavaRuntimes()
+      .then(() => {
+        renderJavaRuntimeSettings();
+        renderJavaSelects();
+      })
+      .catch((error) => toast(error.message));
+  });
+
+  $("#java-runtime-list").addEventListener("click", async (event) => {
+    const button = event.target.closest("button");
+    if (!button || button.dataset.javaAction !== "default") return;
+    await api("/api/settings/java-runtimes/default", {
+      method: "POST",
+      body: JSON.stringify({ id: button.dataset.id }),
+    });
+    await refreshJavaRuntimes();
+    renderJavaRuntimeSettings();
+    renderJavaSelects();
+  });
+
+  $("#java-runtime-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const payload = Object.fromEntries(form.entries());
+    payload.is_default = event.currentTarget.elements.is_default.checked;
+    await api("/api/settings/java-runtimes", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    event.currentTarget.reset();
+    await refreshJavaRuntimes();
+    renderJavaRuntimeSettings();
+    renderJavaSelects();
+    toast("Java добавлена");
+  });
+
+  $("#servers-list").addEventListener("click", async (event) => {
+    const button = event.target.closest("button");
+    if (!button) return;
+    const id = button.dataset.id;
+    if (button.dataset.action === "activate") {
+      await api(`/api/servers/${encodeURIComponent(id)}/activate`, { method: "POST" });
+      await refreshAll();
+    }
+    if (button.dataset.action === "delete" && confirm(`Удалить сервер ${id} и его файлы?`)) {
+      await api(`/api/servers/${encodeURIComponent(id)}?delete_files=true`, { method: "DELETE" });
+      await refreshAll();
+    }
+    if (button.dataset.action === "files") switchView("files");
+    if (button.dataset.action === "edit") switchView("properties");
+  });
+
+  $("#console-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const input = $("#console-command");
+    const command = input.value.trim();
+    if (!command) return;
+    const firstWord = command.split(/\s+/)[0].toLowerCase();
+    if (dangerousCommands.has(firstWord) && !confirm(`Команда "${firstWord}" может изменить состояние сервера. Отправить?`)) return;
+    if (state.socket && state.socket.readyState === WebSocket.OPEN) {
+      state.socket.send(JSON.stringify({ type: "command", command }));
+    } else {
+      await api("/api/servers/active/console/command", {
+        method: "POST",
+        body: JSON.stringify({ command }),
+      });
+    }
+    input.value = "";
+  });
+  $("#clear-console-btn").addEventListener("click", () => {
+    state.consoleItems = [];
+    renderConsole();
+  });
+  $("#log-filter").addEventListener("change", renderConsole);
+
+  $("#reload-properties-btn").addEventListener("click", () => loadProperties().catch((error) => toast(error.message)));
+  $("#properties-form").addEventListener("submit", (event) => saveQuickProperties(event).catch((error) => toast(error.message)));
+  $("#save-raw-properties-btn").addEventListener("click", async () => {
+    await api("/api/servers/active/properties", {
+      method: "PUT",
+      body: JSON.stringify({ raw: $("#raw-properties").value }),
+    });
+    await loadProperties();
+    toast("Raw server.properties сохранен");
+  });
+
+  $("#files-list").addEventListener("click", async (event) => {
+    const button = event.target.closest("button");
+    if (!button) return;
+    const path = button.dataset.path;
+    if (button.dataset.fileAction === "open") await loadFiles(path);
+    if (button.dataset.fileAction === "edit") await openTextFile(path);
+    if (button.dataset.fileAction === "delete" && confirm(`Удалить ${path}?`)) {
+      await api(`/api/servers/active/files?path=${encodeURIComponent(path)}`, { method: "DELETE" });
+      await loadFiles();
+    }
+    if (button.dataset.fileAction === "rename") {
+      const newName = prompt("Новое имя");
+      if (newName) {
+        await api(`/api/servers/active/files?path=${encodeURIComponent(path)}`, {
+          method: "PATCH",
+          body: JSON.stringify({ new_name: newName }),
+        });
+        await loadFiles();
+      }
+    }
+  });
+  $("#files-up-btn").addEventListener("click", () => {
+    const parent = state.filePath.split("/").slice(0, -1).join("/");
+    loadFiles(parent).catch((error) => toast(error.message));
+  });
+  $("#mkdir-btn").addEventListener("click", async () => {
+    const name = prompt("Имя папки");
+    if (!name) return;
+    await api(`/api/servers/active/files/directories?path=${encodeURIComponent(state.filePath)}`, {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    });
+    await loadFiles();
+  });
+  $("#upload-input").addEventListener("change", async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const form = new FormData();
+    form.append("file", file);
+    await api(`/api/servers/active/files/upload?path=${encodeURIComponent(state.filePath)}`, {
+      method: "POST",
+      body: form,
+    });
+    event.target.value = "";
+    await loadFiles();
+  });
+  $("#save-file-btn").addEventListener("click", async () => {
+    if (!state.selectedFile) return toast("Файл не выбран");
+    await api(`/api/servers/active/files/text?path=${encodeURIComponent(state.selectedFile)}`, {
+      method: "PUT",
+      body: JSON.stringify({ content: $("#file-editor").value }),
+    });
+    toast("Файл сохранен");
+  });
+}
+
+bindEvents();
+refreshAll().catch((error) => toast(error.message));
+connectConsole();
+window.setInterval(() => refreshAll().catch(() => {}), 3000);

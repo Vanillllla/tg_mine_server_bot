@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Minecraft Web Panel</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-mark">MC</span>
+          <div>
+            <strong>Minecraft Panel</strong>
+            <span>Server Instances</span>
+          </div>
+        </div>
+        <nav class="nav" aria-label="Основная навигация">
+          <button class="nav-item active" data-view="dashboard">Dashboard</button>
+          <button class="nav-item" data-view="servers">Servers</button>
+          <button class="nav-item" data-view="console">Console</button>
+          <button class="nav-item" data-view="properties">Properties</button>
+          <button class="nav-item" data-view="files">Files</button>
+          <button class="nav-item" data-view="telegram">Telegram</button>
+          <button class="nav-item" data-view="users">Users</button>
+          <button class="nav-item" data-view="settings">Settings</button>
+        </nav>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Active server</p>
+            <h1 id="page-title">Dashboard</h1>
+          </div>
+          <div class="topbar-status">
+            <span id="active-server-label">Не выбран</span>
+            <span id="server-status-pill" class="pill status-off">OFF</span>
+          </div>
+        </header>
+
+        <section id="view-dashboard" class="view active">
+          <div class="dashboard-grid">
+            <section class="panel hero-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Управление</p>
+                  <h2 id="dashboard-server-name">Сервер не выбран</h2>
+                </div>
+                <span id="dashboard-status" class="pill status-off">OFF</span>
+              </div>
+              <div class="actions">
+                <button id="start-btn" class="btn primary">Start</button>
+                <button id="stop-btn" class="btn">Stop</button>
+                <button id="restart-btn" class="btn">Restart</button>
+                <button id="kill-btn" class="btn danger">Kill</button>
+              </div>
+              <div id="dashboard-summary" class="summary-grid"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Метрики</p>
+                  <h2>VM и Java</h2>
+                </div>
+              </div>
+              <div id="metrics-grid" class="metric-grid"></div>
+            </section>
+          </div>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Последние строки</p>
+                <h2>Логи</h2>
+              </div>
+              <button class="btn small" data-view-jump="console">Открыть консоль</button>
+            </div>
+            <pre id="recent-logs" class="log-window compact"></pre>
+          </section>
+        </section>
+
+        <section id="view-servers" class="view">
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Instances</p>
+                <h2>Серверы</h2>
+              </div>
+            </div>
+            <div id="servers-list" class="servers-list"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Новый сервер</p>
+                <h2>Создать из одного jar</h2>
+              </div>
+            </div>
+            <form id="create-server-form" class="form-grid">
+              <label>ID <input name="id" placeholder="vanilla_1_20_1" required /></label>
+              <label>Название <input name="display_name" placeholder="Vanilla 1.20.1" required /></label>
+              <label>Ядро .jar <input name="core_file" type="file" accept=".jar" required /></label>
+              <label>Версия <input name="minecraft_version" placeholder="1.20.1" /></label>
+              <label>Тип <input name="server_type" placeholder="vanilla / forge / paper" /></label>
+              <label>Java <select name="java_path" data-java-select></select></label>
+              <label>Xms MB <input name="xms_mb" type="number" min="64" value="512" /></label>
+              <label>Xmx MB <input name="xmx_mb" type="number" min="64" value="1024" /></label>
+              <label class="checkbox-row"><input name="eula_accept" type="checkbox" /> EULA accepted</label>
+              <button class="btn primary" type="submit">Создать</button>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Forge / готовая сборка</p>
+                <h2>Импортировать сервер из .zip</h2>
+              </div>
+            </div>
+            <form id="import-server-form" class="form-grid">
+              <label>ID <input name="id" placeholder="forge_1_12_2_hbm" required /></label>
+              <label>Название <input name="display_name" placeholder="Forge 1.12.2 HBM" required /></label>
+              <label>Архив .zip <input name="archive_file" type="file" accept=".zip" required /></label>
+              <label>Jar внутри архива <input name="jar_file" placeholder="оставь пустым для автоопределения" /></label>
+              <label>Версия <input name="minecraft_version" placeholder="1.12.2" /></label>
+              <label>Тип <input name="server_type" value="forge" /></label>
+              <label>Java <select name="java_path" data-java-select></select></label>
+              <label>Xms MB <input name="xms_mb" type="number" min="64" value="2048" /></label>
+              <label>Xmx MB <input name="xmx_mb" type="number" min="64" value="4096" /></label>
+              <label class="checkbox-row"><input name="eula_accept" type="checkbox" /> EULA accepted</label>
+              <button class="btn primary" type="submit">Импортировать</button>
+            </form>
+          </section>
+        </section>
+
+        <section id="view-console" class="view">
+          <section class="panel console-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">WebSocket</p>
+                <h2>Консоль активного сервера</h2>
+              </div>
+              <div class="toolbar">
+                <select id="log-filter" class="select">
+                  <option value="">Все</option>
+                  <option value="INFO">INFO</option>
+                  <option value="WARN">WARN</option>
+                  <option value="ERROR">ERROR</option>
+                </select>
+                <label class="checkbox-row"><input id="autoscroll" type="checkbox" checked /> Autoscroll</label>
+                <button id="clear-console-btn" class="btn small">Очистить</button>
+              </div>
+            </div>
+            <pre id="console-output" class="log-window"></pre>
+            <form id="console-form" class="console-form">
+              <input id="console-command" placeholder="say hello" autocomplete="off" />
+              <button class="btn primary" type="submit">Send</button>
+            </form>
+          </section>
+        </section>
+
+        <section id="view-properties" class="view">
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">server.properties</p>
+                <h2>Быстрые настройки</h2>
+              </div>
+              <button id="reload-properties-btn" class="btn small">Обновить</button>
+            </div>
+            <form id="properties-form" class="form-grid"></form>
+          </section>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Raw editor</p>
+                <h2>Полный файл</h2>
+              </div>
+              <button id="save-raw-properties-btn" class="btn primary small">Сохранить raw</button>
+            </div>
+            <textarea id="raw-properties" class="code-editor" spellcheck="false"></textarea>
+          </section>
+        </section>
+
+        <section id="view-files" class="view">
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Файловый менеджер</p>
+                <h2 id="files-path-title">/</h2>
+              </div>
+              <div class="toolbar">
+                <button id="files-up-btn" class="btn small">Вверх</button>
+                <button id="mkdir-btn" class="btn small">Папка</button>
+                <label class="btn small file-button">Upload<input id="upload-input" type="file" hidden /></label>
+              </div>
+            </div>
+            <div id="files-list" class="file-list"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Текстовый файл</p>
+                <h2 id="editor-title">Файл не выбран</h2>
+              </div>
+              <button id="save-file-btn" class="btn primary small">Сохранить</button>
+            </div>
+            <textarea id="file-editor" class="code-editor" spellcheck="false"></textarea>
+          </section>
+        </section>
+
+        <section id="view-telegram" class="view">
+          <section class="panel placeholder">
+            <p class="eyebrow">Этап 7</p>
+            <h2>Telegram Bot</h2>
+            <p>Раздел подготовлен под управление aiogram-ботом через тот же backend API.</p>
+          </section>
+        </section>
+
+        <section id="view-users" class="view">
+          <section class="panel placeholder">
+            <p class="eyebrow">Этап 6</p>
+            <h2>Users and permissions</h2>
+            <p>Здесь будут Owner/Admin/Moderator/Viewer, роли, permissions и audit log.</p>
+          </section>
+        </section>
+
+        <section id="view-settings" class="view">
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Java Runtime</p>
+                <h2>Установленные версии Java</h2>
+              </div>
+              <button id="reload-java-btn" class="btn small">Обновить</button>
+            </div>
+            <div id="java-runtime-list" class="servers-list"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Добавить Java</p>
+                <h2>Новый путь к java.exe</h2>
+              </div>
+            </div>
+            <form id="java-runtime-form" class="form-grid">
+              <label>ID <input name="id" placeholder="java17" required /></label>
+              <label>Название <input name="display_name" placeholder="Java 17" required /></label>
+              <label>Путь <input name="path" placeholder="C:\Program Files\Java\jdk-17\bin\java.exe" required /></label>
+              <label class="checkbox-row"><input name="is_default" type="checkbox" /> Использовать по умолчанию</label>
+              <button class="btn primary" type="submit">Добавить</button>
+            </form>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast" role="status"></div>
+    <script src="/assets/app.js" type="module"></script>
+  </body>
+</html>
