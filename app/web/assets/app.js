@@ -420,15 +420,26 @@ function closeFileEditor() {
 function updateEditorHighlight() {
   const editor = $("#file-editor");
   const highlight = $("#file-editor-highlight");
-  const isJson = state.selectedFile.toLowerCase().endsWith(".json");
-  $("#file-editor-wrap").classList.toggle("json-mode", isJson);
-  if (!isJson) {
+  const mode = editorHighlightMode(state.selectedFile);
+  const wrap = $("#file-editor-wrap");
+  wrap.classList.toggle("json-mode", mode === "json");
+  wrap.classList.toggle("properties-mode", mode === "properties");
+
+  if (!mode) {
     highlight.innerHTML = "";
     return;
   }
-  highlight.innerHTML = highlightJson(editor.value);
+  highlight.innerHTML =
+    mode === "json" ? highlightJson(editor.value) : highlightProperties(editor.value);
   highlight.scrollTop = editor.scrollTop;
   highlight.scrollLeft = editor.scrollLeft;
+}
+
+function editorHighlightMode(path) {
+  const lowerPath = (path || "").toLowerCase();
+  if (lowerPath.endsWith(".json")) return "json";
+  if (lowerPath.endsWith(".properties") || lowerPath.endsWith(".cfg")) return "properties";
+  return "";
 }
 
 function highlightJson(value) {
@@ -450,6 +461,41 @@ function highlightJson(value) {
   });
   result += escapeHtml(value.slice(lastIndex));
   return result || "\n";
+}
+
+function highlightProperties(value) {
+  const lines = value.split(/(\r?\n)/);
+  return lines
+    .map((line) => {
+      if (/^\r?\n$/.test(line)) return line;
+      return highlightPropertyLine(line);
+    })
+    .join("") || "\n";
+}
+
+function highlightPropertyLine(line) {
+  const trimmedLine = line.trimStart();
+  if (!trimmedLine) return escapeHtml(line);
+  if (trimmedLine.startsWith("#") || trimmedLine.startsWith(";")) {
+    return `<span class="properties-comment">${escapeHtml(line)}</span>`;
+  }
+  if (/^\s*\[[^\]]+\]\s*$/.test(line)) {
+    return `<span class="properties-section">${escapeHtml(line)}</span>`;
+  }
+
+  const separatorIndex = line.search(/[=:]/);
+  if (separatorIndex === -1) {
+    return `<span class="properties-key">${escapeHtml(line)}</span>`;
+  }
+
+  const key = line.slice(0, separatorIndex);
+  const separator = line.slice(separatorIndex, separatorIndex + 1);
+  const propertyValue = line.slice(separatorIndex + 1);
+  return [
+    `<span class="properties-key">${escapeHtml(key)}</span>`,
+    `<span class="properties-separator">${escapeHtml(separator)}</span>`,
+    `<span class="properties-value">${escapeHtml(propertyValue)}</span>`,
+  ].join("");
 }
 
 function renderFileBrowser() {
@@ -496,7 +542,7 @@ function renderFileRow(item) {
   const iconClass = item.type === "directory" ? "folder" : "file";
   return `
     <article class="file-row ${selected ? "selected" : ""}" data-file-row data-path="${escapeHtml(item.path)}" tabindex="0">
-      <button class="file-name-cell" type="button" data-file-action="open" data-path="${escapeHtml(item.path)}">
+      <button class="file-name-cell" type="button" data-file-action="select" data-path="${escapeHtml(item.path)}">
         <span class="file-icon ${iconClass}" aria-hidden="true"></span>
         <span>
           <strong>${escapeHtml(item.name)}</strong>
@@ -506,27 +552,7 @@ function renderFileRow(item) {
       <span class="file-type-col">${fileTypeLabel(item)}</span>
       <span class="file-size-col">${item.type === "directory" ? "-" : formatBytes(item.size)}</span>
       <span class="file-date-col">${formatFileDate(item.modified_at)}</span>
-      <div class="row-actions">
-        ${fileActionButtons(item)}
-      </div>
     </article>`;
-}
-
-function fileActionButtons(item) {
-  const path = escapeHtml(item.path);
-  const buttons = [];
-  if (item.type === "directory") {
-    buttons.push(`<button class="btn small" data-file-action="open" data-path="${path}">Открыть</button>`);
-  }
-  if (item.editable) {
-    buttons.push(`<button class="btn small" data-file-action="edit" data-path="${path}">Edit</button>`);
-  }
-  if (item.type === "file") {
-    buttons.push(`<a class="btn small" href="${downloadUrl(item.path)}">Download</a>`);
-  }
-  buttons.push(`<button class="btn small" data-file-action="rename" data-path="${path}">Rename</button>`);
-  buttons.push(`<button class="btn danger small" data-file-action="delete" data-path="${path}">Delete</button>`);
-  return buttons.join("");
 }
 
 function renderFileDetails() {
@@ -825,17 +851,12 @@ function bindEvents() {
   $("#files-list").addEventListener("click", async (event) => {
     const action = event.target.closest("[data-file-action]");
     if (action) {
-      const item = fileItemByPath(action.dataset.path);
       if (action.dataset.fileAction === "select") selectFileItem(action.dataset.path);
-      if (action.dataset.fileAction === "open") await openFileItem(item);
-      if (action.dataset.fileAction === "edit") await openTextFile(action.dataset.path);
-      if (action.dataset.fileAction === "delete") await deleteFileItem(item);
-      if (action.dataset.fileAction === "rename") await renameFileItem(item);
       return;
     }
 
     const row = event.target.closest("[data-file-row]");
-    if (row) await openFileItem(fileItemByPath(row.dataset.path));
+    if (row) selectFileItem(row.dataset.path);
   });
   $("#files-list").addEventListener("dblclick", async (event) => {
     const row = event.target.closest("[data-file-row]");
