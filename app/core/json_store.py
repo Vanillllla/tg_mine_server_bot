@@ -8,7 +8,7 @@ from typing import Any
 def read_json(path: Path, default: Any) -> Any:
     if not path.exists():
         return default
-    with path.open("r", encoding="utf-8") as file:
+    with path.open("r", encoding="utf-8-sig") as file:
         return json.load(file)
 
 
@@ -23,4 +23,3 @@ def write_json_atomic(path: Path, payload: Any) -> None:
     finally:
         if os.path.exists(tmp_name):
             os.unlink(tmp_name)
-

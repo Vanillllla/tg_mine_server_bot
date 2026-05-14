@@ -14,6 +14,7 @@ DEFAULT_PANEL = {
         "shutdown_if_empty_minutes": 5,
     },
     "telegram": {"autostart": False, "token_secret_id": "telegram_bot_token"},
+    "java": {"default_runtime_id": "", "runtimes": []},
 }
 
 
@@ -76,4 +77,3 @@ def get_settings() -> AppSettings:
     panel_home = Path(os.getenv("MC_PANEL_HOME", str(default_home))).expanduser().resolve()
     lines = int(os.getenv("MC_PANEL_LOG_BUFFER_LINES", "5000"))
     return AppSettings(panel_home=panel_home, log_buffer_lines=max(lines, 300))
-

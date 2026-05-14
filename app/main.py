@@ -1,12 +1,17 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import console_ws, health, servers
+from app.api.routes import console_ws, files, health, properties, servers, settings, web
 from app.core.settings import get_settings
+from app.services.file_manager import FileManagerService
 from app.services.log_buffer import LogBuffer
 from app.services.minecraft_manager import MinecraftServerManager
+from app.services.panel_settings import PanelSettingsService
+from app.services.server_properties import ServerPropertiesService
 from app.services.server_instances import ServerInstanceService
 
 
@@ -23,13 +28,16 @@ async def lifespan(app: FastAPI):
     app.state.instance_service = instance_service
     app.state.log_buffer = log_buffer
     app.state.minecraft_manager = manager
+    app.state.properties_service = ServerPropertiesService()
+    app.state.file_manager = FileManagerService()
+    app.state.panel_settings_service = PanelSettingsService(settings)
     yield
     await manager.shutdown()
 
 
 app = FastAPI(
     title="Minecraft Web Panel API",
-    version="0.1.0",
+    version="0.1.1",
     lifespan=lifespan,
 )
 
@@ -43,5 +51,13 @@ app.add_middleware(
 
 app.include_router(health.router)
 app.include_router(servers.router)
+app.include_router(properties.router)
+app.include_router(files.router)
+app.include_router(settings.router)
 app.include_router(console_ws.router)
-
+app.include_router(web.router)
+app.mount(
+    "/assets",
+    StaticFiles(directory=Path(__file__).resolve().parent / "web" / "assets"),
+    name="assets",
+)

@@ -1,7 +1,7 @@
 import asyncio
 import os
+import subprocess
 import time
-from asyncio.subprocess import Process
 from pathlib import Path
 from typing import Any
 
@@ -23,7 +23,7 @@ class MinecraftServerManager:
     ) -> None:
         self.instance_service = instance_service
         self.log_buffer = log_buffer
-        self.process: Process | None = None
+        self.process: subprocess.Popen | None = None
         self.status = ServerStatus.OFF
         self.current_server_id: str | None = None
         self.started_at: float | None = None
@@ -35,7 +35,7 @@ class MinecraftServerManager:
         self._lock = asyncio.Lock()
 
     def is_running(self) -> bool:
-        return self.process is not None and self.process.returncode is None
+        return self.process is not None and self.process.poll() is None
 
     async def start(self) -> None:
         async with self._lock:
@@ -55,12 +55,16 @@ class MinecraftServerManager:
 
             args = self._build_launch_args(server)
             try:
-                self.process = await asyncio.create_subprocess_exec(
-                    *args,
+                self.process = subprocess.Popen(
+                    args,
                     cwd=server.server_dir,
-                    stdin=asyncio.subprocess.PIPE,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    bufsize=1,
                 )
             except Exception as exc:
                 self.status = ServerStatus.ERROR
@@ -81,22 +85,22 @@ class MinecraftServerManager:
             self.status = ServerStatus.STOPPING
             proc = self.process
 
-        if proc.returncode is None and proc.stdin is not None:
+        if proc.poll() is None and proc.stdin is not None:
             try:
-                proc.stdin.write(b"stop\n")
-                await proc.stdin.drain()
+                proc.stdin.write("stop\n")
+                proc.stdin.flush()
             except Exception:
                 pass
 
         try:
-            await asyncio.wait_for(proc.wait(), timeout=30)
-        except asyncio.TimeoutError:
+            await asyncio.to_thread(proc.wait, 30)
+        except subprocess.TimeoutExpired:
             proc.terminate()
             try:
-                await asyncio.wait_for(proc.wait(), timeout=5)
-            except asyncio.TimeoutError:
+                await asyncio.to_thread(proc.wait, 5)
+            except subprocess.TimeoutExpired:
                 proc.kill()
-                await proc.wait()
+                await asyncio.to_thread(proc.wait)
 
         await self._finalize_process()
 
@@ -108,9 +112,9 @@ class MinecraftServerManager:
         async with self._lock:
             proc = self.process
             self.status = ServerStatus.STOPPING if proc else ServerStatus.OFF
-        if proc and proc.returncode is None:
+        if proc and proc.poll() is None:
             proc.kill()
-            await proc.wait()
+            await asyncio.to_thread(proc.wait)
         await self._finalize_process()
 
     async def send_stdin_command(self, command: str) -> None:
@@ -121,8 +125,8 @@ class MinecraftServerManager:
             raise RuntimeError("empty_command")
         server_id = self.current_server_id or "active"
         await self.log_buffer.append("stdin", server_id, f"> {line}")
-        self.process.stdin.write((line + "\n").encode("utf-8"))
-        await self.process.stdin.drain()
+        self.process.stdin.write(line + "\n")
+        self.process.stdin.flush()
 
     def get_status(self) -> dict[str, Any]:
         self._sync_process_state()
@@ -151,7 +155,7 @@ class MinecraftServerManager:
         return {"system": system, "process": process}
 
     async def shutdown(self) -> None:
-        if self.process and self.process.returncode is None:
+        if self.process and self.process.poll() is None:
             await self.stop()
 
     def _build_launch_args(self, server: ServerInstance) -> list[str]:
@@ -182,10 +186,10 @@ class MinecraftServerManager:
         if stream is None:
             return
         while True:
-            raw = await stream.readline()
-            if not raw:
+            line = await asyncio.to_thread(stream.readline)
+            if not line:
                 break
-            line = raw.decode("utf-8", errors="replace").rstrip("\r\n")
+            line = line.rstrip("\r\n")
             await self.log_buffer.append(stream_name, server_id, line)
             if self.status == ServerStatus.STARTING and "Done (" in line and "For help" in line:
                 self.status = ServerStatus.RUNNING
@@ -210,15 +214,15 @@ class MinecraftServerManager:
     async def _finalize_process(self) -> None:
         async with self._lock:
             if self.process:
-                self.exit_code = self.process.returncode
+                self.exit_code = self.process.poll()
             self.process = None
             self.started_at = None
             self.current_server_id = None
             self.status = ServerStatus.OFF
 
     def _sync_process_state(self) -> None:
-        if self.process and self.process.returncode is not None:
-            self.exit_code = self.process.returncode
+        if self.process and self.process.poll() is not None:
+            self.exit_code = self.process.poll()
             self.process = None
             self.started_at = None
             self.current_server_id = None
@@ -258,4 +262,3 @@ class MinecraftServerManager:
             }
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             return {"available": True, "is_running": False}
-
