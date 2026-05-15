@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import auth, client_mods, console_ws, files, health, properties, servers, settings, web
+from app.api.routes import auth, client_mods, console_ws, files, health, properties, servers, settings, updater, web
 from app.core.settings import get_settings
 from app.services.file_manager import FileManagerService
 from app.services.auth import AuthService
@@ -45,7 +45,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://mc.vanilla.xazux.ru"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -58,6 +58,7 @@ app.include_router(properties.router)
 app.include_router(files.router)
 app.include_router(client_mods.router)
 app.include_router(settings.router)
+app.include_router(updater.router)
 app.include_router(console_ws.router)
 app.include_router(web.router)
 app.mount(
