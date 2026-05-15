@@ -74,7 +74,9 @@ async function api(path, options = {}) {
     } catch {
       // Keep HTTP status text.
     }
-    throw new Error(detail);
+    const error = new Error(detail);
+    error.status = response.status;
+    throw error;
   }
   if (response.status === 204) return null;
   return response.json();
@@ -94,6 +96,18 @@ function showLogin(message = "") {
 function showApp() {
   $("#auth-screen").hidden = true;
   $("#app-shell").hidden = false;
+}
+
+function clearSessionState(message = "") {
+  if (state.socket) state.socket.close();
+  state.socket = null;
+  state.currentUser = null;
+  state.servers = [];
+  state.activeServer = null;
+  state.workData = null;
+  state.consoleItems = [];
+  state.invite = null;
+  showLogin(message);
 }
 
 async function loadCurrentUser() {
@@ -585,7 +599,10 @@ function filteredFileItems() {
 
 function selectFileItem(path) {
   state.selectedFileItem = state.fileItems.find((item) => item.path === path) || null;
-  renderFileBrowser();
+  $$("[data-file-row]").forEach((row) => {
+    row.classList.toggle("selected", row.dataset.path === path);
+  });
+  renderFileDetails();
 }
 
 async function openFileItem(item) {
@@ -700,13 +717,7 @@ function bindEvents() {
 
   $("#logout-btn").addEventListener("click", async () => {
     await api("/api/auth/logout", { method: "POST" }).catch(() => null);
-    if (state.socket) state.socket.close();
-    state.currentUser = null;
-    state.servers = [];
-    state.activeServer = null;
-    state.workData = null;
-    state.consoleItems = [];
-    showLogin("");
+    clearSessionState("");
   });
 
   $$(".nav-item").forEach((button) => button.addEventListener("click", () => switchView(button.dataset.view)));
@@ -777,6 +788,31 @@ function bindEvents() {
     renderJavaRuntimeSettings();
     renderJavaSelects();
     toast("Java добавлена");
+  });
+
+  $("#admin-password-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const currentPassword = String(form.get("current_password") || "");
+    const newPassword = String(form.get("new_password") || "");
+    const confirmPassword = String(form.get("confirm_password") || "");
+    if (newPassword !== confirmPassword) {
+      toast("Новые пароли не совпадают");
+      return;
+    }
+    try {
+      await api("/api/auth/admin/password", {
+        method: "POST",
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      });
+      event.currentTarget.reset();
+      toast("Пароль администратора изменён");
+    } catch (error) {
+      toast(error.message);
+    }
   });
 
   $("#create-invite-btn").addEventListener("click", async () => {
@@ -967,5 +1003,9 @@ async function boot() {
 bindEvents();
 boot();
 window.setInterval(() => {
-  if (state.currentUser) refreshAll().catch(() => {});
+  if (state.currentUser) {
+    refreshAll().catch((error) => {
+      if (error.status === 401) clearSessionState("Сессия завершена.");
+    });
+  }
 }, 3000);

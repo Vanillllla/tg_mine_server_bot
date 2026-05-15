@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from app.api.deps import get_auth_service, get_current_user, require_admin
 from app.models.auth import (
+    AdminPasswordChangeRequest,
     AuthResponse,
     AuthUser,
     InviteLinkResponse,
@@ -61,6 +62,18 @@ async def logout(request: Request, response: Response) -> None:
 @router.get("/me", response_model=AuthResponse)
 async def me(current_user: AuthUser = Depends(get_current_user)) -> AuthResponse:
     return AuthResponse(user=current_user)
+
+
+@router.post("/admin/password", status_code=status.HTTP_204_NO_CONTENT)
+async def change_admin_password(
+    request: Request,
+    payload: AdminPasswordChangeRequest,
+    current_user: AuthUser = Depends(require_admin),
+) -> None:
+    try:
+        get_auth_service(request).change_admin_password(payload.current_password, payload.new_password)
+    except PermissionError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
 
 @router.get("/invite", response_model=InviteLinkResponse)
