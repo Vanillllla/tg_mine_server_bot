@@ -1,4 +1,6 @@
 MC_PANEL_ADMIN_USERNAME=admin
 MC_PANEL_ADMIN_PASSWORD=change-me
 
+Запуск:
+$env:MC_PANEL_HOME = ".\runtime\mc-panel"    #это команда под винду
 .\.venv\Scripts\python -m uvicorn app.main:app --reload
