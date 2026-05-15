@@ -82,21 +82,158 @@ textarea {
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
-  border: 1px solid #486452;
-  border-radius: var(--radius);
-  background: #1d2a24;
-  color: #baf7d2;
-  font-weight: 800;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
 }
 
-.brand strong,
-.brand span {
+.minecraft-nuke-logo {
+  overflow: visible;
+  perspective: 180px;
+}
+
+.logo-scene,
+.grass-block,
+.grass-face,
+.mushroom-cloud,
+.cloud-stem,
+.cloud-cap,
+.cloud-lobe {
   display: block;
 }
 
-.brand span {
+.logo-scene {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  transform-style: preserve-3d;
+  animation: logo-orbit 5.5s ease-in-out infinite;
+  filter: drop-shadow(0 10px 10px rgb(0 0 0 / 28%));
+}
+
+.grass-block {
+  position: absolute;
+  left: 13px;
+  bottom: 8px;
+  width: 24px;
+  height: 24px;
+  transform-style: preserve-3d;
+  transform: rotateX(-28deg) rotateY(38deg);
+}
+
+.grass-face {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgb(255 255 255 / 12%);
+  image-rendering: pixelated;
+}
+
+.grass-top {
+  transform: rotateX(90deg) translateZ(12px);
+  background:
+    linear-gradient(90deg, rgb(255 255 255 / 10%) 1px, transparent 1px) 0 0 / 6px 6px,
+    linear-gradient(#4fa33f, #2f7c32);
+}
+
+.grass-front {
+  transform: translateZ(12px);
+  background:
+    linear-gradient(90deg, rgb(74 47 25 / 52%) 1px, transparent 1px) 0 0 / 6px 6px,
+    linear-gradient(#4c3522 0 24%, #6b4827 24% 100%);
+}
+
+.grass-right {
+  transform: rotateY(90deg) translateZ(12px);
+  background:
+    linear-gradient(90deg, rgb(46 30 18 / 48%) 1px, transparent 1px) 0 0 / 6px 6px,
+    linear-gradient(#3b7f32 0 24%, #56391f 24% 100%);
+}
+
+.mushroom-cloud {
+  position: absolute;
+  left: 15px;
+  bottom: 26px;
+  width: 24px;
+  height: 26px;
+  transform: translateZ(20px);
+  animation: cloud-breathe 2.8s ease-in-out infinite;
+}
+
+.cloud-stem {
+  position: absolute;
+  left: 9px;
+  bottom: 0;
+  width: 7px;
+  height: 19px;
+  border-radius: 7px 7px 3px 3px;
+  background: linear-gradient(#fff0bc, #eaa65a 55%, #9f542e);
+  box-shadow: 0 0 10px rgb(255 194 91 / 42%);
+}
+
+.cloud-cap,
+.cloud-lobe {
+  position: absolute;
+  border-radius: 999px;
+  background: radial-gradient(circle at 34% 28%, #fff8cb, #f0a64e 54%, #7b321f 100%);
+  box-shadow: 0 0 14px rgb(255 180 71 / 48%);
+}
+
+.cloud-cap {
+  left: 3px;
+  top: 0;
+  width: 19px;
+  height: 13px;
+}
+
+.cloud-lobe {
+  top: 7px;
+  width: 13px;
+  height: 11px;
+}
+
+.cloud-lobe-left {
+  left: 0;
+}
+
+.cloud-lobe-right {
+  right: 0;
+}
+
+@keyframes logo-orbit {
+  0%,
+  100% {
+    transform: rotateX(8deg) rotateY(-18deg);
+  }
+  50% {
+    transform: rotateX(12deg) rotateY(24deg) translateY(-1px);
+  }
+}
+
+@keyframes cloud-breathe {
+  0%,
+  100% {
+    transform: translateZ(20px) scale(0.94);
+    opacity: 0.92;
+  }
+  50% {
+    transform: translateZ(23px) scale(1.06);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-scene,
+  .mushroom-cloud {
+    animation: none;
+  }
+}
+
+.brand-copy strong,
+.brand-copy span {
+  display: block;
+}
+
+.brand-copy span {
   color: var(--muted);
   font-size: 13px;
 }
