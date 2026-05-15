@@ -700,9 +700,8 @@ function bindEvents() {
   $("#login-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    let response;
     try {
-      response = await api("/api/auth/login", {
+      await api("/api/auth/login", {
         method: "POST",
         body: JSON.stringify(Object.fromEntries(form.entries())),
       });
@@ -711,19 +710,8 @@ function bindEvents() {
       return;
     }
 
-    state.currentUser = response.user;
     event.currentTarget.reset();
-    showApp();
-    try {
-      await refreshAll();
-      if (hasPermission("console.view")) connectConsole();
-    } catch (error) {
-      if (error.status === 401) {
-        clearSessionState("Сессия завершена.");
-        return;
-      }
-      toast(error.message);
-    }
+    window.location.reload();
   });
 
   $("#logout-btn").addEventListener("click", async () => {
