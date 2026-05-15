@@ -101,6 +101,10 @@ class UpdateServerInstanceRequest(BaseModel):
     startup_timeout: int | None = None
 
 
+class SelectActiveServerJarRequest(BaseModel):
+    path: str = Field(min_length=1, max_length=512)
+
+
 class ConsoleCommandRequest(BaseModel):
     command: str = Field(min_length=1, max_length=4096)
 
@@ -113,4 +117,3 @@ class ServerStatusResponse(BaseModel):
     start_error: str = ""
     exit_code: int | None = None
     details: dict[str, Any] = Field(default_factory=dict)
-
