@@ -8,6 +8,7 @@ from app.models.auth import AuthUser
 from app.models.server import (
     ConsoleCommandRequest,
     CreateServerInstanceRequest,
+    SelectActiveServerJarRequest,
     ServerInstance,
     UpdateServerInstanceRequest,
 )
@@ -231,6 +232,22 @@ async def get_active_server(
     current_user: AuthUser = Depends(require_permission("servers.view")),
 ) -> ServerInstance | None:
     return get_instance_service(request).get_active_server()
+
+
+@router.post("/active/jar", response_model=ServerInstance)
+async def select_active_server_jar(
+    request: Request,
+    payload: SelectActiveServerJarRequest,
+    current_user: AuthUser = Depends(require_permission("servers.edit_launch_settings")),
+) -> ServerInstance:
+    try:
+        return get_instance_service(request).set_active_server_jar(payload.path)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.post("/{server_id}/activate", response_model=ServerInstance)

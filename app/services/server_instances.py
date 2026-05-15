@@ -103,6 +103,28 @@ class ServerInstanceService:
         self._write_servers(servers)
         return self.get_server(server_id)
 
+    def set_active_server_jar(self, jar_file: str) -> ServerInstance:
+        server = self.get_active_server()
+        if server is None:
+            raise KeyError("active_server_not_selected")
+
+        candidate = Path(jar_file.replace("\\", "/"))
+        if candidate.is_absolute() or any(part in {"", ".", ".."} for part in candidate.parts):
+            raise ValueError("jar_file_has_unsafe_path")
+        if candidate.suffix.lower() != ".jar":
+            raise ValueError("jar_file_must_be_jar")
+
+        server_dir = Path(server.server_dir).expanduser().resolve()
+        target = (server_dir / candidate).resolve()
+        try:
+            target.relative_to(server_dir)
+        except ValueError as exc:
+            raise ValueError("jar_file_must_be_inside_server_dir") from exc
+        if not target.is_file():
+            raise FileNotFoundError("jar_file_not_found")
+
+        return self.update_server(server.id, UpdateServerInstanceRequest(jar_file=candidate.as_posix()))
+
     def delete_server(self, server_id: str, delete_files: bool = True) -> None:
         server = self.get_server(server_id)
         servers = self._read_servers()

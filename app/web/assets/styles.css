@@ -652,6 +652,33 @@ h2 {
   white-space: nowrap;
 }
 
+.file-name-cell > span:last-child {
+  min-width: 0;
+}
+
+.file-title-line {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-title-line strong {
+  min-width: 0;
+}
+
+.file-tag {
+  flex: 0 0 auto;
+  border: 1px solid #6f5b22;
+  border-radius: 999px;
+  background: #2b2517;
+  color: #ffd990;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 4px 7px;
+}
+
 .file-icon {
   position: relative;
   flex: 0 0 34px;

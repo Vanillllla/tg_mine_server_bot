@@ -554,12 +554,13 @@ function renderFileRows() {
 function renderFileRow(item) {
   const selected = state.selectedFileItem?.path === item.path;
   const iconClass = item.type === "directory" ? "folder" : "file";
+  const coreTag = isServerCoreFile(item) ? '<span class="file-tag core">Ядро</span>' : "";
   return `
     <article class="file-row ${selected ? "selected" : ""}" data-file-row data-path="${escapeHtml(item.path)}" tabindex="0">
       <button class="file-name-cell" type="button" data-file-action="select" data-path="${escapeHtml(item.path)}">
         <span class="file-icon ${iconClass}" aria-hidden="true"></span>
         <span>
-          <strong>${escapeHtml(item.name)}</strong>
+          <span class="file-title-line"><strong>${escapeHtml(item.name)}</strong>${coreTag}</span>
           <span class="file-meta mobile-only">${fileTypeLabel(item)} · ${formatBytes(item.size)}</span>
         </span>
       </button>
@@ -584,6 +585,9 @@ function renderFileDetails() {
   $("#file-details-edit").hidden = !item?.editable;
   $("#file-details-download").hidden = item?.type !== "file";
   $("#file-details-download").href = item ? downloadUrl(item.path) : "#";
+  $("#file-details-select-core").hidden = !isJarFile(item);
+  $("#file-details-select-core").disabled = !isJarFile(item) || isServerCoreFile(item);
+  $("#file-details-select-core").textContent = isServerCoreFile(item) ? "Текущее ядро" : "Выбрать ядро";
 }
 
 function filteredFileItems() {
@@ -642,8 +646,41 @@ function fileItemByPath(path) {
   return state.fileItems.find((item) => item.path === path) || null;
 }
 
+function normalizeFilePath(path) {
+  return String(path || "").replaceAll("\\", "/").toLowerCase();
+}
+
+function activeServerJarPath() {
+  return normalizeFilePath(state.activeServer?.jar_file || state.workData?.active_server?.jar_file || "");
+}
+
+function isJarFile(item) {
+  return item?.type === "file" && normalizeFilePath(item.path).endsWith(".jar");
+}
+
+function isServerCoreFile(item) {
+  return isJarFile(item) && normalizeFilePath(item.path) === activeServerJarPath();
+}
+
+async function selectActiveServerCore(item) {
+  if (!isJarFile(item)) return;
+  const server = await api("/api/servers/active/jar", {
+    method: "POST",
+    body: JSON.stringify({ path: item.path }),
+  });
+  state.activeServer = server;
+  state.servers = state.servers.map((candidate) => (candidate.id === server.id ? server : candidate));
+  if (state.workData?.active_server?.id === server.id) {
+    state.workData.active_server = server;
+  }
+  renderHeader();
+  renderFileBrowser();
+  toast("Ядро сервера выбрано");
+}
+
 function fileTypeLabel(item) {
   if (item.type === "directory") return "Папка";
+  if (isJarFile(item)) return "JAR файл";
   return item.editable ? "Текстовый файл" : "Файл";
 }
 
@@ -937,6 +974,9 @@ function bindEvents() {
   });
   $("#file-details-delete").addEventListener("click", () => {
     deleteFileItem(selectedFileItem()).catch((error) => toast(error.message));
+  });
+  $("#file-details-select-core").addEventListener("click", () => {
+    selectActiveServerCore(selectedFileItem()).catch((error) => toast(error.message));
   });
   $("#files-up-btn").addEventListener("click", () => {
     if (!state.filePath) return;
