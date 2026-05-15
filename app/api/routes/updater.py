@@ -1,9 +1,9 @@
 import json
 import os
+import shlex
 import subprocess
 import urllib.error
 import urllib.request
-from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -15,11 +15,18 @@ router = APIRouter(prefix="/api/updater", tags=["updater"])
 
 GITHUB_REPO = os.getenv("MC_PANEL_GITHUB_REPO", "Vanillllla/mc-server-controller")
 CURRENT_VERSION = os.getenv("MC_PANEL_VERSION", "0.1.1")
-UPDATE_SCRIPT = Path(os.getenv("MC_PANEL_UPDATE_SCRIPT", "/usr/local/sbin/mc-panel-update"))
+UPDATE_COMMAND = os.getenv("MC_PANEL_UPDATE_COMMAND", "/usr/bin/sudo /usr/local/sbin/mc-panel-update")
 
 
 def _normalize_version(version: str) -> str:
     return version.strip().lstrip("v")
+
+
+def _update_command_args(version: str) -> list[str]:
+    args = shlex.split(UPDATE_COMMAND)
+    if not args:
+        raise HTTPException(status_code=500, detail="update_command_is_empty")
+    return [*args, version]
 
 
 def _github_latest_release() -> dict[str, Any]:
@@ -79,12 +86,9 @@ async def apply_update(
     if manager.is_running():
         raise HTTPException(status_code=409, detail="minecraft_server_must_be_stopped_before_update")
 
-    if not UPDATE_SCRIPT.is_file():
-        raise HTTPException(status_code=500, detail=f"update_script_not_found: {UPDATE_SCRIPT}")
-
     try:
         subprocess.Popen(
-            [str(UPDATE_SCRIPT), latest["latest_version"]],
+            _update_command_args(latest["latest_version"]),
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
