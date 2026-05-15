@@ -34,6 +34,26 @@ def test_invite_login_uses_limited_permissions(tmp_path: Path) -> None:
     assert not user.has_permission("console.view")
 
 
+def test_revoked_invite_invalidates_existing_sessions(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+    invite = service.create_invite("http://testserver")
+    token, _ = service.login_invite(invite["token"])
+
+    service.revoke_invite("http://testserver")
+
+    assert service.get_user_by_session_token(token) is None
+
+
+def test_recreated_invite_invalidates_existing_sessions(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+    invite = service.create_invite("http://testserver")
+    token, _ = service.login_invite(invite["token"])
+
+    service.create_invite("http://testserver")
+
+    assert service.get_user_by_session_token(token) is None
+
+
 def test_revoked_invite_rejects_login(tmp_path: Path) -> None:
     service = make_service(tmp_path)
     invite = service.create_invite("http://testserver")
@@ -45,3 +65,21 @@ def test_revoked_invite_rejects_login(tmp_path: Path) -> None:
         assert str(exc) == "invite_is_closed"
     else:
         raise AssertionError("revoked invite was accepted")
+
+
+def test_admin_password_change_updates_login(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+
+    service.change_admin_password("change-me", "new-password")
+
+    try:
+        service.login_admin("admin", "change-me")
+    except PermissionError as exc:
+        assert str(exc) == "invalid_credentials"
+    else:
+        raise AssertionError("old admin password was accepted")
+
+    token, user = service.login_admin("admin", "new-password")
+
+    assert token
+    assert user.role == "admin"

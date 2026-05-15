@@ -10,8 +10,22 @@
     <section id="auth-screen" class="auth-screen">
       <form id="login-form" class="auth-card">
         <div class="brand">
-          <span class="brand-mark">MC</span>
-          <div>
+          <span class="brand-mark minecraft-nuke-logo" aria-hidden="true">
+            <span class="logo-scene">
+              <span class="grass-block">
+                <span class="grass-face grass-top"></span>
+                <span class="grass-face grass-front"></span>
+                <span class="grass-face grass-right"></span>
+              </span>
+              <span class="mushroom-cloud">
+                <span class="cloud-stem"></span>
+                <span class="cloud-cap"></span>
+                <span class="cloud-lobe cloud-lobe-left"></span>
+                <span class="cloud-lobe cloud-lobe-right"></span>
+              </span>
+            </span>
+          </span>
+          <div class="brand-copy">
             <strong>Minecraft Panel</strong>
             <span>Admin access</span>
           </div>
@@ -30,8 +44,22 @@
     <div id="app-shell" class="app-shell" hidden>
       <aside class="sidebar">
         <div class="brand">
-          <span class="brand-mark">MC</span>
-          <div>
+          <span class="brand-mark minecraft-nuke-logo" aria-hidden="true">
+            <span class="logo-scene">
+              <span class="grass-block">
+                <span class="grass-face grass-top"></span>
+                <span class="grass-face grass-front"></span>
+                <span class="grass-face grass-right"></span>
+              </span>
+              <span class="mushroom-cloud">
+                <span class="cloud-stem"></span>
+                <span class="cloud-cap"></span>
+                <span class="cloud-lobe cloud-lobe-left"></span>
+                <span class="cloud-lobe cloud-lobe-right"></span>
+              </span>
+            </span>
+          </span>
+          <div class="brand-copy">
             <strong>Minecraft Panel</strong>
             <span>Server Instances</span>
           </div>
@@ -220,7 +248,6 @@
                 <button id="files-refresh-btn" class="btn small" type="button" title="Обновить">↻</button>
                 <button id="files-up-btn" class="btn small" type="button" title="Вверх">↑</button>
                 <button id="client-mods-folder-btn" class="btn small" type="button">Client mods</button>
-                <button id="mkdir-btn" class="btn small">Папка</button>
                 <label class="btn small file-button">Upload<input id="upload-input" type="file" hidden /></label>
               </div>
             </div>
@@ -270,6 +297,7 @@
                   </div>
                 </dl>
                 <div class="file-details-actions">
+                  <button id="mkdir-btn" class="btn small" type="button">Новая папка</button>
                   <button id="file-details-open" class="btn small" type="button">Открыть</button>
                   <button id="file-details-edit" class="btn small" type="button">Редактировать</button>
                   <a id="file-details-download" class="btn small" href="#">Download</a>
@@ -290,14 +318,6 @@
         </section>
 
         <section id="view-users" class="view">
-          <section class="panel placeholder">
-            <p class="eyebrow">Этап 6</p>
-            <h2>Users and permissions</h2>
-            <p>Здесь будут Owner/Admin/Moderator/Viewer, роли, permissions и audit log.</p>
-          </section>
-        </section>
-
-        <section id="view-settings" class="view">
           <section class="panel" data-admin-only>
             <div class="panel-heading">
               <div>
@@ -319,6 +339,29 @@
                 <button id="copy-invite-btn" class="btn small" type="button">Copy</button>
               </div>
             </div>
+          </section>
+
+          <section class="panel placeholder">
+            <p class="eyebrow">Этап 6</p>
+            <h2>Users and permissions</h2>
+            <p>Здесь будут Owner/Admin/Moderator/Viewer, роли, permissions и audit log.</p>
+          </section>
+        </section>
+
+        <section id="view-settings" class="view">
+          <section class="panel" data-admin-only>
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Admin access</p>
+                <h2>Пароль администратора</h2>
+              </div>
+            </div>
+            <form id="admin-password-form" class="form-grid">
+              <label>Текущий пароль <input name="current_password" type="password" autocomplete="current-password" required /></label>
+              <label>Новый пароль <input name="new_password" type="password" autocomplete="new-password" minlength="8" required /></label>
+              <label>Повторите пароль <input name="confirm_password" type="password" autocomplete="new-password" minlength="8" required /></label>
+              <button class="btn primary" type="submit">Сменить пароль</button>
+            </form>
           </section>
 
           <section class="panel">
