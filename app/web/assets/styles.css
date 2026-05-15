@@ -107,7 +107,7 @@ textarea {
   width: 52px;
   height: 52px;
   transform-style: preserve-3d;
-  animation: logo-orbit 5.5s ease-in-out infinite;
+  animation: logo-orbit 8s linear infinite;
   filter: drop-shadow(0 10px 10px rgb(0 0 0 / 28%));
 }
 
@@ -149,12 +149,34 @@ textarea {
     linear-gradient(#3b7f32 0 24%, #56391f 24% 100%);
 }
 
+.grass-back {
+  transform: rotateY(180deg) translateZ(12px);
+  background:
+    linear-gradient(90deg, rgb(46 30 18 / 42%) 1px, transparent 1px) 0 0 / 6px 6px,
+    linear-gradient(#356e2d 0 24%, #52371f 24% 100%);
+}
+
+.grass-left {
+  transform: rotateY(-90deg) translateZ(12px);
+  background:
+    linear-gradient(90deg, rgb(46 30 18 / 48%) 1px, transparent 1px) 0 0 / 6px 6px,
+    linear-gradient(#438f37 0 24%, #644326 24% 100%);
+}
+
+.grass-bottom {
+  transform: rotateX(-90deg) translateZ(12px);
+  background:
+    linear-gradient(90deg, rgb(40 25 14 / 46%) 1px, transparent 1px) 0 0 / 6px 6px,
+    linear-gradient(#5a3a21, #3f2918);
+}
+
 .mushroom-cloud {
   position: absolute;
   left: 15px;
   bottom: 26px;
   width: 24px;
   height: 26px;
+  transform-style: preserve-3d;
   transform: translateZ(20px);
   animation: cloud-breathe 2.8s ease-in-out infinite;
 }
@@ -168,6 +190,7 @@ textarea {
   border-radius: 7px 7px 3px 3px;
   background: linear-gradient(#fff0bc, #eaa65a 55%, #9f542e);
   box-shadow: 0 0 10px rgb(255 194 91 / 42%);
+  transform: translateZ(2px);
 }
 
 .cloud-cap,
@@ -183,6 +206,7 @@ textarea {
   top: 0;
   width: 19px;
   height: 13px;
+  transform: translateZ(8px);
 }
 
 .cloud-lobe {
@@ -193,19 +217,38 @@ textarea {
 
 .cloud-lobe-left {
   left: 0;
+  transform: translateZ(4px) rotateY(-18deg);
 }
 
 .cloud-lobe-right {
   right: 0;
+  transform: translateZ(4px) rotateY(18deg);
+}
+
+.cloud-lobe-front {
+  left: 5px;
+  top: 8px;
+  width: 15px;
+  height: 10px;
+  opacity: 0.96;
+  transform: translateZ(13px) scale(0.9);
+}
+
+.cloud-lobe-back {
+  left: 5px;
+  top: 5px;
+  width: 15px;
+  height: 10px;
+  opacity: 0.72;
+  transform: translateZ(-7px) scale(0.95);
 }
 
 @keyframes logo-orbit {
-  0%,
-  100% {
-    transform: rotateX(8deg) rotateY(-18deg);
+  from {
+    transform: rotateX(10deg) rotateY(0deg);
   }
-  50% {
-    transform: rotateX(12deg) rotateY(24deg) translateY(-1px);
+  to {
+    transform: rotateX(10deg) rotateY(360deg);
   }
 }
 
