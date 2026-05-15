@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+VERSION="${1:-}"
+if [[ -z "$VERSION" ]]; then
+  echo "Usage: mc-panel-update <version>" >&2
+  exit 2
+fi
+
+REPO="${MC_PANEL_GITHUB_REPO:-Vanillllla/mc-server-controller}"
+APP_DIR="${MC_PANEL_APP_DIR:-/opt/mc-server-controller}"
+VENV_DIR="${MC_PANEL_VENV_DIR:-/opt/mc-server-controller/.venv}"
+SERVICE_NAME="${MC_PANEL_SERVICE_NAME:-mc-panel.service}"
+BACKUP_DIR="${MC_PANEL_BACKUP_DIR:-/opt/mc-server-controller-backups}"
+
+VERSION_TAG="$VERSION"
+if [[ "$VERSION_TAG" != v* ]]; then
+  VERSION_TAG="v${VERSION_TAG}"
+fi
+
+ARCHIVE_URL="https://github.com/${REPO}/archive/refs/tags/${VERSION_TAG}.tar.gz"
+TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "$TMP_DIR"' EXIT
+
+mkdir -p "$BACKUP_DIR"
+if [[ -d "$APP_DIR" ]]; then
+  tar -C "$(dirname "$APP_DIR")" -czf "$BACKUP_DIR/mc-panel-$(date +%Y%m%d%H%M%S).tar.gz" "$(basename "$APP_DIR")"
+fi
+
+curl -fsSL "$ARCHIVE_URL" -o "$TMP_DIR/source.tar.gz"
+tar -xzf "$TMP_DIR/source.tar.gz" -C "$TMP_DIR"
+SOURCE_DIR="$(find "$TMP_DIR" -maxdepth 1 -mindepth 1 -type d | head -n 1)"
+
+systemctl stop "$SERVICE_NAME" || true
+
+rsync -a --delete \
+  --exclude '.venv' \
+  --exclude 'runtime' \
+  --exclude '__pycache__' \
+  "$SOURCE_DIR/" "$APP_DIR/"
+
+python3 -m venv "$VENV_DIR"
+"$VENV_DIR/bin/pip" install --upgrade pip
+"$VENV_DIR/bin/pip" install -r "$APP_DIR/requirements.txt"
+
+systemctl restart "$SERVICE_NAME"
