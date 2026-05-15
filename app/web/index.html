@@ -396,7 +396,7 @@
             <form id="java-runtime-form" class="form-grid">
               <label>ID <input name="id" placeholder="java17" required /></label>
               <label>Название <input name="display_name" placeholder="Java 17" required /></label>
-              <label>Путь <input name="path" placeholder="C:\Program Files\Java\jdk-17\bin\java.exe" required /></label>
+              <label>Путь <input name="path" placeholder="/usr/bin/java" required /></label>
               <label class="checkbox-row"><input name="is_default" type="checkbox" /> Использовать по умолчанию</label>
               <button class="btn primary" type="submit">Добавить</button>
             </form>
@@ -427,5 +427,6 @@
 
     <div id="toast" class="toast" role="status"></div>
     <script src="/assets/app.js?v=core-select-1" type="module"></script>
+    <script src="/assets/updater.js?v=updater-1" type="module"></script>
   </body>
 </html>
