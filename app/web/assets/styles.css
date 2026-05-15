@@ -79,6 +79,10 @@ textarea {
   margin-bottom: 28px;
 }
 
+.brand-copy {
+  min-width: 0;
+}
+
 .brand-mark {
   display: grid;
   place-items: center;
@@ -279,6 +283,22 @@ textarea {
 .brand-copy span {
   color: var(--muted);
   font-size: 13px;
+}
+
+.brand-link {
+  margin-left: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 8px;
+  text-decoration: none;
+}
+
+.brand-link:hover {
+  border-color: #465061;
+  color: var(--text);
 }
 
 .nav {
