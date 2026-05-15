@@ -700,18 +700,29 @@ function bindEvents() {
   $("#login-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    let response;
     try {
-      const response = await api("/api/auth/login", {
+      response = await api("/api/auth/login", {
         method: "POST",
         body: JSON.stringify(Object.fromEntries(form.entries())),
       });
-      state.currentUser = response.user;
-      event.currentTarget.reset();
-      showApp();
+    } catch (error) {
+      showLogin(error.message);
+      return;
+    }
+
+    state.currentUser = response.user;
+    event.currentTarget.reset();
+    showApp();
+    try {
       await refreshAll();
       if (hasPermission("console.view")) connectConsole();
     } catch (error) {
-      showLogin(error.message);
+      if (error.status === 401) {
+        clearSessionState("Сессия завершена.");
+        return;
+      }
+      toast(error.message);
     }
   });
 
