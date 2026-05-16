@@ -121,3 +121,60 @@ def test_import_archive_creates_server_and_extracts_zip(tmp_path: Path, monkeypa
         assert {"server.jar", "config"}.issubset(file_names)
     finally:
         client.__exit__(None, None, None)
+
+
+def test_import_archive_accepts_windows_separators(tmp_path: Path, monkeypatch) -> None:
+    client = make_client(tmp_path, monkeypatch)
+    archive_bytes = BytesIO()
+    with ZipFile(archive_bytes, "w") as archive:
+        archive.writestr("pack\\nested\\server.jar", b"jar-content")
+    archive_bytes.seek(0)
+
+    try:
+        response = client.post(
+            "/api/servers/import-archive",
+            data={
+                "id": "zip_windows_paths",
+                "display_name": "Zip Windows Paths",
+                "java_path": "java",
+                "xms_mb": "512",
+                "xmx_mb": "1024",
+                "jar_file": "nested\\server.jar",
+            },
+            files={"archive_file": ("server.zip", archive_bytes.getvalue(), "application/zip")},
+        )
+
+        assert response.status_code == 201
+        body = response.json()
+        server_dir = Path(body["server_dir"])
+        assert body["jar_file"] == "nested/server.jar"
+        assert (server_dir / "nested" / "server.jar").read_bytes() == b"jar-content"
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_import_archive_rejects_windows_absolute_paths(tmp_path: Path, monkeypatch) -> None:
+    client = make_client(tmp_path, monkeypatch)
+    archive_bytes = BytesIO()
+    with ZipFile(archive_bytes, "w") as archive:
+        archive.writestr(r"C:\server.jar", b"jar-content")
+    archive_bytes.seek(0)
+
+    try:
+        response = client.post(
+            "/api/servers/import-archive",
+            data={
+                "id": "zip_bad_path",
+                "display_name": "Zip Bad Path",
+                "java_path": "java",
+                "xms_mb": "512",
+                "xmx_mb": "1024",
+            },
+            files={"archive_file": ("server.zip", archive_bytes.getvalue(), "application/zip")},
+        )
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == "archive_contains_unsafe_path"
+        assert not (get_settings().servers_dir / "zip_bad_path").exists()
+    finally:
+        client.__exit__(None, None, None)

@@ -1,4 +1,4 @@
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from zipfile import BadZipFile, ZipFile, ZipInfo
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
@@ -37,17 +37,19 @@ def _safe_active_server_payload(payload: dict | None, current_user: AuthUser) ->
 
 def _safe_archive_entries(archive: ZipFile) -> list[tuple[ZipInfo, Path]]:
     raw_names = [info.filename.replace("\\", "/") for info in archive.infolist() if info.filename]
-    roots = {Path(name).parts[0] for name in raw_names if Path(name).parts}
+    roots = {PurePosixPath(name).parts[0] for name in raw_names if PurePosixPath(name).parts}
     strip_root = len(roots) == 1
 
     entries: list[tuple[ZipInfo, Path]] = []
     for info in archive.infolist():
         normalized = info.filename.replace("\\", "/")
-        path = Path(normalized)
+        path = PurePosixPath(normalized)
+        if path.is_absolute() or any(part in {"", ".", ".."} or part.endswith(":") for part in path.parts):
+            raise ValueError("archive_contains_unsafe_path")
         parts = path.parts[1:] if strip_root else path.parts
         if not parts:
             continue
-        if path.is_absolute() or any(part in {"", ".", ".."} for part in parts):
+        if any(part in {"", ".", ".."} for part in parts):
             raise ValueError("archive_contains_unsafe_path")
         relative = Path(*parts)
         if relative.is_absolute():
@@ -58,9 +60,10 @@ def _safe_archive_entries(archive: ZipFile) -> list[tuple[ZipInfo, Path]]:
 
 def _choose_jar_file(entries: list[tuple[ZipInfo, Path]], requested: str = "") -> str:
     if requested:
-        candidate = Path(requested)
-        if candidate.is_absolute() or any(part in {"", ".", ".."} for part in candidate.parts):
+        candidate_path = PurePosixPath(requested.replace("\\", "/"))
+        if candidate_path.is_absolute() or any(part in {"", ".", ".."} or part.endswith(":") for part in candidate_path.parts):
             raise ValueError("jar_file_has_unsafe_path")
+        candidate = Path(*candidate_path.parts)
         if any(relative.as_posix() == candidate.as_posix() for info, relative in entries if not info.is_dir()):
             return candidate.as_posix()
         raise ValueError("jar_file_not_found_in_archive")

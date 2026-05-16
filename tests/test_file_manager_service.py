@@ -27,6 +27,27 @@ def test_file_manager_blocks_path_traversal(tmp_path: Path) -> None:
         raise AssertionError("path traversal was accepted")
 
 
+def test_file_manager_normalizes_windows_separators(tmp_path: Path) -> None:
+    server = make_server(tmp_path)
+    manager = FileManagerService()
+
+    manager.write_text(server, "config\\test.yml", "enabled: true\n")
+
+    assert (Path(server.server_dir) / "config" / "test.yml").is_file()
+    assert manager.read_text(server, "config/test.yml")["content"] == "enabled: true\n"
+
+
+def test_file_manager_blocks_windows_absolute_paths(tmp_path: Path) -> None:
+    server = make_server(tmp_path)
+
+    try:
+        FileManagerService().list_dir(server, r"C:\outside")
+    except ValueError as exc:
+        assert str(exc) == "path_must_stay_inside_server_dir"
+    else:
+        raise AssertionError("windows absolute path was accepted")
+
+
 def test_file_manager_reads_and_writes_text_files(tmp_path: Path) -> None:
     server = make_server(tmp_path)
     manager = FileManagerService()

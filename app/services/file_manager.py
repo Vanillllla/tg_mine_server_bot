@@ -1,6 +1,6 @@
 import shutil
 from zipfile import ZIP_DEFLATED, ZipFile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from fastapi import UploadFile
@@ -163,12 +163,21 @@ class FileManagerService:
 
     def _resolve(self, server: ServerInstance, relative_path: str) -> Path:
         root = self._root(server)
-        target = (root / relative_path).resolve()
+        relative = self._normalize_relative_path(relative_path)
+        target = (root / relative).resolve()
         try:
             target.relative_to(root)
         except ValueError as exc:
             raise ValueError("path_must_stay_inside_server_dir") from exc
         return target
+
+    @staticmethod
+    def _normalize_relative_path(relative_path: str) -> Path:
+        normalized = PurePosixPath(str(relative_path or "").replace("\\", "/"))
+        if normalized.is_absolute() or any(part == ".." or part.endswith(":") for part in normalized.parts):
+            raise ValueError("path_must_stay_inside_server_dir")
+        parts = [part for part in normalized.parts if part not in {"", "."}]
+        return Path(*parts) if parts else Path()
 
     @staticmethod
     def _relative(root: Path, target: Path) -> str:

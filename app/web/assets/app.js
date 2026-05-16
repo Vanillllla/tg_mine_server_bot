@@ -60,6 +60,20 @@ function bindIfExists(selector, eventName, handler) {
   return node;
 }
 
+function bindValidationToast(selector) {
+  const form = $(selector);
+  if (!form) return;
+  form.addEventListener(
+    "invalid",
+    (event) => {
+      const field = event.target;
+      const label = field.closest("label")?.firstChild?.textContent?.trim() || field.name || "Поле";
+      toast(`${label}: ${field.validationMessage || field.title || "проверьте значение"}`);
+    },
+    true,
+  );
+}
+
 function hasPermission(permission) {
   return Boolean(state.currentUser?.permissions?.includes(permission));
 }
@@ -987,6 +1001,9 @@ function escapeHtml(value) {
 }
 
 function normalizeServerForm(form, formNode, defaultType) {
+  const serverId = String(form.get("id") || "").trim().toLowerCase();
+  form.set("id", serverId);
+  if (formNode.elements.id) formNode.elements.id.value = serverId;
   form.set("xms_mb", String(Number(form.get("xms_mb") || 512)));
   form.set("xmx_mb", String(Number(form.get("xmx_mb") || 1024)));
   form.set("eula_accept", formNode.elements.eula_accept.checked ? "true" : "false");
@@ -995,6 +1012,9 @@ function normalizeServerForm(form, formNode, defaultType) {
 }
 
 function bindEvents() {
+  bindValidationToast("#create-server-form");
+  bindValidationToast("#import-server-form");
+
   $("#login-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
