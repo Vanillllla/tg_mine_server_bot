@@ -851,6 +851,68 @@ function downloadUrl(path) {
   return `/api/servers/active/files/download?path=${encodeURIComponent(path)}`;
 }
 
+function joinFilePath(...parts) {
+  return parts
+    .join("/")
+    .replaceAll("\\", "/")
+    .split("/")
+    .filter(Boolean)
+    .join("/");
+}
+
+async function uploadFileToPath(file, path) {
+  const form = new FormData();
+  form.append("file", file);
+  return api(`/api/servers/active/files/upload?path=${encodeURIComponent(path)}`, {
+    method: "POST",
+    body: form,
+  });
+}
+
+async function ensureDirectoryPath(path) {
+  const parts = path.split("/").filter(Boolean);
+  let current = "";
+  for (const part of parts) {
+    const parent = current;
+    current = joinFilePath(current, part);
+    await api(`/api/servers/active/files/directories?path=${encodeURIComponent(parent)}`, {
+      method: "POST",
+      body: JSON.stringify({ name: part }),
+    }).catch((error) => {
+      const message = String(error.message || "");
+      if (!message.includes("file_exists") && !message.includes("path_already_exists")) throw error;
+    });
+  }
+}
+
+async function uploadSelectedFiles(files) {
+  const items = [...files];
+  if (!items.length) return;
+  toast(`Загрузка файлов: 0/${items.length}`);
+  for (const [index, file] of items.entries()) {
+    await uploadFileToPath(file, state.filePath);
+    toast(`Загрузка файлов: ${index + 1}/${items.length}`);
+  }
+  await loadFiles();
+  toast(`Загружено файлов: ${items.length}`);
+}
+
+async function uploadSelectedFolder(files) {
+  const items = [...files].filter((file) => file.webkitRelativePath);
+  if (!items.length) return;
+  toast(`Загрузка папки: 0/${items.length}`);
+  for (const [index, file] of items.entries()) {
+    const relativeParts = file.webkitRelativePath.replaceAll("\\", "/").split("/").filter(Boolean);
+    relativeParts.pop();
+    const directory = joinFilePath(state.filePath, ...relativeParts);
+    if (relativeParts.length) await ensureDirectoryPath(directory);
+    await uploadFileToPath(file, directory || state.filePath);
+    toast(`Загрузка папки: ${index + 1}/${items.length}`);
+  }
+  await loadFiles();
+  toast(`Загружено файлов: ${items.length}`);
+}
+
 function downloadClientModsArchive() {
   const active = state.workData?.active_server || state.activeServer;
   if (!active) {
@@ -1241,16 +1303,22 @@ function bindEvents() {
     await loadFiles();
   });
   $("#upload-input").addEventListener("change", async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    const form = new FormData();
-    form.append("file", file);
-    await api(`/api/servers/active/files/upload?path=${encodeURIComponent(state.filePath)}`, {
-      method: "POST",
-      body: form,
-    });
-    event.target.value = "";
-    await loadFiles();
+    try {
+      await uploadSelectedFiles(event.target.files);
+    } catch (error) {
+      toast(error.message);
+    } finally {
+      event.target.value = "";
+    }
+  });
+  $("#folder-upload-input").addEventListener("change", async (event) => {
+    try {
+      await uploadSelectedFolder(event.target.files);
+    } catch (error) {
+      toast(error.message);
+    } finally {
+      event.target.value = "";
+    }
   });
   $("#close-file-editor-btn").addEventListener("click", closeFileEditor);
   $("#cancel-file-editor-btn").addEventListener("click", closeFileEditor);
