@@ -53,6 +53,13 @@ const dangerousCommands = new Set([
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
+function bindIfExists(selector, eventName, handler) {
+  const node = $(selector);
+  if (!node) return null;
+  node.addEventListener(eventName, handler);
+  return node;
+}
+
 function hasPermission(permission) {
   return Boolean(state.currentUser?.permissions?.includes(permission));
 }
@@ -407,7 +414,10 @@ function setJavaSelectValue(select, value) {
 
 function showModal(id) {
   const modal = $(`#${id}`);
-  if (!modal) return;
+  if (!modal) {
+    toast("Форма не найдена. Обновите страницу без кеша.");
+    return;
+  }
   modal.hidden = false;
   document.body.classList.add("modal-open");
 }
@@ -1011,16 +1021,22 @@ function bindEvents() {
     }
   });
 
-  $("#toggle-add-server-btn").addEventListener("click", () => {
+  bindIfExists("#toggle-add-server-btn", "click", () => {
     const choices = $("#add-server-choices");
+    if (!choices) {
+      toast("Меню добавления сервера не найдено. Обновите страницу без кеша.");
+      return;
+    }
     choices.hidden = !choices.hidden;
   });
-  $("#open-create-jar-modal-btn").addEventListener("click", () => {
-    $("#add-server-choices").hidden = true;
+  bindIfExists("#open-create-jar-modal-btn", "click", () => {
+    const choices = $("#add-server-choices");
+    if (choices) choices.hidden = true;
     showModal("create-jar-modal");
   });
-  $("#open-import-zip-modal-btn").addEventListener("click", () => {
-    $("#add-server-choices").hidden = true;
+  bindIfExists("#open-import-zip-modal-btn", "click", () => {
+    const choices = $("#add-server-choices");
+    if (choices) choices.hidden = true;
     showModal("import-zip-modal");
   });
   $$("[data-close-modal]").forEach((button) => {
@@ -1032,7 +1048,7 @@ function bindEvents() {
     });
   });
 
-  $("#create-server-form").addEventListener("submit", async (event) => {
+  bindIfExists("#create-server-form", "submit", async (event) => {
     event.preventDefault();
     const formNode = event.currentTarget;
     const form = new FormData(formNode);
@@ -1056,7 +1072,7 @@ function bindEvents() {
     }
   });
 
-  $("#import-server-form").addEventListener("submit", async (event) => {
+  bindIfExists("#import-server-form", "submit", async (event) => {
     event.preventDefault();
     const formNode = event.currentTarget;
     const form = new FormData(formNode);
@@ -1080,7 +1096,7 @@ function bindEvents() {
     }
   });
 
-  $("#server-settings-form").addEventListener("submit", async (event) => {
+  bindIfExists("#server-settings-form", "submit", async (event) => {
     event.preventDefault();
     const formNode = event.currentTarget;
     const id = formNode.dataset.serverId;
@@ -1245,7 +1261,7 @@ function bindEvents() {
 
   $("#reload-properties-btn").addEventListener("click", () => loadProperties().catch((error) => toast(error.message)));
   $("#properties-form").addEventListener("submit", (event) => saveQuickProperties(event).catch((error) => toast(error.message)));
-  $("#empty-shutdown-form").addEventListener("submit", (event) => saveEmptyShutdownSettings(event).catch((error) => toast(error.message)));
+  bindIfExists("#empty-shutdown-form", "submit", (event) => saveEmptyShutdownSettings(event).catch((error) => toast(error.message)));
   $("#save-raw-properties-btn").addEventListener("click", async () => {
     await api("/api/servers/active/properties", {
       method: "PUT",
@@ -1327,7 +1343,7 @@ function bindEvents() {
     });
     await loadFiles();
   });
-  $("#upload-input").addEventListener("change", async (event) => {
+  bindIfExists("#upload-input", "change", async (event) => {
     try {
       await uploadSelectedFiles(event.target.files);
     } catch (error) {
@@ -1336,7 +1352,7 @@ function bindEvents() {
       event.target.value = "";
     }
   });
-  $("#folder-upload-input").addEventListener("change", async (event) => {
+  bindIfExists("#folder-upload-input", "change", async (event) => {
     try {
       await uploadSelectedFolder(event.target.files);
     } catch (error) {
