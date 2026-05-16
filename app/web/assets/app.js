@@ -367,7 +367,8 @@ function renderServers() {
             </div>
             <div class="row-actions">
               <button class="btn small" data-action="activate" data-id="${escapeHtml(server.id)}" ${active ? "disabled" : ""}>Активировать</button>
-              <button class="btn small" data-action="edit" data-id="${escapeHtml(server.id)}">Настроить</button>
+              <button class="btn small" data-action="server-settings" data-id="${escapeHtml(server.id)}">Настройки сервера</button>
+              <button class="btn small" data-action="game-settings" data-id="${escapeHtml(server.id)}">Настройки игры</button>
               <button class="btn small" data-action="files" data-id="${escapeHtml(server.id)}">Файлы</button>
               <button class="btn danger small" data-action="delete" data-id="${escapeHtml(server.id)}">Удалить</button>
             </div>
@@ -394,6 +395,55 @@ function renderJavaSelects() {
       ? previous
       : defaultJavaPath();
   });
+}
+
+function setJavaSelectValue(select, value) {
+  if (!select) return;
+  if (value && ![...select.options].some((option) => option.value === value)) {
+    select.appendChild(new Option(value, value));
+  }
+  select.value = value || defaultJavaPath();
+}
+
+function showModal(id) {
+  const modal = $(`#${id}`);
+  if (!modal) return;
+  modal.hidden = false;
+  document.body.classList.add("modal-open");
+}
+
+function hideModal(id) {
+  const modal = $(`#${id}`);
+  if (!modal) return;
+  modal.hidden = true;
+  if (!$(".modal-backdrop:not([hidden])")) {
+    document.body.classList.remove("modal-open");
+  }
+}
+
+function openServerSettings(serverId) {
+  const server = state.servers.find((candidate) => candidate.id === serverId);
+  if (!server) return;
+
+  const form = $("#server-settings-form");
+  form.dataset.serverId = server.id;
+  $("#server-settings-title").textContent = server.display_name;
+  form.elements.id.value = server.id;
+  form.elements.display_name.value = server.display_name || "";
+  form.elements.jar_file.value = server.jar_file || "";
+  form.elements.minecraft_version.value = server.minecraft_version || "";
+  form.elements.server_type.value = server.server_type || "";
+  form.elements.xms_mb.value = server.xms_mb || 512;
+  form.elements.xmx_mb.value = server.xmx_mb || 1024;
+  form.elements.eula_accept.checked = Boolean(server.eula_accept);
+  setJavaSelectValue(form.elements.java_path, server.java_path || defaultJavaPath());
+  showModal("server-settings-modal");
+}
+
+async function activateServerIfNeeded(serverId) {
+  if (state.activeServer?.id === serverId) return;
+  state.activeServer = await api(`/api/servers/${encodeURIComponent(serverId)}/activate`, { method: "POST" });
+  await refreshAll();
 }
 
 function renderJavaRuntimeSettings() {
@@ -875,6 +925,27 @@ function bindEvents() {
     }
   });
 
+  $("#toggle-add-server-btn").addEventListener("click", () => {
+    const choices = $("#add-server-choices");
+    choices.hidden = !choices.hidden;
+  });
+  $("#open-create-jar-modal-btn").addEventListener("click", () => {
+    $("#add-server-choices").hidden = true;
+    showModal("create-jar-modal");
+  });
+  $("#open-import-zip-modal-btn").addEventListener("click", () => {
+    $("#add-server-choices").hidden = true;
+    showModal("import-zip-modal");
+  });
+  $$("[data-close-modal]").forEach((button) => {
+    button.addEventListener("click", () => hideModal(button.dataset.closeModal));
+  });
+  $$(".modal-backdrop").forEach((backdrop) => {
+    backdrop.addEventListener("click", (event) => {
+      if (event.target === backdrop) hideModal(backdrop.id);
+    });
+  });
+
   $("#create-server-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const formNode = event.currentTarget;
@@ -889,6 +960,7 @@ function bindEvents() {
       formNode.reset();
       await refreshAll();
       setUploadProgress(formNode, "hidden");
+      hideModal("create-jar-modal");
       toast("Сервер создан");
     } catch (error) {
       setUploadProgress(formNode, "error");
@@ -912,12 +984,45 @@ function bindEvents() {
       formNode.reset();
       await refreshAll();
       setUploadProgress(formNode, "hidden");
+      hideModal("import-zip-modal");
       toast("Сервер импортирован");
     } catch (error) {
       setUploadProgress(formNode, "error");
       toast(error.message);
     } finally {
       setFormBusy(formNode, false);
+    }
+  });
+
+  $("#server-settings-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const formNode = event.currentTarget;
+    const id = formNode.dataset.serverId;
+    if (!id) return;
+    const payload = {
+      display_name: String(formNode.elements.display_name.value || "").trim(),
+      minecraft_version: String(formNode.elements.minecraft_version.value || "").trim(),
+      server_type: String(formNode.elements.server_type.value || "").trim() || "custom",
+      java_path: String(formNode.elements.java_path.value || "").trim() || defaultJavaPath(),
+      xms_mb: Number(formNode.elements.xms_mb.value || 512),
+      xmx_mb: Number(formNode.elements.xmx_mb.value || 1024),
+      eula_accept: formNode.elements.eula_accept.checked,
+    };
+    try {
+      const server = await api(`/api/servers/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+      state.servers = state.servers.map((candidate) => (candidate.id === id ? server : candidate));
+      if (state.activeServer?.id === id) state.activeServer = server;
+      if (state.workData?.active_server?.id === id) state.workData.active_server = server;
+      renderServers();
+      renderHeader();
+      renderDashboard();
+      hideModal("server-settings-modal");
+      toast("Настройки сервера сохранены");
+    } catch (error) {
+      toast(error.message);
     }
   });
 
@@ -1006,16 +1111,27 @@ function bindEvents() {
     const button = event.target.closest("button");
     if (!button) return;
     const id = button.dataset.id;
-    if (button.dataset.action === "activate") {
-      await api(`/api/servers/${encodeURIComponent(id)}/activate`, { method: "POST" });
-      await refreshAll();
+    try {
+      if (button.dataset.action === "activate") {
+        await api(`/api/servers/${encodeURIComponent(id)}/activate`, { method: "POST" });
+        await refreshAll();
+      }
+      if (button.dataset.action === "delete" && confirm(`Удалить сервер ${id} и его файлы?`)) {
+        await api(`/api/servers/${encodeURIComponent(id)}?delete_files=true`, { method: "DELETE" });
+        await refreshAll();
+      }
+      if (button.dataset.action === "server-settings") openServerSettings(id);
+      if (button.dataset.action === "game-settings") {
+        await activateServerIfNeeded(id);
+        switchView("properties");
+      }
+      if (button.dataset.action === "files") {
+        await activateServerIfNeeded(id);
+        switchView("files");
+      }
+    } catch (error) {
+      toast(error.message);
     }
-    if (button.dataset.action === "delete" && confirm(`Удалить сервер ${id} и его файлы?`)) {
-      await api(`/api/servers/${encodeURIComponent(id)}?delete_files=true`, { method: "DELETE" });
-      await refreshAll();
-    }
-    if (button.dataset.action === "files") switchView("files");
-    if (button.dataset.action === "edit") switchView("properties");
   });
 
   $("#console-form").addEventListener("submit", async (event) => {

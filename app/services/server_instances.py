@@ -23,7 +23,7 @@ class ServerInstanceService:
 
     def list_servers(self) -> list[ServerInstance]:
         return [
-            ServerInstance(id=server_id, **payload)
+            self._server_from_payload(server_id, payload)
             for server_id, payload in self._read_servers().items()
         ]
 
@@ -31,7 +31,7 @@ class ServerInstanceService:
         servers = self._read_servers()
         if server_id not in servers:
             raise KeyError(server_id)
-        return ServerInstance(id=server_id, **servers[server_id])
+        return self._server_from_payload(server_id, servers[server_id])
 
     def get_active_server(self) -> ServerInstance | None:
         active_id = self.active_server_id
@@ -97,6 +97,8 @@ class ServerInstanceService:
 
         server_dir = Path(updated.server_dir).expanduser().resolve()
         self._ensure_server_dir_allowed(server_dir)
+        if updated.eula_accept:
+            self._write_eula_file(server_dir, True)
 
         servers = self._read_servers()
         servers[server_id] = self._instance_payload(updated)
@@ -154,6 +156,14 @@ class ServerInstanceService:
         payload.pop("id", None)
         return payload
 
+    @classmethod
+    def _server_from_payload(cls, server_id: str, payload: dict[str, Any]) -> ServerInstance:
+        data = dict(payload)
+        server_dir = Path(str(data.get("server_dir", "")))
+        if cls._eula_file_is_accepted(server_dir / "eula.txt"):
+            data["eula_accept"] = True
+        return ServerInstance(id=server_id, **data)
+
     def _ensure_server_dir_allowed(self, server_dir: Path) -> None:
         allowed_root = self.settings.servers_dir.resolve()
         try:
@@ -165,3 +175,17 @@ class ServerInstanceService:
     def _write_eula_file(server_dir: Path, accepted: bool) -> None:
         if accepted:
             (server_dir / "eula.txt").write_text("eula=true\n", encoding="utf-8")
+
+    @staticmethod
+    def _eula_file_is_accepted(path: Path) -> bool:
+        if not path.is_file():
+            return False
+        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+            normalized = line.strip().lower()
+            if not normalized or normalized.startswith("#"):
+                continue
+            if normalized == "eula=true":
+                return True
+            if normalized.startswith("eula="):
+                return False
+        return False

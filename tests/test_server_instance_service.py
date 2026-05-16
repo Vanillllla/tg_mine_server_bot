@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from app.core.settings import AppSettings
-from app.models.server import CreateServerInstanceRequest
+from app.models.server import CreateServerInstanceRequest, UpdateServerInstanceRequest
 from app.services.server_instances import ServerInstanceService
 
 
@@ -40,6 +40,48 @@ def test_create_server_accepts_single_character_id(tmp_path: Path) -> None:
 
     assert server.id == "1"
     assert Path(server.server_dir).name == "1"
+
+
+def test_update_server_changes_memory_and_writes_eula(tmp_path: Path) -> None:
+    settings = AppSettings(panel_home=tmp_path / "mc-panel")
+    settings.ensure_runtime_layout()
+    service = ServerInstanceService(settings)
+
+    server = service.create_server(
+        CreateServerInstanceRequest(
+            id="test_server",
+            display_name="Test Server",
+            jar_file="server.jar",
+        )
+    )
+
+    updated = service.update_server(
+        "test_server",
+        UpdateServerInstanceRequest(xms_mb=1024, xmx_mb=2048, eula_accept=True),
+    )
+
+    assert updated.xms_mb == 1024
+    assert updated.xmx_mb == 2048
+    assert updated.eula_accept is True
+    assert (Path(server.server_dir) / "eula.txt").read_text(encoding="utf-8") == "eula=true\n"
+
+
+def test_get_server_uses_existing_eula_file(tmp_path: Path) -> None:
+    settings = AppSettings(panel_home=tmp_path / "mc-panel")
+    settings.ensure_runtime_layout()
+    service = ServerInstanceService(settings)
+
+    server = service.create_server(
+        CreateServerInstanceRequest(
+            id="test_server",
+            display_name="Test Server",
+            jar_file="server.jar",
+            eula_accept=False,
+        )
+    )
+    (Path(server.server_dir) / "eula.txt").write_text("eula=true\n", encoding="utf-8")
+
+    assert service.get_server("test_server").eula_accept is True
 
 
 def test_rejects_server_dir_outside_root(tmp_path: Path) -> None:
