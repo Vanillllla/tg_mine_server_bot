@@ -182,6 +182,36 @@ def test_import_archive_accepts_windows_separators(tmp_path: Path, monkeypatch) 
         client.__exit__(None, None, None)
 
 
+def test_import_archive_accepts_windows_directory_entries(tmp_path: Path, monkeypatch) -> None:
+    client = make_client(tmp_path, monkeypatch)
+    archive_bytes = BytesIO()
+    with ZipFile(archive_bytes, "w") as archive:
+        archive.writestr("pack\\nested\\", b"")
+        archive.writestr("pack\\nested\\server.jar", b"jar-content")
+    archive_bytes.seek(0)
+
+    try:
+        response = client.post(
+            "/api/servers/import-archive",
+            data={
+                "id": "zip_windows_dirs",
+                "display_name": "Zip Windows Dirs",
+                "java_path": "java",
+                "xms_mb": "512",
+                "xmx_mb": "1024",
+            },
+            files={"archive_file": ("server.zip", archive_bytes.getvalue(), "application/zip")},
+        )
+
+        assert response.status_code == 201
+        body = response.json()
+        server_dir = Path(body["server_dir"])
+        assert body["jar_file"] == "nested/server.jar"
+        assert (server_dir / "nested" / "server.jar").read_bytes() == b"jar-content"
+    finally:
+        client.__exit__(None, None, None)
+
+
 def test_import_archive_rejects_windows_absolute_paths(tmp_path: Path, monkeypatch) -> None:
     client = make_client(tmp_path, monkeypatch)
     archive_bytes = BytesIO()

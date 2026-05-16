@@ -16,12 +16,18 @@ from app.models.server import (
 
 router = APIRouter(prefix="/api/servers", tags=["servers"])
 
+UPLOAD_COPY_CHUNK_SIZE = 8 * 1024 * 1024
+
 
 def _validation_error_detail(exc: ValidationError) -> str:
     first = exc.errors()[0] if exc.errors() else {}
     message = str(first.get("msg") or exc)
     prefix = "Value error, "
     return message.removeprefix(prefix)
+
+
+def _zip_entry_is_dir(info: ZipInfo) -> bool:
+    return info.is_dir() or info.filename.replace("\\", "/").endswith("/")
 
 
 def _safe_active_server_payload(payload: dict | None, current_user: AuthUser) -> dict | None:
@@ -35,12 +41,12 @@ def _safe_active_server_payload(payload: dict | None, current_user: AuthUser) ->
     }
 
 
-def _safe_archive_entries(archive: ZipFile) -> list[tuple[ZipInfo, Path]]:
+def _safe_archive_entries(archive: ZipFile) -> list[tuple[ZipInfo, Path, bool]]:
     raw_names = [info.filename.replace("\\", "/") for info in archive.infolist() if info.filename]
     roots = {PurePosixPath(name).parts[0] for name in raw_names if PurePosixPath(name).parts}
     strip_root = len(roots) == 1
 
-    entries: list[tuple[ZipInfo, Path]] = []
+    entries: list[tuple[ZipInfo, Path, bool]] = []
     for info in archive.infolist():
         normalized = info.filename.replace("\\", "/")
         path = PurePosixPath(normalized)
@@ -54,21 +60,21 @@ def _safe_archive_entries(archive: ZipFile) -> list[tuple[ZipInfo, Path]]:
         relative = Path(*parts)
         if relative.is_absolute():
             raise ValueError("archive_contains_unsafe_path")
-        entries.append((info, relative))
+        entries.append((info, relative, _zip_entry_is_dir(info)))
     return entries
 
 
-def _choose_jar_file(entries: list[tuple[ZipInfo, Path]], requested: str = "") -> str:
+def _choose_jar_file(entries: list[tuple[ZipInfo, Path, bool]], requested: str = "") -> str:
     if requested:
         candidate_path = PurePosixPath(requested.replace("\\", "/"))
         if candidate_path.is_absolute() or any(part in {"", ".", ".."} or part.endswith(":") for part in candidate_path.parts):
             raise ValueError("jar_file_has_unsafe_path")
         candidate = Path(*candidate_path.parts)
-        if any(relative.as_posix() == candidate.as_posix() for info, relative in entries if not info.is_dir()):
+        if any(relative.as_posix() == candidate.as_posix() for info, relative, is_dir in entries if not is_dir):
             return candidate.as_posix()
         raise ValueError("jar_file_not_found_in_archive")
 
-    jars = [relative for info, relative in entries if not info.is_dir() and relative.suffix.lower() == ".jar"]
+    jars = [relative for info, relative, is_dir in entries if not is_dir and relative.suffix.lower() == ".jar"]
     if not jars:
         raise ValueError("archive_must_contain_jar_file")
 
@@ -84,16 +90,16 @@ def _choose_jar_file(entries: list[tuple[ZipInfo, Path]], requested: str = "") -
     return jars[0].as_posix()
 
 
-def _extract_archive(archive: ZipFile, entries: list[tuple[ZipInfo, Path]], target_dir: Path) -> None:
+def _extract_archive(archive: ZipFile, entries: list[tuple[ZipInfo, Path, bool]], target_dir: Path) -> None:
     root = target_dir.resolve()
-    for info, relative in entries:
+    for info, relative, is_dir in entries:
         target = (root / relative).resolve()
         try:
             target.relative_to(root)
         except ValueError as exc:
             raise ValueError("archive_contains_unsafe_path") from exc
 
-        if info.is_dir():
+        if is_dir:
             target.mkdir(parents=True, exist_ok=True)
             continue
 
@@ -165,7 +171,7 @@ async def create_server_from_uploaded_core(
         created_server_id = server.id
         jar_path = Path(server.server_dir) / server.jar_file
         with jar_path.open("xb") as output:
-            while chunk := await core_file.read(1024 * 1024):
+            while chunk := await core_file.read(UPLOAD_COPY_CHUNK_SIZE):
                 output.write(chunk)
         return server
     except ValueError as exc:
@@ -220,7 +226,7 @@ async def create_server_from_archive(
     created_server_id = ""
     try:
         with temp_archive_path.open("wb") as output:
-            while chunk := await archive_file.read(1024 * 1024):
+            while chunk := await archive_file.read(UPLOAD_COPY_CHUNK_SIZE):
                 output.write(chunk)
 
         with ZipFile(temp_archive_path) as archive:
@@ -237,6 +243,10 @@ async def create_server_from_archive(
         if created_server_id:
             service.delete_server(created_server_id, delete_files=True)
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except OSError as exc:
+        if created_server_id:
+            service.delete_server(created_server_id, delete_files=True)
+        raise HTTPException(status_code=500, detail=f"archive_extract_error: {exc}") from exc
     except Exception:
         if created_server_id:
             service.delete_server(created_server_id, delete_files=True)

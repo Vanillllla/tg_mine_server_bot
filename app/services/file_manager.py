@@ -22,6 +22,7 @@ TEXT_EXTENSIONS = {
 }
 
 CLIENT_MODS_DIR = "client-mods"
+UPLOAD_COPY_CHUNK_SIZE = 8 * 1024 * 1024
 
 
 class FileManagerService:
@@ -86,7 +87,7 @@ class FileManagerService:
             raise NotADirectoryError("path_is_not_directory")
         target = self._resolve(server, str(Path(relative_path) / file.filename))
         with target.open("wb") as output:
-            while chunk := await file.read(1024 * 1024):
+            while chunk := await file.read(UPLOAD_COPY_CHUNK_SIZE):
                 output.write(chunk)
         return {"path": self._relative(self._root(server), target), "uploaded": True}
 
