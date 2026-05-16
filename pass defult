@@ -1,5 +1,5 @@
 MC_PANEL_ADMIN_USERNAME=admin
-MC_PANEL_ADMIN_PASSWORD=change-me
+MC_PANEL_ADMIN_PASSWORD=12341234
 
 Запуск:
 $env:MC_PANEL_HOME = ".\runtime\mc-panel"    #это команда под винду
