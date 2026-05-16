@@ -3,7 +3,7 @@ from typing import Any
 
 from app.core.json_store import read_json, write_json_atomic
 from app.core.settings import AppSettings, DEFAULT_PANEL
-from app.models.settings import JavaRuntime, PublicPanelSettings, UpsertJavaRuntimeRequest
+from app.models.settings import EmptyShutdownSettings, JavaRuntime, PublicPanelSettings, UpsertJavaRuntimeRequest
 
 
 BUILTIN_JAVA_RUNTIMES = [
@@ -35,6 +35,26 @@ class PanelSettingsService:
         if changed:
             self._write_panel(panel)
         return PublicPanelSettings(links=panel["links"])
+
+    def empty_shutdown_settings(self) -> EmptyShutdownSettings:
+        panel = self._read_panel()
+        changed = self._ensure_empty_shutdown_defaults(panel)
+        if changed:
+            self._write_panel(panel)
+        server = panel["server"]
+        return EmptyShutdownSettings(
+            enabled=bool(server.get("shutdown_if_empty_enabled", False)),
+            shutdown_if_empty_minutes=int(server.get("shutdown_if_empty_minutes", 5) or 5),
+        )
+
+    def update_empty_shutdown_settings(self, payload: EmptyShutdownSettings) -> EmptyShutdownSettings:
+        panel = self._read_panel()
+        self._ensure_empty_shutdown_defaults(panel)
+        server = panel.setdefault("server", {})
+        server["shutdown_if_empty_enabled"] = payload.enabled
+        server["shutdown_if_empty_minutes"] = payload.shutdown_if_empty_minutes
+        self._write_panel(panel)
+        return self.empty_shutdown_settings()
 
     def list_java_runtimes(self) -> list[JavaRuntime]:
         panel = self._read_panel()
@@ -133,4 +153,15 @@ class PanelSettingsService:
                 discord[key] = value
                 changed = True
 
+        return changed
+
+    @staticmethod
+    def _ensure_empty_shutdown_defaults(panel: dict[str, Any]) -> bool:
+        server = panel.setdefault("server", {})
+        defaults = DEFAULT_PANEL["server"]
+        changed = False
+        for key in ("shutdown_if_empty_enabled", "shutdown_if_empty_minutes"):
+            if key not in server:
+                server[key] = defaults[key]
+                changed = True
         return changed

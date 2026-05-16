@@ -42,3 +42,12 @@ def test_launch_validation_rejects_missing_or_false_eula_file(tmp_path: Path) ->
         assert str(exc) == "eula_must_be_accepted_before_start"
     else:
         raise AssertionError("eula=false was accepted")
+
+
+def test_player_events_are_parsed_from_minecraft_logs() -> None:
+    joined = "[12:00:00] [Server thread/INFO]: Steve joined the game"
+    left = "[12:10:00] [Server thread/INFO]: Steve left the game"
+
+    assert MinecraftServerManager._player_event_from_log_line(joined) == ("join", "Steve")
+    assert MinecraftServerManager._player_event_from_log_line(left) == ("leave", "Steve")
+    assert MinecraftServerManager._player_event_from_log_line("Done (1.0s)!") is None

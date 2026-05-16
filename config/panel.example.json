@@ -13,6 +13,7 @@
   "server": {
     "active_server_id": "",
     "use_last_active_server": true,
+    "shutdown_if_empty_enabled": false,
     "shutdown_if_empty_minutes": 5
   },
   "telegram": {

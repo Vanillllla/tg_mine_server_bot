@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 import subprocess
 import time
 from pathlib import Path
@@ -10,9 +11,14 @@ try:
 except ImportError:  # pragma: no cover - optional until dependencies are installed
     psutil = None
 
+from app.core.json_store import read_json
 from app.models.server import ServerInstance, ServerStatus
 from app.services.log_buffer import LogBuffer
 from app.services.server_instances import ServerInstanceService
+
+
+PLAYER_JOINED_RE = re.compile(r":\s*(?P<name>[A-Za-z0-9_]{1,16}) joined the game\b")
+PLAYER_LEFT_RE = re.compile(r":\s*(?P<name>[A-Za-z0-9_]{1,16}) left the game\b")
 
 
 class MinecraftServerManager:
@@ -32,7 +38,10 @@ class MinecraftServerManager:
         self._stdout_task: asyncio.Task | None = None
         self._stderr_task: asyncio.Task | None = None
         self._monitor_task: asyncio.Task | None = None
+        self._empty_shutdown_task: asyncio.Task | None = None
         self._lock = asyncio.Lock()
+        self._players_online: set[str] = set()
+        self._last_empty_at: float | None = None
 
     def is_running(self) -> bool:
         return self.process is not None and self.process.poll() is None
@@ -52,6 +61,8 @@ class MinecraftServerManager:
             self.started_at = time.time()
             self.start_error = ""
             self.exit_code = None
+            self._players_online = set()
+            self._last_empty_at = time.time()
 
             args = self._build_launch_args(server)
             try:
@@ -76,6 +87,7 @@ class MinecraftServerManager:
             self._stdout_task = asyncio.create_task(self._read_stream("stdout", server.id))
             self._stderr_task = asyncio.create_task(self._read_stream("stderr", server.id))
             self._monitor_task = asyncio.create_task(self._monitor_startup(server))
+            self._empty_shutdown_task = asyncio.create_task(self._monitor_empty_shutdown(server.id))
 
     async def stop(self) -> None:
         async with self._lock:
@@ -205,8 +217,59 @@ class MinecraftServerManager:
                 break
             line = line.rstrip("\r\n")
             await self.log_buffer.append(stream_name, server_id, line)
+            if stream_name == "stdout":
+                self._update_player_presence(line)
             if self.status == ServerStatus.STARTING and "Done (" in line and "For help" in line:
                 self.status = ServerStatus.RUNNING
+
+    async def _monitor_empty_shutdown(self, server_id: str) -> None:
+        while self.is_running() and self.current_server_id == server_id:
+            settings = self._empty_shutdown_settings()
+            if not settings["enabled"]:
+                self._last_empty_at = time.time() if not self._players_online else None
+                await asyncio.sleep(15)
+                continue
+
+            if self.status == ServerStatus.RUNNING and not self._players_online:
+                if self._last_empty_at is None:
+                    self._last_empty_at = time.time()
+                if time.time() - self._last_empty_at >= settings["minutes"] * 60:
+                    await self.log_buffer.append("stdout", server_id, "Auto shutdown: server is empty")
+                    await self.stop()
+                    return
+            await asyncio.sleep(15)
+
+    def _update_player_presence(self, line: str) -> None:
+        event = self._player_event_from_log_line(line)
+        if event is None:
+            return
+        action, name = event
+        if action == "join":
+            self._players_online.add(name)
+            self._last_empty_at = None
+            return
+        self._players_online.discard(name)
+        if not self._players_online:
+            self._last_empty_at = time.time()
+
+    @staticmethod
+    def _player_event_from_log_line(line: str) -> tuple[str, str] | None:
+        joined = PLAYER_JOINED_RE.search(line)
+        if joined:
+            return ("join", joined.group("name"))
+        left = PLAYER_LEFT_RE.search(line)
+        if left:
+            return ("leave", left.group("name"))
+        return None
+
+    def _empty_shutdown_settings(self) -> dict[str, Any]:
+        panel = read_json(self.instance_service.settings.panel_config_path, default={})
+        server = panel.get("server", {})
+        minutes = int(server.get("shutdown_if_empty_minutes", 5) or 5)
+        return {
+            "enabled": bool(server.get("shutdown_if_empty_enabled", False)),
+            "minutes": max(1, minutes),
+        }
 
     async def _monitor_startup(self, server: ServerInstance) -> None:
         deadline = time.time() + server.startup_timeout

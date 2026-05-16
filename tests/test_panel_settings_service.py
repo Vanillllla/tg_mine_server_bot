@@ -2,6 +2,7 @@ from pathlib import Path
 
 from app.core.json_store import read_json, write_json_atomic
 from app.core.settings import AppSettings
+from app.models.settings import EmptyShutdownSettings
 from app.services.panel_settings import PanelSettingsService
 
 
@@ -35,3 +36,17 @@ def test_public_settings_keeps_custom_discord_link(tmp_path: Path) -> None:
 
     assert settings.links.discord.url == "https://discord.gg/custom"
     assert settings.links.discord.icon_path == "/assets/icons/custom.svg"
+
+
+def test_empty_shutdown_settings_have_defaults_and_can_be_updated(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+
+    defaults = service.empty_shutdown_settings()
+    updated = service.update_empty_shutdown_settings(
+        EmptyShutdownSettings(enabled=True, shutdown_if_empty_minutes=12)
+    )
+
+    assert defaults.enabled is False
+    assert defaults.shutdown_if_empty_minutes == 5
+    assert updated.enabled is True
+    assert updated.shutdown_if_empty_minutes == 12

@@ -17,6 +17,7 @@ DEFAULT_PANEL = {
     "server": {
         "active_server_id": "",
         "use_last_active_server": True,
+        "shutdown_if_empty_enabled": False,
         "shutdown_if_empty_minutes": 5,
     },
     "telegram": {"autostart": False, "token_secret_id": "telegram_bot_token"},

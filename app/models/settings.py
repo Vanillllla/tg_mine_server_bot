@@ -19,6 +19,11 @@ class SetDefaultJavaRuntimeRequest(BaseModel):
     id: str = Field(min_length=1, max_length=64)
 
 
+class EmptyShutdownSettings(BaseModel):
+    enabled: bool = False
+    shutdown_if_empty_minutes: int = Field(default=5, ge=1, le=1440)
+
+
 class PublicLink(BaseModel):
     url: str = Field(min_length=1, max_length=500)
     icon_path: str = Field(min_length=1, max_length=500)

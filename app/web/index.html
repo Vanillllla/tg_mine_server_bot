@@ -217,6 +217,19 @@
           <section class="panel">
             <div class="panel-heading">
               <div>
+                <p class="eyebrow">Auto shutdown</p>
+                <h2>Выключение пустого сервера</h2>
+              </div>
+            </div>
+            <form id="empty-shutdown-form" class="form-grid">
+              <label class="checkbox-row"><input name="enabled" type="checkbox" /> Выключать сервер, если нет игроков</label>
+              <label>Время без игроков, минут <input name="shutdown_if_empty_minutes" type="number" min="1" max="1440" value="5" required /></label>
+              <button class="btn primary" type="submit">Сохранить авто выключение</button>
+            </form>
+          </section>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
                 <p class="eyebrow">Raw editor</p>
                 <h2>Полный файл</h2>
               </div>

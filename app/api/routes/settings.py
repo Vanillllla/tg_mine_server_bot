@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from app.api.deps import get_panel_settings_service, require_admin
 from app.models.auth import AuthUser
 from app.models.settings import (
+    EmptyShutdownSettings,
     JavaRuntime,
     PublicPanelSettings,
     SetDefaultJavaRuntimeRequest,
@@ -15,6 +16,23 @@ router = APIRouter(prefix="/api/settings", tags=["settings"])
 @router.get("/public", response_model=PublicPanelSettings)
 async def get_public_settings(request: Request) -> PublicPanelSettings:
     return get_panel_settings_service(request).public_settings()
+
+
+@router.get("/empty-shutdown", response_model=EmptyShutdownSettings)
+async def get_empty_shutdown_settings(
+    request: Request,
+    current_user: AuthUser = Depends(require_admin),
+) -> EmptyShutdownSettings:
+    return get_panel_settings_service(request).empty_shutdown_settings()
+
+
+@router.put("/empty-shutdown", response_model=EmptyShutdownSettings)
+async def update_empty_shutdown_settings(
+    request: Request,
+    payload: EmptyShutdownSettings,
+    current_user: AuthUser = Depends(require_admin),
+) -> EmptyShutdownSettings:
+    return get_panel_settings_service(request).update_empty_shutdown_settings(payload)
 
 
 @router.get("/java-runtimes", response_model=list[JavaRuntime])

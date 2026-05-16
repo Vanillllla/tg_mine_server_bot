@@ -516,6 +516,7 @@ async function loadProperties() {
   const data = await api("/api/servers/active/properties");
   $("#raw-properties").value = data.raw || "";
   renderPropertiesForm(data.values || {});
+  await loadEmptyShutdownSettings();
 }
 
 function renderPropertiesForm(values) {
@@ -551,6 +552,29 @@ async function saveQuickProperties(event) {
   });
   $("#raw-properties").value = data.raw || "";
   toast("server.properties сохранен");
+}
+
+async function loadEmptyShutdownSettings() {
+  const settings = await api("/api/settings/empty-shutdown");
+  const form = $("#empty-shutdown-form");
+  form.elements.enabled.checked = Boolean(settings.enabled);
+  form.elements.shutdown_if_empty_minutes.value = settings.shutdown_if_empty_minutes || 5;
+}
+
+async function saveEmptyShutdownSettings(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const payload = {
+    enabled: form.elements.enabled.checked,
+    shutdown_if_empty_minutes: Number(form.elements.shutdown_if_empty_minutes.value || 5),
+  };
+  const settings = await api("/api/settings/empty-shutdown", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  form.elements.enabled.checked = Boolean(settings.enabled);
+  form.elements.shutdown_if_empty_minutes.value = settings.shutdown_if_empty_minutes || 5;
+  toast("Авто выключение сохранено");
 }
 
 async function loadFiles(path = state.filePath) {
@@ -1221,6 +1245,7 @@ function bindEvents() {
 
   $("#reload-properties-btn").addEventListener("click", () => loadProperties().catch((error) => toast(error.message)));
   $("#properties-form").addEventListener("submit", (event) => saveQuickProperties(event).catch((error) => toast(error.message)));
+  $("#empty-shutdown-form").addEventListener("submit", (event) => saveEmptyShutdownSettings(event).catch((error) => toast(error.message)));
   $("#save-raw-properties-btn").addEventListener("click", async () => {
     await api("/api/servers/active/properties", {
       method: "PUT",
