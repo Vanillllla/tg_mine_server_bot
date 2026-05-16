@@ -8,6 +8,12 @@ from app.core.json_store import write_json_atomic
 
 DEFAULT_PANEL = {
     "panel": {"language": "ru", "theme": "dark", "debug_mode": False},
+    "links": {
+        "discord": {
+            "url": "https://discord.gg/cUt6nYVEyn",
+            "icon_path": "/assets/icons/discord.svg",
+        },
+    },
     "server": {
         "active_server_id": "",
         "use_last_active_server": True,

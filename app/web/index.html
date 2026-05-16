@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Minecraft Web Panel</title>
-    <link rel="stylesheet" href="/assets/styles.css?v=github-link-1" />
+    <link rel="stylesheet" href="/assets/styles.css?v=public-links-1" />
   </head>
   <body>
     <section id="auth-screen" class="auth-screen">
@@ -34,7 +34,14 @@
             <strong>Minecraft Panel</strong>
             <span>Admin access</span>
           </div>
-          <a class="brand-link" href="https://github.com/Vanillllla/mc-server-controller" target="_blank" rel="noreferrer" aria-label="GitHub repository">GitHub</a>
+          <div class="brand-links">
+            <a class="brand-link icon-link" href="https://github.com/Vanillllla/mc-server-controller" target="_blank" rel="noreferrer" aria-label="GitHub repository">
+              <img src="/assets/icons/github.svg" alt="" />
+            </a>
+            <a class="brand-link icon-link" href="https://discord.gg/cUt6nYVEyn" target="_blank" rel="noreferrer" aria-label="Discord server" data-public-link="discord">
+              <img src="/assets/icons/discord.svg" alt="" data-public-link-icon="discord" />
+            </a>
+          </div>
         </div>
         <div>
           <p class="eyebrow">Вход</p>
@@ -74,7 +81,14 @@
             <strong>Minecraft Panel</strong>
             <span>Server Instances</span>
           </div>
-          <a class="brand-link" href="https://github.com/Vanillllla/mc-server-controller" target="_blank" rel="noreferrer" aria-label="GitHub repository">GitHub</a>
+          <div class="brand-links">
+            <a class="brand-link icon-link" href="https://github.com/Vanillllla/mc-server-controller" target="_blank" rel="noreferrer" aria-label="GitHub repository">
+              <img src="/assets/icons/github.svg" alt="" />
+            </a>
+            <a class="brand-link icon-link" href="https://discord.gg/cUt6nYVEyn" target="_blank" rel="noreferrer" aria-label="Discord server" data-public-link="discord">
+              <img src="/assets/icons/discord.svg" alt="" data-public-link-icon="discord" />
+            </a>
+          </div>
         </div>
         <nav class="nav" aria-label="Основная навигация">
           <button class="nav-item active" data-view="dashboard">Dashboard</button>
@@ -428,7 +442,7 @@
     </div>
 
     <div id="toast" class="toast" role="status"></div>
-    <script src="/assets/app.js?v=core-select-1" type="module"></script>
+    <script src="/assets/app.js?v=public-links-1" type="module"></script>
     <script src="/assets/updater.js?v=updater-1" type="module"></script>
   </body>
 </html>

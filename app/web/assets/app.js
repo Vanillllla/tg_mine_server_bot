@@ -1,6 +1,7 @@
 const state = {
   activeView: "dashboard",
   currentUser: null,
+  publicLinks: null,
   servers: [],
   activeServer: null,
   workData: null,
@@ -14,6 +15,13 @@ const state = {
   selectedFile: "",
   javaRuntimes: [],
   invite: null,
+};
+
+const defaultPublicLinks = {
+  discord: {
+    url: "https://discord.gg/cUt6nYVEyn",
+    icon_path: "/assets/icons/discord.svg",
+  },
 };
 
 const quickPropertyFields = [
@@ -113,6 +121,26 @@ function clearSessionState(message = "") {
 async function loadCurrentUser() {
   const response = await api("/api/auth/me");
   state.currentUser = response.user;
+}
+
+async function loadPublicSettings() {
+  try {
+    const response = await api("/api/settings/public");
+    state.publicLinks = { ...defaultPublicLinks, ...(response.links || {}) };
+  } catch {
+    state.publicLinks = defaultPublicLinks;
+  }
+  renderPublicLinks();
+}
+
+function renderPublicLinks() {
+  const discord = state.publicLinks?.discord || defaultPublicLinks.discord;
+  $$('[data-public-link="discord"]').forEach((link) => {
+    link.href = discord.url || defaultPublicLinks.discord.url;
+  });
+  $$('[data-public-link-icon="discord"]').forEach((icon) => {
+    icon.src = discord.icon_path || defaultPublicLinks.discord.icon_path;
+  });
 }
 
 async function authenticateInviteIfPresent() {
@@ -748,7 +776,7 @@ function bindEvents() {
     }
 
     event.currentTarget.reset();
-    window.location.reload();
+    window.location.assign("/");
   });
 
   $("#logout-btn").addEventListener("click", async () => {
@@ -1027,6 +1055,7 @@ function bindEvents() {
 
 async function boot() {
   const inviteMode = Boolean(inviteTokenFromPath());
+  await loadPublicSettings();
   try {
     await authenticateInviteIfPresent();
     await loadCurrentUser();
