@@ -38,6 +38,20 @@ def test_file_manager_reads_and_writes_text_files(tmp_path: Path) -> None:
     assert manager.list_dir(server, "config")["items"][0]["name"] == "test.yml"
 
 
+def test_file_manager_creates_missing_server_root_for_root_listing(tmp_path: Path) -> None:
+    server = ServerInstance(
+        id="missing_root",
+        display_name="Missing Root",
+        server_dir=str(tmp_path / "missing"),
+        jar_file="server.jar",
+    )
+
+    result = FileManagerService().list_dir(server)
+
+    assert result == {"path": "", "items": []}
+    assert Path(server.server_dir).is_dir()
+
+
 def test_file_manager_builds_client_mods_archive(tmp_path: Path) -> None:
     server = make_server(tmp_path)
     manager = FileManagerService()

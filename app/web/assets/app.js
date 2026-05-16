@@ -237,8 +237,8 @@ function uploadForm(path, formData, onProgress) {
       error.status = request.status;
       reject(error);
     });
-    request.addEventListener("error", () => reject(new Error("upload_failed")));
-    request.addEventListener("abort", () => reject(new Error("upload_aborted")));
+    request.addEventListener("error", () => reject(new Error("Ошибка сети при загрузке файла")));
+    request.addEventListener("abort", () => reject(new Error("Загрузка файла прервана")));
     request.send(formData);
   });
 }
@@ -256,7 +256,7 @@ function setUploadProgress(formNode, stateName, progress = {}) {
   node.hidden = stateName === "hidden";
   if (stateName === "uploading") status.textContent = "Загрузка файла...";
   if (stateName === "processing") status.textContent = "Файл загружен, сервер обрабатывает данные...";
-  if (stateName === "error") status.textContent = "Загрузка прервана";
+  if (stateName === "error") status.textContent = progress.message || "Загрузка прервана";
 
   progressBar.value = stateName === "processing" ? 100 : percentValue;
   percent.textContent = stateName === "processing" ? "100%" : `${percentValue}%`;
@@ -1060,12 +1060,12 @@ function bindEvents() {
         setUploadProgress(formNode, progress.percent === 100 ? "processing" : "uploading", progress);
       });
       formNode.reset();
-      await refreshAll();
       setUploadProgress(formNode, "hidden");
       hideModal("create-jar-modal");
       toast("Сервер создан");
+      refreshAll().catch((error) => toast(`Сервер создан, но данные не обновились: ${error.message}`));
     } catch (error) {
-      setUploadProgress(formNode, "error");
+      setUploadProgress(formNode, "error", { message: error.message });
       toast(error.message);
     } finally {
       setFormBusy(formNode, false);
@@ -1084,12 +1084,12 @@ function bindEvents() {
         setUploadProgress(formNode, progress.percent === 100 ? "processing" : "uploading", progress);
       });
       formNode.reset();
-      await refreshAll();
       setUploadProgress(formNode, "hidden");
       hideModal("import-zip-modal");
       toast("Сервер импортирован");
+      refreshAll().catch((error) => toast(`Сервер импортирован, но данные не обновились: ${error.message}`));
     } catch (error) {
-      setUploadProgress(formNode, "error");
+      setUploadProgress(formNode, "error", { message: error.message });
       toast(error.message);
     } finally {
       setFormBusy(formNode, false);

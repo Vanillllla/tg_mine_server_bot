@@ -81,5 +81,10 @@ def test_import_archive_creates_server_and_extracts_zip(tmp_path: Path, monkeypa
         assert body["jar_file"] == "server.jar"
         assert (server_dir / "server.jar").read_bytes() == b"jar-content"
         assert (server_dir / "config" / "server.properties").read_text(encoding="utf-8") == "motd=Test\n"
+
+        files_response = client.get("/api/servers/active/files")
+        assert files_response.status_code == 200
+        file_names = {item["name"] for item in files_response.json()["items"]}
+        assert {"server.jar", "config"}.issubset(file_names)
     finally:
         client.__exit__(None, None, None)

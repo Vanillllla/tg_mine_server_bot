@@ -156,13 +156,26 @@ class ServerInstanceService:
         payload.pop("id", None)
         return payload
 
-    @classmethod
-    def _server_from_payload(cls, server_id: str, payload: dict[str, Any]) -> ServerInstance:
+    def _server_from_payload(self, server_id: str, payload: dict[str, Any]) -> ServerInstance:
         data = dict(payload)
-        server_dir = Path(str(data.get("server_dir", "")))
-        if cls._eula_file_is_accepted(server_dir / "eula.txt"):
+        server_dir = self._stored_server_dir(server_id, data.get("server_dir"))
+        data["server_dir"] = str(server_dir)
+        if self._eula_file_is_accepted(server_dir / "eula.txt"):
             data["eula_accept"] = True
         return ServerInstance(id=server_id, **data)
+
+    def _stored_server_dir(self, server_id: str, raw_server_dir: Any) -> Path:
+        default_dir = (self.settings.servers_dir / server_id).expanduser().resolve()
+        if not raw_server_dir:
+            return default_dir
+
+        server_dir = Path(str(raw_server_dir)).expanduser().resolve()
+        allowed_root = self.settings.servers_dir.resolve()
+        try:
+            server_dir.relative_to(allowed_root)
+        except ValueError:
+            return default_dir
+        return server_dir
 
     def _ensure_server_dir_allowed(self, server_dir: Path) -> None:
         allowed_root = self.settings.servers_dir.resolve()

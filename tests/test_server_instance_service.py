@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from app.core.json_store import write_json_atomic
 from app.core.settings import AppSettings
 from app.models.server import CreateServerInstanceRequest, UpdateServerInstanceRequest
 from app.services.server_instances import ServerInstanceService
@@ -82,6 +83,28 @@ def test_get_server_uses_existing_eula_file(tmp_path: Path) -> None:
     (Path(server.server_dir) / "eula.txt").write_text("eula=true\n", encoding="utf-8")
 
     assert service.get_server("test_server").eula_accept is True
+
+
+def test_get_server_rebases_stale_server_dir_to_current_runtime(tmp_path: Path) -> None:
+    settings = AppSettings(panel_home=tmp_path / "mc-panel")
+    settings.ensure_runtime_layout()
+    server_dir = settings.servers_dir / "legacy"
+    server_dir.mkdir()
+    (server_dir / "server.jar").write_text("jar", encoding="utf-8")
+    write_json_atomic(
+        settings.servers_config_path,
+        {
+            "legacy": {
+                "display_name": "Legacy Server",
+                "server_dir": r"C:\old\mc-panel\servers\legacy",
+                "jar_file": "server.jar",
+            }
+        },
+    )
+
+    server = ServerInstanceService(settings).get_server("legacy")
+
+    assert Path(server.server_dir) == server_dir.resolve()
 
 
 def test_rejects_server_dir_outside_root(tmp_path: Path) -> None:

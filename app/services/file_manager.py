@@ -27,6 +27,8 @@ CLIENT_MODS_DIR = "client-mods"
 class FileManagerService:
     def list_dir(self, server: ServerInstance, relative_path: str = "") -> dict[str, Any]:
         root = self._root(server)
+        if not relative_path:
+            root.mkdir(parents=True, exist_ok=True)
         target = self._resolve(server, relative_path)
         if not target.exists():
             raise FileNotFoundError("path_not_found")
