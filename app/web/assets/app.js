@@ -75,6 +75,15 @@ function toast(message) {
   window.setTimeout(() => node.classList.remove("visible"), 3200);
 }
 
+window.addEventListener("error", (event) => {
+  toast(`Ошибка интерфейса: ${event.message}`);
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+  const reason = event.reason?.message || event.reason || "unknown_error";
+  toast(`Ошибка интерфейса: ${reason}`);
+});
+
 async function api(path, options = {}) {
   const response = await fetch(path, {
     credentials: "same-origin",
