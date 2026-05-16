@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Minecraft Web Panel</title>
-    <link rel="stylesheet" href="/assets/styles.css?v=server-ui-7" />
+    <link rel="stylesheet" href="/assets/styles.css?v=server-ui-8" />
   </head>
   <body>
     <section id="auth-screen" class="auth-screen">
@@ -269,6 +269,15 @@
               </div>
             </div>
 
+            <div id="files-upload-progress" class="upload-progress files-upload-progress" hidden>
+              <div class="upload-progress-header">
+                <span data-upload-status>Загрузка...</span>
+                <strong data-upload-percent>0%</strong>
+              </div>
+              <progress value="0" max="100"></progress>
+              <span class="server-meta" data-upload-size></span>
+            </div>
+
             <div class="file-browser-layout">
               <section class="file-main-pane">
                 <div class="file-list-header">
@@ -513,7 +522,7 @@
     </div>
 
     <div id="toast" class="toast" role="status"></div>
-    <script src="/assets/app.js?v=server-ui-7" type="module"></script>
+    <script src="/assets/app.js?v=server-ui-8" type="module"></script>
     <script src="/assets/updater.js?v=updater-1" type="module"></script>
   </body>
 </html>

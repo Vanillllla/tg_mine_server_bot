@@ -268,6 +268,10 @@ function uploadForm(path, formData, onProgress) {
 
 function setUploadProgress(formNode, stateName, progress = {}) {
   const node = formNode.querySelector("[data-upload-progress]");
+  setUploadProgressNode(node, stateName, progress);
+}
+
+function setUploadProgressNode(node, stateName, progress = {}) {
   if (!node) return;
 
   const status = node.querySelector("[data-upload-status]");
@@ -280,6 +284,7 @@ function setUploadProgress(formNode, stateName, progress = {}) {
   if (stateName === "uploading") status.textContent = "Загрузка файла...";
   if (stateName === "processing") status.textContent = "Файл загружен, сервер обрабатывает данные...";
   if (stateName === "error") status.textContent = progress.message || "Загрузка прервана";
+  if (progress.message && stateName !== "error") status.textContent = progress.message;
 
   progressBar.value = stateName === "processing" ? 100 : percentValue;
   percent.textContent = stateName === "processing" ? "100%" : `${percentValue}%`;
@@ -288,6 +293,10 @@ function setUploadProgress(formNode, stateName, progress = {}) {
     : progress.loaded
       ? `${formatBytes(progress.loaded)} загружено`
       : "";
+}
+
+function setFilesUploadProgress(stateName, progress = {}) {
+  setUploadProgressNode($("#files-upload-progress"), stateName, progress);
 }
 
 function setFormBusy(formNode, busy) {
@@ -917,13 +926,10 @@ function joinFilePath(...parts) {
     .join("/");
 }
 
-async function uploadFileToPath(file, path) {
+async function uploadFileToPath(file, path, onProgress) {
   const form = new FormData();
   form.append("file", file);
-  return api(`/api/servers/active/files/upload?path=${encodeURIComponent(path)}`, {
-    method: "POST",
-    body: form,
-  });
+  return uploadForm(`/api/servers/active/files/upload?path=${encodeURIComponent(path)}`, form, onProgress);
 }
 
 async function ensureDirectoryPath(path) {
@@ -945,28 +951,80 @@ async function ensureDirectoryPath(path) {
 async function uploadSelectedFiles(files) {
   const items = [...files];
   if (!items.length) return;
+  const totalBytes = items.reduce((total, file) => total + (Number(file.size) || 0), 0);
+  let completedBytes = 0;
   toast(`Загрузка файлов: 0/${items.length}`);
+  setFilesUploadProgress("uploading", {
+    loaded: 0,
+    total: totalBytes,
+    percent: 0,
+    message: `Загрузка файлов: 0/${items.length}`,
+  });
   for (const [index, file] of items.entries()) {
-    await uploadFileToPath(file, state.filePath);
+    await uploadFileToPath(file, state.filePath, (progress) => {
+      const fileLoaded = Math.min(Number(progress.loaded) || 0, Number(file.size) || 0);
+      const loaded = completedBytes + fileLoaded;
+      const percent = totalBytes ? Math.min(100, Math.round((loaded / totalBytes) * 100)) : progress.percent;
+      setFilesUploadProgress("uploading", {
+        loaded,
+        total: totalBytes,
+        percent,
+        message: `Загрузка файлов: ${index + 1}/${items.length} - ${file.name}`,
+      });
+    });
+    completedBytes += Number(file.size) || 0;
     toast(`Загрузка файлов: ${index + 1}/${items.length}`);
   }
+  setFilesUploadProgress("processing", {
+    loaded: completedBytes,
+    total: totalBytes,
+    percent: 100,
+    message: "Обновление списка файлов...",
+  });
   await loadFiles();
+  setFilesUploadProgress("hidden");
   toast(`Загружено файлов: ${items.length}`);
 }
 
 async function uploadSelectedFolder(files) {
   const items = [...files].filter((file) => file.webkitRelativePath);
   if (!items.length) return;
+  const totalBytes = items.reduce((total, file) => total + (Number(file.size) || 0), 0);
+  let completedBytes = 0;
   toast(`Загрузка папки: 0/${items.length}`);
+  setFilesUploadProgress("uploading", {
+    loaded: 0,
+    total: totalBytes,
+    percent: 0,
+    message: `Подготовка папки: 0/${items.length}`,
+  });
   for (const [index, file] of items.entries()) {
     const relativeParts = file.webkitRelativePath.replaceAll("\\", "/").split("/").filter(Boolean);
     relativeParts.pop();
     const directory = joinFilePath(state.filePath, ...relativeParts);
     if (relativeParts.length) await ensureDirectoryPath(directory);
-    await uploadFileToPath(file, directory || state.filePath);
+    await uploadFileToPath(file, directory || state.filePath, (progress) => {
+      const fileLoaded = Math.min(Number(progress.loaded) || 0, Number(file.size) || 0);
+      const loaded = completedBytes + fileLoaded;
+      const percent = totalBytes ? Math.min(100, Math.round((loaded / totalBytes) * 100)) : progress.percent;
+      setFilesUploadProgress("uploading", {
+        loaded,
+        total: totalBytes,
+        percent,
+        message: `Загрузка папки: ${index + 1}/${items.length} - ${file.webkitRelativePath}`,
+      });
+    });
+    completedBytes += Number(file.size) || 0;
     toast(`Загрузка папки: ${index + 1}/${items.length}`);
   }
+  setFilesUploadProgress("processing", {
+    loaded: completedBytes,
+    total: totalBytes,
+    percent: 100,
+    message: "Обновление списка файлов...",
+  });
   await loadFiles();
+  setFilesUploadProgress("hidden");
   toast(`Загружено файлов: ${items.length}`);
 }
 
@@ -1081,12 +1139,22 @@ function bindEvents() {
     event.preventDefault();
     const formNode = event.currentTarget;
     const form = new FormData(formNode);
+    const coreFile = form.get("core_file");
+    const coreFileName = coreFile?.name ? ` - ${coreFile.name}` : "";
     normalizeServerForm(form, formNode, "custom");
     setFormBusy(formNode, true);
-    setUploadProgress(formNode, "uploading", { loaded: 0, total: form.get("core_file")?.size || 0, percent: 0 });
+    setUploadProgress(formNode, "uploading", {
+      loaded: 0,
+      total: coreFile?.size || 0,
+      percent: 0,
+      message: `Загрузка ядра${coreFileName}`,
+    });
     try {
       await uploadForm("/api/servers/upload-core", form, (progress) => {
-        setUploadProgress(formNode, progress.percent === 100 ? "processing" : "uploading", progress);
+        setUploadProgress(formNode, progress.percent === 100 ? "processing" : "uploading", {
+          ...progress,
+          message: progress.percent === 100 ? undefined : `Загрузка ядра${coreFileName}`,
+        });
       });
       formNode.reset();
       setUploadProgress(formNode, "hidden");
@@ -1105,12 +1173,22 @@ function bindEvents() {
     event.preventDefault();
     const formNode = event.currentTarget;
     const form = new FormData(formNode);
+    const archiveFile = form.get("archive_file");
+    const archiveFileName = archiveFile?.name ? ` - ${archiveFile.name}` : "";
     normalizeServerForm(form, formNode, "forge");
     setFormBusy(formNode, true);
-    setUploadProgress(formNode, "uploading", { loaded: 0, total: form.get("archive_file")?.size || 0, percent: 0 });
+    setUploadProgress(formNode, "uploading", {
+      loaded: 0,
+      total: archiveFile?.size || 0,
+      percent: 0,
+      message: `Загрузка архива${archiveFileName}`,
+    });
     try {
       await uploadForm("/api/servers/import-archive", form, (progress) => {
-        setUploadProgress(formNode, progress.percent === 100 ? "processing" : "uploading", progress);
+        setUploadProgress(formNode, progress.percent === 100 ? "processing" : "uploading", {
+          ...progress,
+          message: progress.percent === 100 ? undefined : `Загрузка архива${archiveFileName}`,
+        });
       });
       formNode.reset();
       setUploadProgress(formNode, "hidden");
@@ -1386,6 +1464,7 @@ function bindEvents() {
     try {
       await uploadSelectedFiles(event.target.files);
     } catch (error) {
+      setFilesUploadProgress("error", { message: error.message || "Загрузка файлов прервана" });
       toast(error.message);
     } finally {
       event.target.value = "";
@@ -1395,6 +1474,7 @@ function bindEvents() {
     try {
       await uploadSelectedFolder(event.target.files);
     } catch (error) {
+      setFilesUploadProgress("error", { message: error.message || "Загрузка папки прервана" });
       toast(error.message);
     } finally {
       event.target.value = "";
