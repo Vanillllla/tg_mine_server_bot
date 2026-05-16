@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+VERSION="${1:-}"
+if [[ -z "$VERSION" ]]; then
+  echo "Usage: mc-panel-update-dispatch <version>" >&2
+  exit 2
+fi
+
+UNIT_VERSION="${VERSION//[^a-zA-Z0-9_.-]/-}"
+UNIT_NAME="mc-panel-update-${UNIT_VERSION}"
+
+exec /usr/bin/systemd-run \
+  --unit="$UNIT_NAME" \
+  --property=Type=oneshot \
+  --property=User=root \
+  --property=Group=root \
+  --property=WorkingDirectory=/ \
+  --collect \
+  /usr/local/sbin/mc-panel-update "$VERSION"
