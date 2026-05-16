@@ -874,6 +874,51 @@ h2 {
   gap: 12px;
 }
 
+.upload-progress {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #171b22;
+  padding: 12px;
+}
+
+.upload-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.upload-progress-header strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.upload-progress progress {
+  width: 100%;
+  height: 12px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #10141b;
+}
+
+.upload-progress progress::-webkit-progress-bar {
+  background: #10141b;
+}
+
+.upload-progress progress::-webkit-progress-value {
+  background: var(--accent);
+}
+
+.upload-progress progress::-moz-progress-bar {
+  background: var(--accent);
+}
+
 label {
   display: grid;
   gap: 6px;

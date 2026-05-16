@@ -188,6 +188,84 @@ function formatBytes(size) {
   return `${(size / 1024 / 1024).toFixed(1)} MB`;
 }
 
+function uploadForm(path, formData, onProgress) {
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    let latestProgress = { loaded: 0, total: null, percent: null };
+    request.open("POST", path);
+    request.withCredentials = true;
+    request.upload.addEventListener("progress", (event) => {
+      if (!event.lengthComputable) {
+        latestProgress = { loaded: event.loaded, total: null, percent: null };
+        onProgress?.(latestProgress);
+        return;
+      }
+      latestProgress = {
+        loaded: event.loaded,
+        total: event.total,
+        percent: Math.min(100, Math.round((event.loaded / event.total) * 100)),
+      };
+      onProgress?.(latestProgress);
+    });
+    request.upload.addEventListener("load", () => {
+      onProgress?.({
+        loaded: latestProgress.total || latestProgress.loaded,
+        total: latestProgress.total,
+        percent: 100,
+      });
+    });
+    request.addEventListener("load", () => {
+      if (request.status >= 200 && request.status < 300) {
+        resolve(request.responseText ? JSON.parse(request.responseText) : null);
+        return;
+      }
+
+      let detail = request.statusText;
+      try {
+        detail = JSON.parse(request.responseText).detail || detail;
+      } catch {
+        // Keep HTTP status text.
+      }
+      const error = new Error(detail);
+      error.status = request.status;
+      reject(error);
+    });
+    request.addEventListener("error", () => reject(new Error("upload_failed")));
+    request.addEventListener("abort", () => reject(new Error("upload_aborted")));
+    request.send(formData);
+  });
+}
+
+function setUploadProgress(formNode, stateName, progress = {}) {
+  const node = formNode.querySelector("[data-upload-progress]");
+  if (!node) return;
+
+  const status = node.querySelector("[data-upload-status]");
+  const percent = node.querySelector("[data-upload-percent]");
+  const size = node.querySelector("[data-upload-size]");
+  const progressBar = node.querySelector("progress");
+  const percentValue = Number.isFinite(progress.percent) ? progress.percent : 0;
+
+  node.hidden = stateName === "hidden";
+  if (stateName === "uploading") status.textContent = "Загрузка файла...";
+  if (stateName === "processing") status.textContent = "Файл загружен, сервер обрабатывает данные...";
+  if (stateName === "error") status.textContent = "Загрузка прервана";
+
+  progressBar.value = stateName === "processing" ? 100 : percentValue;
+  percent.textContent = stateName === "processing" ? "100%" : `${percentValue}%`;
+  size.textContent = progress.total
+    ? `${formatBytes(progress.loaded)} из ${formatBytes(progress.total)}`
+    : progress.loaded
+      ? `${formatBytes(progress.loaded)} загружено`
+      : "";
+}
+
+function setFormBusy(formNode, busy) {
+  formNode.querySelectorAll("input, select, button").forEach((node) => {
+    node.disabled = busy;
+  });
+}
+
 async function refreshAll() {
   const tasks = [refreshWorkData()];
   if (isAdmin()) {
@@ -799,22 +877,48 @@ function bindEvents() {
 
   $("#create-server-form").addEventListener("submit", async (event) => {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    normalizeServerForm(form, event.currentTarget, "custom");
-    await api("/api/servers/upload-core", { method: "POST", body: form });
-    event.currentTarget.reset();
-    await refreshAll();
-    toast("Сервер создан");
+    const formNode = event.currentTarget;
+    const form = new FormData(formNode);
+    normalizeServerForm(form, formNode, "custom");
+    setFormBusy(formNode, true);
+    setUploadProgress(formNode, "uploading", { loaded: 0, total: form.get("core_file")?.size || 0, percent: 0 });
+    try {
+      await uploadForm("/api/servers/upload-core", form, (progress) => {
+        setUploadProgress(formNode, progress.percent === 100 ? "processing" : "uploading", progress);
+      });
+      formNode.reset();
+      await refreshAll();
+      setUploadProgress(formNode, "hidden");
+      toast("Сервер создан");
+    } catch (error) {
+      setUploadProgress(formNode, "error");
+      toast(error.message);
+    } finally {
+      setFormBusy(formNode, false);
+    }
   });
 
   $("#import-server-form").addEventListener("submit", async (event) => {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    normalizeServerForm(form, event.currentTarget, "forge");
-    await api("/api/servers/import-archive", { method: "POST", body: form });
-    event.currentTarget.reset();
-    await refreshAll();
-    toast("Сервер импортирован");
+    const formNode = event.currentTarget;
+    const form = new FormData(formNode);
+    normalizeServerForm(form, formNode, "forge");
+    setFormBusy(formNode, true);
+    setUploadProgress(formNode, "uploading", { loaded: 0, total: form.get("archive_file")?.size || 0, percent: 0 });
+    try {
+      await uploadForm("/api/servers/import-archive", form, (progress) => {
+        setUploadProgress(formNode, progress.percent === 100 ? "processing" : "uploading", progress);
+      });
+      formNode.reset();
+      await refreshAll();
+      setUploadProgress(formNode, "hidden");
+      toast("Сервер импортирован");
+    } catch (error) {
+      setUploadProgress(formNode, "error");
+      toast(error.message);
+    } finally {
+      setFormBusy(formNode, false);
+    }
   });
 
   $("#reload-java-btn").addEventListener("click", () => {

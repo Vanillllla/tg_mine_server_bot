@@ -178,7 +178,7 @@
               </div>
             </div>
             <form id="create-server-form" class="form-grid">
-              <label>ID <input name="id" placeholder="vanilla_1_20_1" required /></label>
+              <label>ID <input name="id" placeholder="vanilla_1_20_1" pattern="[a-z0-9][a-z0-9_-]{0,63}" maxlength="64" title="Только строчные латинские буквы, цифры, _ и -" required /></label>
               <label>Название <input name="display_name" placeholder="Vanilla 1.20.1" required /></label>
               <label>Ядро .jar <input name="core_file" type="file" accept=".jar" required /></label>
               <label>Версия <input name="minecraft_version" placeholder="1.20.1" /></label>
@@ -188,6 +188,14 @@
               <label>Xmx MB <input name="xmx_mb" type="number" min="64" value="1024" /></label>
               <label class="checkbox-row"><input name="eula_accept" type="checkbox" /> EULA accepted</label>
               <button class="btn primary" type="submit">Создать</button>
+              <div class="upload-progress" data-upload-progress hidden>
+                <div class="upload-progress-header">
+                  <span data-upload-status>Загрузка...</span>
+                  <strong data-upload-percent>0%</strong>
+                </div>
+                <progress value="0" max="100"></progress>
+                <span class="server-meta" data-upload-size></span>
+              </div>
             </form>
           </section>
 
@@ -199,7 +207,7 @@
               </div>
             </div>
             <form id="import-server-form" class="form-grid">
-              <label>ID <input name="id" placeholder="forge_1_12_2_hbm" required /></label>
+              <label>ID <input name="id" placeholder="forge_1_12_2_hbm" pattern="[a-z0-9][a-z0-9_-]{0,63}" maxlength="64" title="Только строчные латинские буквы, цифры, _ и -" required /></label>
               <label>Название <input name="display_name" placeholder="Forge 1.12.2 HBM" required /></label>
               <label>Архив .zip <input name="archive_file" type="file" accept=".zip" required /></label>
               <label>Jar внутри архива <input name="jar_file" placeholder="оставь пустым для автоопределения" /></label>
@@ -210,6 +218,14 @@
               <label>Xmx MB <input name="xmx_mb" type="number" min="64" value="4096" /></label>
               <label class="checkbox-row"><input name="eula_accept" type="checkbox" /> EULA accepted</label>
               <button class="btn primary" type="submit">Импортировать</button>
+              <div class="upload-progress" data-upload-progress hidden>
+                <div class="upload-progress-header">
+                  <span data-upload-status>Загрузка...</span>
+                  <strong data-upload-percent>0%</strong>
+                </div>
+                <progress value="0" max="100"></progress>
+                <span class="server-meta" data-upload-size></span>
+              </div>
             </form>
           </section>
         </section>

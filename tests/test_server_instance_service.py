@@ -25,6 +25,23 @@ def test_create_server_sets_first_active(tmp_path: Path) -> None:
     assert (Path(server.server_dir) / "eula.txt").read_text(encoding="utf-8") == "eula=true\n"
 
 
+def test_create_server_accepts_single_character_id(tmp_path: Path) -> None:
+    settings = AppSettings(panel_home=tmp_path / "mc-panel")
+    settings.ensure_runtime_layout()
+    service = ServerInstanceService(settings)
+
+    server = service.create_server(
+        CreateServerInstanceRequest(
+            id="1",
+            display_name="Test Server",
+            jar_file="server.jar",
+        )
+    )
+
+    assert server.id == "1"
+    assert Path(server.server_dir).name == "1"
+
+
 def test_rejects_server_dir_outside_root(tmp_path: Path) -> None:
     settings = AppSettings(panel_home=tmp_path / "mc-panel")
     settings.ensure_runtime_layout()

@@ -7,7 +7,7 @@ from typing import Any
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
-SERVER_ID_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{1,63}$")
+SERVER_ID_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 
 
 class ServerStatus(str, Enum):
