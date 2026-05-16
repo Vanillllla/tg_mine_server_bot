@@ -4,11 +4,17 @@ from app.api.deps import get_panel_settings_service, require_admin
 from app.models.auth import AuthUser
 from app.models.settings import (
     JavaRuntime,
+    PublicPanelSettings,
     SetDefaultJavaRuntimeRequest,
     UpsertJavaRuntimeRequest,
 )
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
+
+
+@router.get("/public", response_model=PublicPanelSettings)
+async def get_public_settings(request: Request) -> PublicPanelSettings:
+    return get_panel_settings_service(request).public_settings()
 
 
 @router.get("/java-runtimes", response_model=list[JavaRuntime])

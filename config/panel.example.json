@@ -4,6 +4,12 @@
     "theme": "dark",
     "debug_mode": false
   },
+  "links": {
+    "discord": {
+      "url": "https://discord.gg/cUt6nYVEyn",
+      "icon_path": "/assets/icons/discord.svg"
+    }
+  },
   "server": {
     "active_server_id": "",
     "use_last_active_server": true,

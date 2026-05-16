@@ -17,3 +17,16 @@ class UpsertJavaRuntimeRequest(BaseModel):
 
 class SetDefaultJavaRuntimeRequest(BaseModel):
     id: str = Field(min_length=1, max_length=64)
+
+
+class PublicLink(BaseModel):
+    url: str = Field(min_length=1, max_length=500)
+    icon_path: str = Field(min_length=1, max_length=500)
+
+
+class PublicLinks(BaseModel):
+    discord: PublicLink
+
+
+class PublicPanelSettings(BaseModel):
+    links: PublicLinks

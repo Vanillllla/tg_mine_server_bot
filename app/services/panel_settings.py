@@ -2,8 +2,8 @@ from pathlib import Path
 from typing import Any
 
 from app.core.json_store import read_json, write_json_atomic
-from app.core.settings import AppSettings
-from app.models.settings import JavaRuntime, UpsertJavaRuntimeRequest
+from app.core.settings import AppSettings, DEFAULT_PANEL
+from app.models.settings import JavaRuntime, PublicPanelSettings, UpsertJavaRuntimeRequest
 
 
 BUILTIN_JAVA_RUNTIMES = [
@@ -28,6 +28,13 @@ BUILTIN_JAVA_RUNTIMES = [
 class PanelSettingsService:
     def __init__(self, settings: AppSettings) -> None:
         self.settings = settings
+
+    def public_settings(self) -> PublicPanelSettings:
+        panel = self._read_panel()
+        changed = self._ensure_public_link_defaults(panel)
+        if changed:
+            self._write_panel(panel)
+        return PublicPanelSettings(links=panel["links"])
 
     def list_java_runtimes(self) -> list[JavaRuntime]:
         panel = self._read_panel()
@@ -111,5 +118,19 @@ class PanelSettingsService:
             preferred = "java8_oracle" if "java8_oracle" in known_ids else runtimes[0]["id"]
             java["default_runtime_id"] = preferred
             changed = True
+
+        return changed
+
+    @staticmethod
+    def _ensure_public_link_defaults(panel: dict[str, Any]) -> bool:
+        links = panel.setdefault("links", {})
+        discord = links.setdefault("discord", {})
+        changed = False
+
+        default_discord = DEFAULT_PANEL["links"]["discord"]
+        for key, value in default_discord.items():
+            if not discord.get(key):
+                discord[key] = value
+                changed = True
 
         return changed
