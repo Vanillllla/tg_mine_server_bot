@@ -10,6 +10,12 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 SERVER_ID_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 
 
+def validate_server_id(value: str) -> str:
+    if not SERVER_ID_RE.match(value):
+        raise ValueError("server_id_must_be_slug")
+    return value
+
+
 class ServerStatus(str, Enum):
     OFF = "OFF"
     STARTING = "STARTING"
@@ -40,9 +46,7 @@ class ServerInstance(BaseModel):
     @field_validator("id")
     @classmethod
     def validate_id(cls, value: str) -> str:
-        if not SERVER_ID_RE.match(value):
-            raise ValueError("server_id_must_be_slug")
-        return value
+        return validate_server_id(value)
 
     @field_validator("xms_mb", "xmx_mb")
     @classmethod
@@ -84,6 +88,11 @@ class CreateServerInstanceRequest(BaseModel):
     eula_accept: bool = False
     auto_restart: bool = False
     startup_timeout: int = 180
+
+    @field_validator("id")
+    @classmethod
+    def validate_id(cls, value: str) -> str:
+        return validate_server_id(value)
 
 
 class UpdateServerInstanceRequest(BaseModel):

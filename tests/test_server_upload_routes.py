@@ -49,6 +49,39 @@ def test_upload_core_creates_server_and_writes_jar(tmp_path: Path, monkeypatch) 
         client.__exit__(None, None, None)
 
 
+def test_upload_core_rejects_invalid_id_before_creating_server_dir(tmp_path: Path, monkeypatch) -> None:
+    client = make_client(tmp_path, monkeypatch)
+    try:
+        response = client.post(
+            "/api/servers/upload-core",
+            data={
+                "id": "forge1-12-2-HBM",
+                "display_name": "Bad ID",
+                "java_path": "java",
+                "xms_mb": "512",
+                "xmx_mb": "1024",
+            },
+            files={"core_file": ("server.jar", b"jar-content", "application/java-archive")},
+        )
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == "server_id_must_be_slug"
+        assert list((get_settings().servers_dir).iterdir()) == []
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_files_without_active_server_returns_clear_error(tmp_path: Path, monkeypatch) -> None:
+    client = make_client(tmp_path, monkeypatch)
+    try:
+        response = client.get("/api/servers/active/files")
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "active_server_not_selected"
+    finally:
+        client.__exit__(None, None, None)
+
+
 def test_import_archive_creates_server_and_extracts_zip(tmp_path: Path, monkeypatch) -> None:
     client = make_client(tmp_path, monkeypatch)
     archive_bytes = BytesIO()

@@ -16,6 +16,8 @@ def _active_server(request: Request):
 
 
 def _handle_file_error(exc: Exception) -> HTTPException:
+    if isinstance(exc, HTTPException):
+        return exc
     if isinstance(exc, FileNotFoundError):
         return HTTPException(status_code=404, detail=str(exc))
     if isinstance(exc, NotADirectoryError):

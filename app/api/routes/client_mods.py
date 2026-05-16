@@ -19,6 +19,8 @@ def _active_server(request: Request):
 
 
 def _handle_client_mods_error(exc: Exception) -> HTTPException:
+    if isinstance(exc, HTTPException):
+        return exc
     if isinstance(exc, ValueError):
         return HTTPException(status_code=400, detail=str(exc))
     if isinstance(exc, FileNotFoundError):

@@ -50,8 +50,6 @@ class ServerInstanceService:
         server_dir = Path(payload.server_dir) if payload.server_dir else self.settings.servers_dir / payload.id
         server_dir = server_dir.expanduser().resolve()
         self._ensure_server_dir_allowed(server_dir)
-        server_dir.mkdir(parents=True, exist_ok=True)
-        self._write_eula_file(server_dir, payload.eula_accept)
 
         instance = ServerInstance(
             id=payload.id,
@@ -69,6 +67,8 @@ class ServerInstanceService:
             auto_restart=payload.auto_restart,
             startup_timeout=payload.startup_timeout,
         )
+        server_dir.mkdir(parents=True, exist_ok=True)
+        self._write_eula_file(server_dir, payload.eula_accept)
         servers[payload.id] = self._instance_payload(instance)
         self._write_servers(servers)
 

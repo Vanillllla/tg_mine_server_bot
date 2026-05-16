@@ -2,6 +2,7 @@ from pathlib import Path
 from zipfile import BadZipFile, ZipFile, ZipInfo
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
+from pydantic import ValidationError
 
 from app.api.deps import get_instance_service, get_log_buffer, get_manager, require_permission
 from app.models.auth import AuthUser
@@ -14,6 +15,13 @@ from app.models.server import (
 )
 
 router = APIRouter(prefix="/api/servers", tags=["servers"])
+
+
+def _validation_error_detail(exc: ValidationError) -> str:
+    first = exc.errors()[0] if exc.errors() else {}
+    message = str(first.get("msg") or exc)
+    prefix = "Value error, "
+    return message.removeprefix(prefix)
 
 
 def _safe_active_server_payload(payload: dict | None, current_user: AuthUser) -> dict | None:
@@ -133,17 +141,20 @@ async def create_server_from_uploaded_core(
         raise HTTPException(status_code=400, detail="core_file_must_be_jar")
 
     service = get_instance_service(request)
-    payload = CreateServerInstanceRequest(
-        id=id,
-        display_name=display_name,
-        jar_file=jar_name,
-        minecraft_version=minecraft_version,
-        server_type=server_type or "custom",
-        java_path=java_path or "java",
-        xms_mb=xms_mb,
-        xmx_mb=xmx_mb,
-        eula_accept=eula_accept,
-    )
+    try:
+        payload = CreateServerInstanceRequest(
+            id=id,
+            display_name=display_name,
+            jar_file=jar_name,
+            minecraft_version=minecraft_version,
+            server_type=server_type or "custom",
+            java_path=java_path or "java",
+            xms_mb=xms_mb,
+            xmx_mb=xmx_mb,
+            eula_accept=eula_accept,
+        )
+    except ValidationError as exc:
+        raise HTTPException(status_code=400, detail=_validation_error_detail(exc)) from exc
 
     created_server_id = ""
     try:
@@ -184,8 +195,23 @@ async def create_server_from_archive(
     if not archive_file.filename or not archive_file.filename.lower().endswith(".zip"):
         raise HTTPException(status_code=400, detail="archive_file_must_be_zip")
 
+    try:
+        payload = CreateServerInstanceRequest(
+            id=id,
+            display_name=display_name,
+            jar_file="server.jar",
+            minecraft_version=minecraft_version,
+            server_type=server_type or "custom",
+            java_path=java_path or "java",
+            xms_mb=xms_mb,
+            xmx_mb=xmx_mb,
+            eula_accept=eula_accept,
+        )
+    except ValidationError as exc:
+        raise HTTPException(status_code=400, detail=_validation_error_detail(exc)) from exc
+
     service = get_instance_service(request)
-    temp_archive_path = service.settings.uploads_dir / "temp" / f"{id}.import.zip"
+    temp_archive_path = service.settings.uploads_dir / "temp" / f"{payload.id}.import.zip"
     temp_archive_path.parent.mkdir(parents=True, exist_ok=True)
 
     created_server_id = ""
@@ -197,17 +223,7 @@ async def create_server_from_archive(
         with ZipFile(temp_archive_path) as archive:
             entries = _safe_archive_entries(archive)
             selected_jar = _choose_jar_file(entries, jar_file.strip())
-            payload = CreateServerInstanceRequest(
-                id=id,
-                display_name=display_name,
-                jar_file=selected_jar,
-                minecraft_version=minecraft_version,
-                server_type=server_type or "custom",
-                java_path=java_path or "java",
-                xms_mb=xms_mb,
-                xmx_mb=xmx_mb,
-                eula_accept=eula_accept,
-            )
+            payload = payload.model_copy(update={"jar_file": selected_jar})
             server = service.create_server(payload)
             created_server_id = server.id
             _extract_archive(archive, entries, Path(server.server_dir))
