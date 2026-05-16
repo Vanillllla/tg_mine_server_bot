@@ -80,12 +80,13 @@ class FileManagerService:
         return {"path": self._relative(self._root(server), target), "created": True}
 
     async def upload(self, server: ServerInstance, relative_path: str, file: UploadFile) -> dict[str, Any]:
-        if not file.filename or not self._valid_name(file.filename):
+        filename = self._upload_file_name(file.filename)
+        if not filename:
             raise ValueError("invalid_file_name")
         directory = self._resolve(server, relative_path)
         if not directory.is_dir():
             raise NotADirectoryError("path_is_not_directory")
-        target = self._resolve(server, str(Path(relative_path) / file.filename))
+        target = self._resolve(server, str(Path(relative_path) / filename))
         with target.open("wb") as output:
             while chunk := await file.read(UPLOAD_COPY_CHUNK_SIZE):
                 output.write(chunk)
@@ -192,3 +193,10 @@ class FileManagerService:
     @staticmethod
     def _valid_name(name: str) -> bool:
         return bool(name and name not in {".", ".."} and "/" not in name and "\\" not in name)
+
+    @classmethod
+    def _upload_file_name(cls, name: str | None) -> str | None:
+        if not name:
+            return None
+        filename = PurePosixPath(str(name).replace("\\", "/")).name
+        return filename if cls._valid_name(filename) else None

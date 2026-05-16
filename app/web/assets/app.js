@@ -928,7 +928,7 @@ function joinFilePath(...parts) {
 
 async function uploadFileToPath(file, path, onProgress) {
   const form = new FormData();
-  form.append("file", file);
+  form.append("file", file, file.name);
   return uploadForm(`/api/servers/active/files/upload?path=${encodeURIComponent(path)}`, form, onProgress);
 }
 

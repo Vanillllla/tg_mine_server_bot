@@ -152,6 +152,42 @@ def test_files_upload_endpoint_writes_file_to_active_server(tmp_path: Path, monk
         client.__exit__(None, None, None)
 
 
+def test_files_upload_endpoint_accepts_folder_upload_filename(tmp_path: Path, monkeypatch) -> None:
+    client = make_client(tmp_path, monkeypatch)
+    try:
+        create_response = client.post(
+            "/api/servers/upload-core",
+            data={
+                "id": "folder_upload_server",
+                "display_name": "Folder Upload Server",
+                "java_path": "java",
+                "xms_mb": "512",
+                "xmx_mb": "1024",
+            },
+            files={"core_file": ("server.jar", b"jar-content", "application/java-archive")},
+        )
+        assert create_response.status_code == 201
+        server_dir = Path(create_response.json()["server_dir"])
+
+        mkdir_response = client.post(
+            "/api/servers/active/files/directories",
+            json={"name": "mods"},
+        )
+        assert mkdir_response.status_code == 200
+
+        upload_response = client.post(
+            "/api/servers/active/files/upload?path=mods",
+            files={"file": ("mods/example.jar", b"mod-content", "application/java-archive")},
+        )
+
+        assert upload_response.status_code == 200
+        assert upload_response.json()["uploaded"] is True
+        assert (server_dir / "mods" / "example.jar").read_bytes() == b"mod-content"
+        assert not (server_dir / "mods" / "mods").exists()
+    finally:
+        client.__exit__(None, None, None)
+
+
 def test_import_archive_accepts_windows_separators(tmp_path: Path, monkeypatch) -> None:
     client = make_client(tmp_path, monkeypatch)
     archive_bytes = BytesIO()
