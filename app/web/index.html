@@ -168,65 +168,13 @@
               </div>
             </div>
             <div id="servers-list" class="servers-list"></div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-heading">
-              <div>
-                <p class="eyebrow">Новый сервер</p>
-                <h2>Создать из одного jar</h2>
+            <div class="add-server-box">
+              <button id="toggle-add-server-btn" class="btn primary" type="button">Добавить сервер +</button>
+              <div id="add-server-choices" class="add-server-choices" hidden>
+                <button id="open-create-jar-modal-btn" class="btn small" type="button">Создать из jar</button>
+                <button id="open-import-zip-modal-btn" class="btn small" type="button">Создать из zip</button>
               </div>
             </div>
-            <form id="create-server-form" class="form-grid">
-              <label>ID <input name="id" placeholder="vanilla_1_20_1" pattern="[a-z0-9][a-z0-9_-]{0,63}" maxlength="64" title="Только строчные латинские буквы, цифры, _ и -" required /></label>
-              <label>Название <input name="display_name" placeholder="Vanilla 1.20.1" required /></label>
-              <label>Ядро .jar <input name="core_file" type="file" accept=".jar" required /></label>
-              <label>Версия <input name="minecraft_version" placeholder="1.20.1" /></label>
-              <label>Тип <input name="server_type" placeholder="vanilla / forge / paper" /></label>
-              <label>Java <select name="java_path" data-java-select></select></label>
-              <label>Xms MB <input name="xms_mb" type="number" min="64" value="512" /></label>
-              <label>Xmx MB <input name="xmx_mb" type="number" min="64" value="1024" /></label>
-              <label class="checkbox-row"><input name="eula_accept" type="checkbox" /> EULA accepted</label>
-              <button class="btn primary" type="submit">Создать</button>
-              <div class="upload-progress" data-upload-progress hidden>
-                <div class="upload-progress-header">
-                  <span data-upload-status>Загрузка...</span>
-                  <strong data-upload-percent>0%</strong>
-                </div>
-                <progress value="0" max="100"></progress>
-                <span class="server-meta" data-upload-size></span>
-              </div>
-            </form>
-          </section>
-
-          <section class="panel">
-            <div class="panel-heading">
-              <div>
-                <p class="eyebrow">Forge / готовая сборка</p>
-                <h2>Импортировать сервер из .zip</h2>
-              </div>
-            </div>
-            <form id="import-server-form" class="form-grid">
-              <label>ID <input name="id" placeholder="forge_1_12_2_hbm" pattern="[a-z0-9][a-z0-9_-]{0,63}" maxlength="64" title="Только строчные латинские буквы, цифры, _ и -" required /></label>
-              <label>Название <input name="display_name" placeholder="Forge 1.12.2 HBM" required /></label>
-              <label>Архив .zip <input name="archive_file" type="file" accept=".zip" required /></label>
-              <label>Jar внутри архива <input name="jar_file" placeholder="оставь пустым для автоопределения" /></label>
-              <label>Версия <input name="minecraft_version" placeholder="1.12.2" /></label>
-              <label>Тип <input name="server_type" value="forge" /></label>
-              <label>Java <select name="java_path" data-java-select></select></label>
-              <label>Xms MB <input name="xms_mb" type="number" min="64" value="2048" /></label>
-              <label>Xmx MB <input name="xmx_mb" type="number" min="64" value="4096" /></label>
-              <label class="checkbox-row"><input name="eula_accept" type="checkbox" /> EULA accepted</label>
-              <button class="btn primary" type="submit">Импортировать</button>
-              <div class="upload-progress" data-upload-progress hidden>
-                <div class="upload-progress-header">
-                  <span data-upload-status>Загрузка...</span>
-                  <strong data-upload-percent>0%</strong>
-                </div>
-                <progress value="0" max="100"></progress>
-                <span class="server-meta" data-upload-size></span>
-              </div>
-            </form>
           </section>
         </section>
 
@@ -255,7 +203,6 @@
             </form>
           </section>
         </section>
-
         <section id="view-properties" class="view">
           <section class="panel">
             <div class="panel-heading">
@@ -435,6 +382,98 @@
           </section>
         </section>
       </main>
+    </div>
+
+    <div id="create-jar-modal" class="modal-backdrop" hidden>
+      <section class="modal server-form-modal" role="dialog" aria-modal="true" aria-labelledby="create-jar-title">
+        <header class="modal-header">
+          <div>
+            <p class="eyebrow">Новый сервер</p>
+            <h2 id="create-jar-title">Создать из одного jar</h2>
+          </div>
+          <button class="btn small" type="button" data-close-modal="create-jar-modal">Закрыть</button>
+        </header>
+        <form id="create-server-form" class="form-grid modal-form">
+          <label>ID <input name="id" placeholder="vanilla_1_20_1" pattern="[a-z0-9][a-z0-9_-]{0,63}" maxlength="64" title="Только строчные латинские буквы, цифры, _ и -" required /></label>
+          <label>Название <input name="display_name" placeholder="Vanilla 1.20.1" required /></label>
+          <label>Ядро .jar <input name="core_file" type="file" accept=".jar" required /></label>
+          <label>Версия <input name="minecraft_version" placeholder="1.20.1" /></label>
+          <label>Тип <input name="server_type" placeholder="vanilla / forge / paper" /></label>
+          <label>Java <select name="java_path" data-java-select></select></label>
+          <label>Xms MB <input name="xms_mb" type="number" min="64" value="512" /></label>
+          <label>Xmx MB <input name="xmx_mb" type="number" min="64" value="1024" /></label>
+          <label class="checkbox-row"><input name="eula_accept" type="checkbox" /> EULA accepted</label>
+          <button class="btn primary" type="submit">Создать</button>
+          <button class="btn" type="button" data-close-modal="create-jar-modal">Отмена</button>
+          <div class="upload-progress" data-upload-progress hidden>
+            <div class="upload-progress-header">
+              <span data-upload-status>Загрузка...</span>
+              <strong data-upload-percent>0%</strong>
+            </div>
+            <progress value="0" max="100"></progress>
+            <span class="server-meta" data-upload-size></span>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div id="import-zip-modal" class="modal-backdrop" hidden>
+      <section class="modal server-form-modal" role="dialog" aria-modal="true" aria-labelledby="import-zip-title">
+        <header class="modal-header">
+          <div>
+            <p class="eyebrow">Forge / готовая сборка</p>
+            <h2 id="import-zip-title">Импортировать сервер из .zip</h2>
+          </div>
+          <button class="btn small" type="button" data-close-modal="import-zip-modal">Закрыть</button>
+        </header>
+        <form id="import-server-form" class="form-grid modal-form">
+          <label>ID <input name="id" placeholder="forge_1_12_2_hbm" pattern="[a-z0-9][a-z0-9_-]{0,63}" maxlength="64" title="Только строчные латинские буквы, цифры, _ и -" required /></label>
+          <label>Название <input name="display_name" placeholder="Forge 1.12.2 HBM" required /></label>
+          <label>Архив .zip <input name="archive_file" type="file" accept=".zip" required /></label>
+          <label>Jar внутри архива <input name="jar_file" placeholder="оставь пустым для автоопределения" /></label>
+          <label>Версия <input name="minecraft_version" placeholder="1.12.2" /></label>
+          <label>Тип <input name="server_type" value="forge" /></label>
+          <label>Java <select name="java_path" data-java-select></select></label>
+          <label>Xms MB <input name="xms_mb" type="number" min="64" value="2048" /></label>
+          <label>Xmx MB <input name="xmx_mb" type="number" min="64" value="4096" /></label>
+          <label class="checkbox-row"><input name="eula_accept" type="checkbox" /> EULA accepted</label>
+          <button class="btn primary" type="submit">Импортировать</button>
+          <button class="btn" type="button" data-close-modal="import-zip-modal">Отмена</button>
+          <div class="upload-progress" data-upload-progress hidden>
+            <div class="upload-progress-header">
+              <span data-upload-status>Загрузка...</span>
+              <strong data-upload-percent>0%</strong>
+            </div>
+            <progress value="0" max="100"></progress>
+            <span class="server-meta" data-upload-size></span>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div id="server-settings-modal" class="modal-backdrop" hidden>
+      <section class="modal server-form-modal" role="dialog" aria-modal="true" aria-labelledby="server-settings-title">
+        <header class="modal-header">
+          <div>
+            <p class="eyebrow">Настройки сервера</p>
+            <h2 id="server-settings-title">Сервер</h2>
+          </div>
+          <button class="btn small" type="button" data-close-modal="server-settings-modal">Закрыть</button>
+        </header>
+        <form id="server-settings-form" class="form-grid modal-form">
+          <label>ID <input name="id" disabled /></label>
+          <label>Название <input name="display_name" required /></label>
+          <label>Файл ядра <input name="jar_file" disabled /></label>
+          <label>Версия <input name="minecraft_version" /></label>
+          <label>Тип <input name="server_type" placeholder="vanilla / forge / paper" /></label>
+          <label>Java <select name="java_path" data-java-select></select></label>
+          <label>Xms MB <input name="xms_mb" type="number" min="64" required /></label>
+          <label>Xmx MB <input name="xmx_mb" type="number" min="64" required /></label>
+          <label class="checkbox-row"><input name="eula_accept" type="checkbox" /> EULA accepted</label>
+          <button class="btn primary" type="submit">Сохранить</button>
+          <button class="btn" type="button" data-close-modal="server-settings-modal">Отмена</button>
+        </form>
+      </section>
     </div>
 
     <div id="file-editor-modal" class="modal-backdrop" hidden>

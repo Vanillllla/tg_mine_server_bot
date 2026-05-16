@@ -536,6 +536,19 @@ h2 {
   gap: 8px;
 }
 
+.add-server-box {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.add-server-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .invite-link-row {
   align-items: stretch;
 }
@@ -872,6 +885,14 @@ h2 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+}
+
+.modal-form {
+  padding: 14px;
+}
+
+.server-form-modal {
+  width: min(920px, 100%);
 }
 
 .upload-progress {

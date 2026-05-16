@@ -169,15 +169,29 @@ class MinecraftServerManager:
             *server.server_args,
         ]
 
-    @staticmethod
-    def _validate_launch(server: ServerInstance) -> None:
+    @classmethod
+    def _validate_launch(cls, server: ServerInstance) -> None:
         server_dir = Path(server.server_dir)
         if not server_dir.is_dir():
             raise FileNotFoundError(f"server_dir_not_found: {server_dir}")
         if not server.jar_path.is_file():
             raise FileNotFoundError(f"jar_file_not_found: {server.jar_path}")
-        if not server.eula_accept:
+        if not cls._eula_file_is_accepted(server_dir / "eula.txt"):
             raise ValueError("eula_must_be_accepted_before_start")
+
+    @staticmethod
+    def _eula_file_is_accepted(path: Path) -> bool:
+        if not path.is_file():
+            return False
+        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+            normalized = line.strip().lower()
+            if not normalized or normalized.startswith("#"):
+                continue
+            if normalized == "eula=true":
+                return True
+            if normalized.startswith("eula="):
+                return False
+        return False
 
     async def _read_stream(self, stream_name: str, server_id: str) -> None:
         if self.process is None:
