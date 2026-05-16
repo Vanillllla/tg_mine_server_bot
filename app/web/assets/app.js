@@ -1372,6 +1372,16 @@ function bindEvents() {
     });
     await loadFiles();
   });
+  bindIfExists("#upload-files-btn", "click", () => {
+    const input = $("#upload-input");
+    if (!input) return toast("Поле загрузки файлов не найдено. Обновите страницу без кеша.");
+    input.click();
+  });
+  bindIfExists("#upload-folder-btn", "click", () => {
+    const input = $("#folder-upload-input");
+    if (!input) return toast("Поле загрузки папки не найдено. Обновите страницу без кеша.");
+    input.click();
+  });
   bindIfExists("#upload-input", "change", async (event) => {
     try {
       await uploadSelectedFiles(event.target.files);

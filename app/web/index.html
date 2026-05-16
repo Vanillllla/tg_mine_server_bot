@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Minecraft Web Panel</title>
-    <link rel="stylesheet" href="/assets/styles.css?v=server-ui-6" />
+    <link rel="stylesheet" href="/assets/styles.css?v=server-ui-7" />
   </head>
   <body>
     <section id="auth-screen" class="auth-screen">
@@ -250,8 +250,10 @@
                 <button id="files-refresh-btn" class="btn small" type="button" title="Обновить">↻</button>
                 <button id="files-up-btn" class="btn small" type="button" title="Вверх">↑</button>
                 <button id="client-mods-folder-btn" class="btn small" type="button">Client mods</button>
-                <label class="btn small file-button">Upload files<input id="upload-input" type="file" multiple hidden /></label>
-                <label class="btn small file-button">Upload folder<input id="folder-upload-input" type="file" webkitdirectory directory multiple hidden /></label>
+                <button id="upload-files-btn" class="btn small" type="button">Upload files</button>
+                <button id="upload-folder-btn" class="btn small" type="button">Upload folder</button>
+                <input id="upload-input" class="file-input-hidden" type="file" multiple tabindex="-1" />
+                <input id="folder-upload-input" class="file-input-hidden" type="file" webkitdirectory directory multiple tabindex="-1" />
               </div>
             </div>
 
@@ -511,7 +513,7 @@
     </div>
 
     <div id="toast" class="toast" role="status"></div>
-    <script src="/assets/app.js?v=server-ui-6" type="module"></script>
+    <script src="/assets/app.js?v=server-ui-7" type="module"></script>
     <script src="/assets/updater.js?v=updater-1" type="module"></script>
   </body>
 </html>

@@ -18,6 +18,8 @@ def _active_server(request: Request):
 def _handle_file_error(exc: Exception) -> HTTPException:
     if isinstance(exc, HTTPException):
         return exc
+    if isinstance(exc, PermissionError):
+        return HTTPException(status_code=403, detail=f"file_permission_denied: {exc}")
     if isinstance(exc, FileNotFoundError):
         return HTTPException(status_code=404, detail=str(exc))
     if isinstance(exc, NotADirectoryError):
@@ -26,6 +28,8 @@ def _handle_file_error(exc: Exception) -> HTTPException:
         return HTTPException(status_code=409, detail="path_already_exists")
     if isinstance(exc, ValueError):
         return HTTPException(status_code=400, detail=str(exc))
+    if isinstance(exc, OSError):
+        return HTTPException(status_code=500, detail=f"file_system_error: {exc}")
     return HTTPException(status_code=500, detail="file_manager_error")
 
 
