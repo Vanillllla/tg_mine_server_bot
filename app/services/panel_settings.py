@@ -3,7 +3,13 @@ from typing import Any
 
 from app.core.json_store import read_json, write_json_atomic
 from app.core.settings import AppSettings, DEFAULT_PANEL
-from app.models.settings import EmptyShutdownSettings, JavaRuntime, PublicPanelSettings, UpsertJavaRuntimeRequest
+from app.models.settings import (
+    EmptyShutdownSettings,
+    JavaRuntime,
+    PublicPanelSettings,
+    TelegramSettings,
+    UpsertJavaRuntimeRequest,
+)
 
 
 BUILTIN_JAVA_RUNTIMES = [
@@ -55,6 +61,28 @@ class PanelSettingsService:
         server["shutdown_if_empty_minutes"] = payload.shutdown_if_empty_minutes
         self._write_panel(panel)
         return self.empty_shutdown_settings()
+
+    def telegram_settings(self) -> TelegramSettings:
+        panel = self._read_panel()
+        changed = self._ensure_telegram_defaults(panel)
+        if changed:
+            self._write_panel(panel)
+        telegram = panel["telegram"]
+        return TelegramSettings(
+            autostart=bool(telegram.get("autostart", False)),
+            bot_token=str(telegram.get("bot_token", "") or ""),
+            admin_ids=[int(admin_id) for admin_id in telegram.get("admin_ids", [])],
+        )
+
+    def update_telegram_settings(self, payload: TelegramSettings) -> TelegramSettings:
+        panel = self._read_panel()
+        self._ensure_telegram_defaults(panel)
+        telegram = panel.setdefault("telegram", {})
+        telegram["autostart"] = payload.autostart
+        telegram["bot_token"] = payload.bot_token
+        telegram["admin_ids"] = payload.admin_ids
+        self._write_panel(panel)
+        return self.telegram_settings()
 
     def list_java_runtimes(self) -> list[JavaRuntime]:
         panel = self._read_panel()
@@ -163,5 +191,16 @@ class PanelSettingsService:
         for key in ("shutdown_if_empty_enabled", "shutdown_if_empty_minutes"):
             if key not in server:
                 server[key] = defaults[key]
+                changed = True
+        return changed
+
+    @staticmethod
+    def _ensure_telegram_defaults(panel: dict[str, Any]) -> bool:
+        telegram = panel.setdefault("telegram", {})
+        defaults = DEFAULT_PANEL["telegram"]
+        changed = False
+        for key in ("autostart", "token_secret_id", "bot_token", "admin_ids"):
+            if key not in telegram:
+                telegram[key] = defaults[key]
                 changed = True
         return changed

@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from app.api.deps import get_panel_settings_service, require_admin
+from app.api.deps import get_panel_settings_service, get_telegram_bot_service, require_admin
 from app.models.auth import AuthUser
 from app.models.settings import (
     EmptyShutdownSettings,
     JavaRuntime,
     PublicPanelSettings,
     SetDefaultJavaRuntimeRequest,
+    TelegramSettings,
+    TelegramSettingsResponse,
     UpsertJavaRuntimeRequest,
 )
 
@@ -33,6 +35,38 @@ async def update_empty_shutdown_settings(
     current_user: AuthUser = Depends(require_admin),
 ) -> EmptyShutdownSettings:
     return get_panel_settings_service(request).update_empty_shutdown_settings(payload)
+
+
+def _telegram_settings_response(request: Request) -> TelegramSettingsResponse:
+    settings = get_panel_settings_service(request).telegram_settings()
+    status = get_telegram_bot_service(request).status()
+    return TelegramSettingsResponse(
+        **settings.model_dump(),
+        running=bool(status["running"]),
+        last_error=str(status["last_error"]),
+    )
+
+
+@router.get("/telegram", response_model=TelegramSettingsResponse)
+async def get_telegram_settings(
+    request: Request,
+    current_user: AuthUser = Depends(require_admin),
+) -> TelegramSettingsResponse:
+    return _telegram_settings_response(request)
+
+
+@router.put("/telegram", response_model=TelegramSettingsResponse)
+async def update_telegram_settings(
+    request: Request,
+    payload: TelegramSettings,
+    current_user: AuthUser = Depends(require_admin),
+) -> TelegramSettingsResponse:
+    get_panel_settings_service(request).update_telegram_settings(payload)
+    try:
+        await get_telegram_bot_service(request).apply_settings(raise_errors=True)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return _telegram_settings_response(request)
 
 
 @router.get("/java-runtimes", response_model=list[JavaRuntime])

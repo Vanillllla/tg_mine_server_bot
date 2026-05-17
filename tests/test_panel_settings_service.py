@@ -2,7 +2,7 @@ from pathlib import Path
 
 from app.core.json_store import read_json, write_json_atomic
 from app.core.settings import AppSettings
-from app.models.settings import EmptyShutdownSettings
+from app.models.settings import EmptyShutdownSettings, TelegramSettings
 from app.services.panel_settings import PanelSettingsService
 
 
@@ -50,3 +50,23 @@ def test_empty_shutdown_settings_have_defaults_and_can_be_updated(tmp_path: Path
     assert defaults.shutdown_if_empty_minutes == 5
     assert updated.enabled is True
     assert updated.shutdown_if_empty_minutes == 12
+
+
+def test_telegram_settings_have_defaults_and_can_be_updated(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+
+    defaults = service.telegram_settings()
+    updated = service.update_telegram_settings(
+        TelegramSettings(
+            autostart=True,
+            bot_token="123456789:abcdefghijklmnopqrst",
+            admin_ids=[1007806948, 1007806948, 123456789],
+        )
+    )
+
+    assert defaults.autostart is False
+    assert defaults.bot_token == ""
+    assert defaults.admin_ids == []
+    assert updated.autostart is True
+    assert updated.bot_token == "123456789:abcdefghijklmnopqrst"
+    assert updated.admin_ids == [1007806948, 123456789]

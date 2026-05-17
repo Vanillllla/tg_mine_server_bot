@@ -14,6 +14,7 @@ from app.services.minecraft_manager import MinecraftServerManager
 from app.services.panel_settings import PanelSettingsService
 from app.services.server_properties import ServerPropertiesService
 from app.services.server_instances import ServerInstanceService
+from app.services.telegram_bot import TelegramBotService
 
 
 @asynccontextmanager
@@ -33,7 +34,14 @@ async def lifespan(app: FastAPI):
     app.state.file_manager = FileManagerService()
     app.state.panel_settings_service = PanelSettingsService(settings)
     app.state.auth_service = AuthService(settings)
+    app.state.telegram_bot_service = TelegramBotService(
+        app.state.panel_settings_service,
+        manager,
+        log_buffer,
+    )
+    await app.state.telegram_bot_service.apply_settings()
     yield
+    await app.state.telegram_bot_service.stop()
     await manager.shutdown()
 
 

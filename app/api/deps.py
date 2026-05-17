@@ -11,6 +11,7 @@ from app.services.minecraft_manager import MinecraftServerManager
 from app.services.panel_settings import PanelSettingsService
 from app.services.server_properties import ServerPropertiesService
 from app.services.server_instances import ServerInstanceService
+from app.services.telegram_bot import TelegramBotService
 
 
 def get_settings_from_request(request: Request) -> AppSettings:
@@ -43,6 +44,10 @@ def get_panel_settings_service(request: Request) -> PanelSettingsService:
 
 def get_auth_service(request: Request) -> AuthService:
     return cast(AuthService, request.app.state.auth_service)
+
+
+def get_telegram_bot_service(request: Request) -> TelegramBotService:
+    return cast(TelegramBotService, request.app.state.telegram_bot_service)
 
 
 def get_current_user(request: Request) -> AuthUser:

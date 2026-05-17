@@ -20,7 +20,12 @@ DEFAULT_PANEL = {
         "shutdown_if_empty_enabled": False,
         "shutdown_if_empty_minutes": 5,
     },
-    "telegram": {"autostart": False, "token_secret_id": "telegram_bot_token"},
+    "telegram": {
+        "autostart": False,
+        "token_secret_id": "telegram_bot_token",
+        "bot_token": "",
+        "admin_ids": [],
+    },
     "java": {"default_runtime_id": "", "runtimes": []},
 }
 

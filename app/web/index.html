@@ -325,10 +325,21 @@
         </section>
 
         <section id="view-telegram" class="view">
-          <section class="panel placeholder">
-            <p class="eyebrow">Этап 7</p>
-            <h2>Telegram Bot</h2>
-            <p>Раздел подготовлен под управление aiogram-ботом через тот же backend API.</p>
+          <section class="panel" data-admin-only>
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">aiogram</p>
+                <h2>Telegram Bot</h2>
+              </div>
+              <span id="telegram-status" class="pill status-off">OFF</span>
+            </div>
+            <form id="telegram-settings-form" class="form-grid">
+              <label>Bot token <input name="bot_token" type="password" autocomplete="off" placeholder="123456789:AA..." /></label>
+              <label>Admin Telegram IDs <textarea name="admin_ids" rows="5" placeholder="1007806948&#10;123456789"></textarea></label>
+              <label class="checkbox-row"><input name="autostart" type="checkbox" /> Start bot with panel</label>
+              <button class="btn primary" type="submit">Save Telegram bot</button>
+            </form>
+            <p id="telegram-error" class="server-meta"></p>
           </section>
         </section>
 

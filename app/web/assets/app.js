@@ -15,6 +15,7 @@ const state = {
   selectedFile: "",
   javaRuntimes: [],
   invite: null,
+  telegramSettings: null,
 };
 
 const defaultPublicLinks = {
@@ -554,6 +555,50 @@ function renderInviteSettings() {
   $("#copy-invite-btn").disabled = !invite.active;
 }
 
+async function loadTelegramSettings() {
+  state.telegramSettings = await api("/api/settings/telegram");
+  renderTelegramSettings();
+}
+
+function renderTelegramSettings() {
+  const settings = state.telegramSettings || { autostart: false, bot_token: "", admin_ids: [], running: false };
+  const form = $("#telegram-settings-form");
+  if (!form) return;
+  form.elements.bot_token.value = settings.bot_token || "";
+  form.elements.admin_ids.value = (settings.admin_ids || []).join("\n");
+  form.elements.autostart.checked = Boolean(settings.autostart);
+  setStatusPill($("#telegram-status"), settings.running ? "RUNNING" : "OFF");
+  $("#telegram-status").textContent = settings.running ? "RUNNING" : "OFF";
+  $("#telegram-error").textContent = settings.last_error ? `Last error: ${settings.last_error}` : "";
+}
+
+function parseTelegramAdminIds(value) {
+  return String(value || "")
+    .split(/[\s,;]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => {
+      if (!/^\d+$/.test(item)) throw new Error(`Invalid Telegram ID: ${item}`);
+      return Number(item);
+    });
+}
+
+async function saveTelegramSettings(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const payload = {
+    autostart: form.elements.autostart.checked,
+    bot_token: String(form.elements.bot_token.value || "").trim(),
+    admin_ids: parseTelegramAdminIds(form.elements.admin_ids.value),
+  };
+  state.telegramSettings = await api("/api/settings/telegram", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  renderTelegramSettings();
+  toast("Telegram bot settings saved");
+}
+
 function formatLog(item) {
   const time = item.timestamp ? new Date(item.timestamp).toLocaleTimeString() : "";
   const stream = item.stream ? `[${item.stream}]` : "";
@@ -1084,6 +1129,7 @@ function switchView(view) {
   if (view === "console") connectConsole();
   if (view === "properties") loadProperties().catch((error) => toast(error.message));
   if (view === "files") loadFiles().catch((error) => toast(error.message));
+  if (view === "telegram") loadTelegramSettings().catch((error) => toast(error.message));
 }
 
 function escapeHtml(value) {
@@ -1111,6 +1157,7 @@ function normalizeServerForm(form, formNode, defaultType) {
 function bindEvents() {
   bindValidationToast("#create-server-form");
   bindValidationToast("#import-server-form");
+  bindValidationToast("#telegram-settings-form");
 
   $("#login-form").addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -1353,6 +1400,10 @@ function bindEvents() {
     if (!link) return;
     await navigator.clipboard.writeText(link);
     toast("Ссылка скопирована");
+  });
+
+  bindIfExists("#telegram-settings-form", "submit", (event) => {
+    saveTelegramSettings(event).catch((error) => toast(error.message));
   });
 
   $("#servers-list").addEventListener("click", async (event) => {
