@@ -19,6 +19,8 @@ from app.services.server_instances import ServerInstanceService
 
 PLAYER_JOINED_RE = re.compile(r":\s*(?P<name>[A-Za-z0-9_]{1,16}) joined the game\b")
 PLAYER_LEFT_RE = re.compile(r":\s*(?P<name>[A-Za-z0-9_]{1,16}) left the game\b")
+TPS_RE = re.compile(r"\bTPS(?: from last [^:]+)?:\s*\*?(?P<tps>\d+(?:\.\d+)?)", re.IGNORECASE)
+MINECRAFT_COLOR_RE = re.compile(r"§[0-9A-FK-ORa-fk-or]")
 
 
 class MinecraftServerManager:
@@ -39,9 +41,11 @@ class MinecraftServerManager:
         self._stderr_task: asyncio.Task | None = None
         self._monitor_task: asyncio.Task | None = None
         self._empty_shutdown_task: asyncio.Task | None = None
+        self._tps_task: asyncio.Task | None = None
         self._lock = asyncio.Lock()
         self._players_online: set[str] = set()
         self._last_empty_at: float | None = None
+        self._last_tps: float | None = None
 
     def is_running(self) -> bool:
         return self.process is not None and self.process.poll() is None
@@ -63,6 +67,7 @@ class MinecraftServerManager:
             self.exit_code = None
             self._players_online = set()
             self._last_empty_at = time.time()
+            self._last_tps = None
 
             args = self._build_launch_args(server)
             try:
@@ -88,6 +93,7 @@ class MinecraftServerManager:
             self._stderr_task = asyncio.create_task(self._read_stream("stderr", server.id))
             self._monitor_task = asyncio.create_task(self._monitor_startup(server))
             self._empty_shutdown_task = asyncio.create_task(self._monitor_empty_shutdown(server.id))
+            self._tps_task = asyncio.create_task(self._monitor_tps(server.id))
 
     async def stop(self) -> None:
         async with self._lock:
@@ -130,13 +136,17 @@ class MinecraftServerManager:
         await self._finalize_process()
 
     async def send_stdin_command(self, command: str) -> None:
+        await self._write_stdin_command(command, log=True)
+
+    async def _write_stdin_command(self, command: str, log: bool) -> None:
         if not self.is_running() or self.process is None or self.process.stdin is None:
             raise RuntimeError("server_not_running")
         line = command.strip()
         if not line:
             raise RuntimeError("empty_command")
         server_id = self.current_server_id or "active"
-        await self.log_buffer.append("stdin", server_id, f"> {line}")
+        if log:
+            await self.log_buffer.append("stdin", server_id, f"> {line}")
         self.process.stdin.write(line + "\n")
         self.process.stdin.flush()
 
@@ -164,7 +174,8 @@ class MinecraftServerManager:
     def get_metrics(self) -> dict[str, Any]:
         system = self._system_metrics()
         process = self._process_metrics()
-        return {"system": system, "process": process}
+        minecraft = {"tps": self._last_tps if self.is_running() else None}
+        return {"system": system, "process": process, "minecraft": minecraft}
 
     async def shutdown(self) -> None:
         if self.process and self.process.poll() is None:
@@ -219,8 +230,20 @@ class MinecraftServerManager:
             await self.log_buffer.append(stream_name, server_id, line)
             if stream_name == "stdout":
                 self._update_player_presence(line)
+                self._update_tps(line)
             if self.status == ServerStatus.STARTING and "Done (" in line and "For help" in line:
                 self.status = ServerStatus.RUNNING
+
+    async def _monitor_tps(self, server_id: str) -> None:
+        while self.is_running() and self.current_server_id == server_id:
+            if self.status == ServerStatus.RUNNING:
+                try:
+                    await self._write_stdin_command("tps", log=False)
+                except RuntimeError:
+                    pass
+                await asyncio.sleep(60)
+                continue
+            await asyncio.sleep(5)
 
     async def _monitor_empty_shutdown(self, server_id: str) -> None:
         while self.is_running() and self.current_server_id == server_id:
@@ -251,6 +274,19 @@ class MinecraftServerManager:
         self._players_online.discard(name)
         if not self._players_online:
             self._last_empty_at = time.time()
+
+    def _update_tps(self, line: str) -> None:
+        tps = self._tps_from_log_line(line)
+        if tps is not None:
+            self._last_tps = tps
+
+    @staticmethod
+    def _tps_from_log_line(line: str) -> float | None:
+        normalized = MINECRAFT_COLOR_RE.sub("", line)
+        match = TPS_RE.search(normalized)
+        if not match:
+            return None
+        return round(min(float(match.group("tps")), 20.0), 2)
 
     @staticmethod
     def _player_event_from_log_line(line: str) -> tuple[str, str] | None:
@@ -296,6 +332,7 @@ class MinecraftServerManager:
             self.started_at = None
             self.current_server_id = None
             self.status = ServerStatus.OFF
+            self._last_tps = None
 
     def _sync_process_state(self) -> None:
         if self.process and self.process.poll() is not None:
@@ -303,6 +340,7 @@ class MinecraftServerManager:
             self.process = None
             self.started_at = None
             self.current_server_id = None
+            self._last_tps = None
             if self.status not in {ServerStatus.ERROR, ServerStatus.STOPPING}:
                 self.status = ServerStatus.OFF
 

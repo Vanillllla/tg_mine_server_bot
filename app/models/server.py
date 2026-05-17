@@ -81,7 +81,7 @@ class CreateServerInstanceRequest(BaseModel):
     minecraft_version: str = ""
     server_type: str = "custom"
     java_path: str = "java"
-    xms_mb: int = 256
+    xms_mb: int = 1024
     xmx_mb: int = 1024
     jvm_args: list[str] = Field(default_factory=lambda: ["-Dfile.encoding=UTF-8"])
     server_args: list[str] = Field(default_factory=lambda: ["nogui"])

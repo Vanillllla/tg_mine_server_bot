@@ -51,3 +51,10 @@ def test_player_events_are_parsed_from_minecraft_logs() -> None:
     assert MinecraftServerManager._player_event_from_log_line(joined) == ("join", "Steve")
     assert MinecraftServerManager._player_event_from_log_line(left) == ("leave", "Steve")
     assert MinecraftServerManager._player_event_from_log_line("Done (1.0s)!") is None
+
+
+def test_tps_is_parsed_from_server_logs() -> None:
+    line = "[12:00:00] [Server thread/INFO]: TPS from last 1m, 5m, 15m: *19.97, *20.0, *20.0"
+
+    assert MinecraftServerManager._tps_from_log_line(line) == 19.97
+    assert MinecraftServerManager._tps_from_log_line("Unknown command") is None

@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import app.services.server_instances as server_instances
 from app.core.json_store import write_json_atomic
 from app.core.settings import AppSettings
 from app.models.server import CreateServerInstanceRequest, UpdateServerInstanceRequest
@@ -65,6 +66,40 @@ def test_update_server_changes_memory_and_writes_eula(tmp_path: Path) -> None:
     assert updated.xmx_mb == 2048
     assert updated.eula_accept is True
     assert (Path(server.server_dir) / "eula.txt").read_text(encoding="utf-8") == "eula=true\n"
+
+
+def test_memory_limit_uses_floor_host_gb_minus_reserved(tmp_path: Path, monkeypatch) -> None:
+    class VirtualMemory:
+        total = int(11.7 * 1024**3)
+
+    class PsutilStub:
+        @staticmethod
+        def virtual_memory():
+            return VirtualMemory()
+
+    monkeypatch.setattr(server_instances, "psutil", PsutilStub)
+    settings = AppSettings(panel_home=tmp_path / "mc-panel")
+    settings.ensure_runtime_layout()
+    service = ServerInstanceService(settings)
+
+    server = service.create_server(
+        CreateServerInstanceRequest(
+            id="test_server",
+            display_name="Test Server",
+            jar_file="server.jar",
+            xms_mb=1024,
+            xmx_mb=10 * 1024,
+        )
+    )
+
+    assert server.xmx_mb == 10 * 1024
+
+    try:
+        service.update_server("test_server", UpdateServerInstanceRequest(xmx_mb=11 * 1024))
+    except ValueError as exc:
+        assert str(exc) == "memory_exceeds_host_limit: max_10_gb"
+    else:
+        raise AssertionError("memory above host limit was accepted")
 
 
 def test_get_server_uses_existing_eula_file(tmp_path: Path) -> None:

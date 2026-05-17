@@ -425,8 +425,8 @@
           <label>Версия <input name="minecraft_version" placeholder="1.20.1" /></label>
           <label>Тип <input name="server_type" placeholder="vanilla / forge / paper" /></label>
           <label>Java <select name="java_path" data-java-select></select></label>
-          <label>Xms MB <input name="xms_mb" type="number" min="64" value="512" /></label>
-          <label>Xmx MB <input name="xmx_mb" type="number" min="64" value="1024" /></label>
+          <label>Xms GB <input name="xms_gb" type="number" min="1" step="1" value="1" data-memory-gb /></label>
+          <label>Xmx GB <input name="xmx_gb" type="number" min="1" step="1" value="1" data-memory-gb /></label>
           <label class="checkbox-row"><input name="eula_accept" type="checkbox" /> EULA accepted</label>
           <button class="btn primary" type="submit">Создать</button>
           <button class="btn" type="button" data-close-modal="create-jar-modal">Отмена</button>
@@ -459,8 +459,8 @@
           <label>Версия <input name="minecraft_version" placeholder="1.12.2" /></label>
           <label>Тип <input name="server_type" value="forge" /></label>
           <label>Java <select name="java_path" data-java-select></select></label>
-          <label>Xms MB <input name="xms_mb" type="number" min="64" value="2048" /></label>
-          <label>Xmx MB <input name="xmx_mb" type="number" min="64" value="4096" /></label>
+          <label>Xms GB <input name="xms_gb" type="number" min="1" step="1" value="2" data-memory-gb /></label>
+          <label>Xmx GB <input name="xmx_gb" type="number" min="1" step="1" value="4" data-memory-gb /></label>
           <label class="checkbox-row"><input name="eula_accept" type="checkbox" /> EULA accepted</label>
           <button class="btn primary" type="submit">Импортировать</button>
           <button class="btn" type="button" data-close-modal="import-zip-modal">Отмена</button>
@@ -492,8 +492,8 @@
           <label>Версия <input name="minecraft_version" /></label>
           <label>Тип <input name="server_type" placeholder="vanilla / forge / paper" /></label>
           <label>Java <select name="java_path" data-java-select></select></label>
-          <label>Xms MB <input name="xms_mb" type="number" min="64" required /></label>
-          <label>Xmx MB <input name="xmx_mb" type="number" min="64" required /></label>
+          <label>Xms GB <input name="xms_gb" type="number" min="1" step="1" data-memory-gb required /></label>
+          <label>Xmx GB <input name="xmx_gb" type="number" min="1" step="1" data-memory-gb required /></label>
           <label class="checkbox-row"><input name="eula_accept" type="checkbox" /> EULA accepted</label>
           <button class="btn primary" type="submit">Сохранить</button>
           <button class="btn" type="button" data-close-modal="server-settings-modal">Отмена</button>

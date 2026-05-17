@@ -3,6 +3,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+try:
+    import psutil
+except ImportError:  # pragma: no cover - dependency is optional at import time
+    psutil = None
+
 from app.core.json_store import read_json, write_json_atomic
 from app.core.settings import AppSettings
 from app.models.server import (
@@ -10,6 +15,9 @@ from app.models.server import (
     ServerInstance,
     UpdateServerInstanceRequest,
 )
+
+MIN_MINECRAFT_MEMORY_GB = 1
+HOST_RESERVED_MEMORY_GB = 1
 
 
 class ServerInstanceService:
@@ -67,6 +75,7 @@ class ServerInstanceService:
             auto_restart=payload.auto_restart,
             startup_timeout=payload.startup_timeout,
         )
+        self._validate_memory_limit(instance)
         server_dir.mkdir(parents=True, exist_ok=True)
         self._write_eula_file(server_dir, payload.eula_accept)
         servers[payload.id] = self._instance_payload(instance)
@@ -94,6 +103,8 @@ class ServerInstanceService:
         data.update(changes)
         data["updated_at"] = datetime.now(timezone.utc)
         updated = ServerInstance(**data)
+        if {"xms_mb", "xmx_mb"} & changes.keys():
+            self._validate_memory_limit(updated)
 
         server_dir = Path(updated.server_dir).expanduser().resolve()
         self._ensure_server_dir_allowed(server_dir)
@@ -183,6 +194,26 @@ class ServerInstanceService:
             server_dir.relative_to(allowed_root)
         except ValueError as exc:
             raise ValueError("server_dir_must_be_inside_servers_root") from exc
+
+    @staticmethod
+    def max_minecraft_memory_gb() -> int | None:
+        if psutil is None:
+            return None
+        total_gb = int(psutil.virtual_memory().total // (1024**3))
+        return max(MIN_MINECRAFT_MEMORY_GB, total_gb - HOST_RESERVED_MEMORY_GB)
+
+    @classmethod
+    def _validate_memory_limit(cls, instance: ServerInstance) -> None:
+        min_mb = MIN_MINECRAFT_MEMORY_GB * 1024
+        if instance.xms_mb < min_mb or instance.xmx_mb < min_mb:
+            raise ValueError("memory_must_be_at_least_1_gb")
+
+        max_gb = cls.max_minecraft_memory_gb()
+        if max_gb is None:
+            return
+        max_mb = max_gb * 1024
+        if instance.xms_mb > max_mb or instance.xmx_mb > max_mb:
+            raise ValueError(f"memory_exceeds_host_limit: max_{max_gb}_gb")
 
     @staticmethod
     def _write_eula_file(server_dir: Path, accepted: bool) -> None:

@@ -357,6 +357,38 @@ function metric(label, value) {
   return `<div class="metric"><span>${label}</span><strong>${value ?? "-"}</strong></div>`;
 }
 
+function maxMinecraftMemoryGb() {
+  const totalMb = state.workData?.metrics?.system?.ram_total_mb;
+  if (!Number.isFinite(totalMb)) return null;
+  return Math.max(1, Math.floor(totalMb / 1024) - 1);
+}
+
+function applyMemoryInputLimits(root = document) {
+  const maxGb = maxMinecraftMemoryGb();
+  root.querySelectorAll("[data-memory-gb]").forEach((input) => {
+    input.min = "1";
+    input.step = "1";
+    if (maxGb) input.max = String(maxGb);
+    const value = Number(input.value || 1);
+    if (!Number.isFinite(value) || value < 1) input.value = "1";
+    if (maxGb && Number(input.value) > maxGb) input.value = String(maxGb);
+  });
+}
+
+function gbToMb(value, fallbackGb = 1) {
+  const gb = Number(value || fallbackGb);
+  return Math.max(1, Math.floor(Number.isFinite(gb) ? gb : fallbackGb)) * 1024;
+}
+
+function mbToGb(value, fallbackGb = 1) {
+  const mb = Number(value || fallbackGb * 1024);
+  return Math.max(1, Math.floor((Number.isFinite(mb) ? mb : fallbackGb * 1024) / 1024));
+}
+
+function formatTps(value) {
+  return Number.isFinite(value) ? value.toFixed(2) : "-";
+}
+
 function renderDashboard() {
   const active = state.workData?.active_server || state.activeServer;
   const status = state.workData?.status || "OFF";
@@ -374,14 +406,16 @@ function renderDashboard() {
   const metrics = state.workData?.metrics || {};
   const system = metrics.system || {};
   const proc = metrics.process || {};
+  const minecraft = metrics.minecraft || {};
   $("#metrics-grid").innerHTML = [
     metric("CPU VM", system.available ? `${system.cpu_percent}%` : "-"),
     metric("RAM VM", system.available ? `${system.ram_percent}%` : "-"),
     metric("RAM used", system.available ? `${system.ram_used_mb} MB` : "-"),
     metric("Java RAM", proc.is_running ? `${proc.ram_rss_mb} MB` : "-"),
     metric("Java CPU", proc.is_running ? `${proc.cpu_percent}%` : "-"),
-    metric("Process", proc.is_running ? "RUNNING" : "OFF"),
+    metric("TPS", formatTps(minecraft.tps)),
   ].join("");
+  applyMemoryInputLimits();
 
   const logs = state.workData?.recent_logs || [];
   $("#recent-logs").textContent = logs.map(formatLog).join("\n");
@@ -450,6 +484,7 @@ function showModal(id) {
     toast("Форма не найдена. Обновите страницу без кеша.");
     return;
   }
+  applyMemoryInputLimits(modal);
   modal.hidden = false;
   document.body.classList.add("modal-open");
 }
@@ -475,10 +510,11 @@ function openServerSettings(serverId) {
   form.elements.jar_file.value = server.jar_file || "";
   form.elements.minecraft_version.value = server.minecraft_version || "";
   form.elements.server_type.value = server.server_type || "";
-  form.elements.xms_mb.value = server.xms_mb || 512;
-  form.elements.xmx_mb.value = server.xmx_mb || 1024;
+  form.elements.xms_gb.value = mbToGb(server.xms_mb);
+  form.elements.xmx_gb.value = mbToGb(server.xmx_mb);
   form.elements.eula_accept.checked = Boolean(server.eula_accept);
   setJavaSelectValue(form.elements.java_path, server.java_path || defaultJavaPath());
+  applyMemoryInputLimits(form);
   showModal("server-settings-modal");
 }
 
@@ -1062,8 +1098,11 @@ function normalizeServerForm(form, formNode, defaultType) {
   const serverId = String(form.get("id") || "").trim().toLowerCase();
   form.set("id", serverId);
   if (formNode.elements.id) formNode.elements.id.value = serverId;
-  form.set("xms_mb", String(Number(form.get("xms_mb") || 512)));
-  form.set("xmx_mb", String(Number(form.get("xmx_mb") || 1024)));
+  applyMemoryInputLimits(formNode);
+  form.set("xms_mb", String(gbToMb(form.get("xms_gb"), 1)));
+  form.set("xmx_mb", String(gbToMb(form.get("xmx_gb"), 1)));
+  form.delete("xms_gb");
+  form.delete("xmx_gb");
   form.set("eula_accept", formNode.elements.eula_accept.checked ? "true" : "false");
   form.set("server_type", String(form.get("server_type") || defaultType));
   form.set("java_path", String(form.get("java_path") || defaultJavaPath()));
@@ -1213,8 +1252,8 @@ function bindEvents() {
       minecraft_version: String(formNode.elements.minecraft_version.value || "").trim(),
       server_type: String(formNode.elements.server_type.value || "").trim() || "custom",
       java_path: String(formNode.elements.java_path.value || "").trim() || defaultJavaPath(),
-      xms_mb: Number(formNode.elements.xms_mb.value || 512),
-      xmx_mb: Number(formNode.elements.xmx_mb.value || 1024),
+      xms_mb: gbToMb(formNode.elements.xms_gb.value, 1),
+      xmx_mb: gbToMb(formNode.elements.xmx_gb.value, 1),
       eula_accept: formNode.elements.eula_accept.checked,
     };
     try {
