@@ -1186,6 +1186,11 @@ function bindEvents() {
 
   $("#start-btn").addEventListener("click", () => serverCommand("start").catch((error) => toast(error.message)));
   $("#download-client-mods-btn").addEventListener("click", downloadClientModsArchive);
+  $("#copy-minecraft-domain-btn").addEventListener("click", async () => {
+    const domain = $("#minecraft-domain").value;
+    await navigator.clipboard.writeText(domain);
+    toast("Домен скопирован");
+  });
   $("#stop-btn").addEventListener("click", () => serverCommand("stop").catch((error) => toast(error.message)));
   $("#restart-btn").addEventListener("click", () => serverCommand("restart").catch((error) => toast(error.message)));
   $("#kill-btn").addEventListener("click", () => {
