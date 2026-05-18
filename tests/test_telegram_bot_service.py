@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 
 import pytest
@@ -124,3 +125,34 @@ def test_telegram_bot_notification_toggles_are_per_admin(tmp_path: Path) -> None
     assert service._toggle_notification(1001, "server_starts") is True
     assert service._notification_settings(1001)["server_starts"] is True
     assert service._admin_notification_ids("server_starts") == [1001]
+
+
+def test_telegram_bot_stop_waits_for_dispatcher_polling_shutdown(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+
+    async def scenario() -> None:
+        stopped = asyncio.Event()
+
+        class FakeDispatcher:
+            stop_called = False
+
+            async def stop_polling(self) -> None:
+                self.stop_called = True
+                stopped.set()
+
+        async def polling() -> None:
+            await stopped.wait()
+
+        dispatcher = FakeDispatcher()
+        task = asyncio.create_task(polling())
+        service.dispatcher = dispatcher
+        service._polling_task = task
+
+        await service.stop()
+
+        assert dispatcher.stop_called is True
+        assert task.done() is True
+        assert service._polling_task is None
+        assert service.dispatcher is None
+
+    asyncio.run(scenario())

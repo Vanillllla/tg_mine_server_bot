@@ -86,6 +86,8 @@ class TelegramBotService:
         self.bot: Bot | None = None
         self.dispatcher: Dispatcher | None = None
         self._polling_task: asyncio.Task | None = None
+        self._restart_lock = asyncio.Lock()
+        self._restart_requested = False
         self._admin_ids: set[int] = set()
         self._last_error = ""
 
@@ -126,22 +128,47 @@ class TelegramBotService:
         self._polling_task.add_done_callback(self._capture_polling_error)
 
     async def restart(self) -> None:
-        await self.stop()
-        await self.start()
+        async with self._restart_lock:
+            await self.stop()
+            await self.start()
 
     async def stop(self) -> None:
         task = self._polling_task
-        self._polling_task = None
-        if task and not task.done():
-            task.cancel()
+        dispatcher = self.dispatcher
+        bot = self.bot
+
+        if task and not task.done() and dispatcher is not None:
+            stop_polling = getattr(dispatcher, "stop_polling", None)
+            if stop_polling is not None:
+                try:
+                    await stop_polling()
+                except RuntimeError:
+                    pass
+
+        if task and not task.done() and task is not asyncio.current_task():
             try:
-                await task
+                await asyncio.wait_for(task, timeout=10)
+            except asyncio.TimeoutError:
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+                except Exception as exc:
+                    self._last_error = str(exc)
             except asyncio.CancelledError:
                 pass
-        if self.bot is not None:
-            await self.bot.session.close()
-        self.bot = None
-        self.dispatcher = None
+            except Exception as exc:
+                self._last_error = str(exc)
+
+        if self._polling_task is task:
+            self._polling_task = None
+        if bot is not None:
+            await bot.session.close()
+        if self.bot is bot:
+            self.bot = None
+        if self.dispatcher is dispatcher:
+            self.dispatcher = None
 
     def status(self) -> dict[str, Any]:
         settings = self.panel_settings_service.telegram_settings()
@@ -165,6 +192,14 @@ class TelegramBotService:
         await self._notify_server_start(role, "сайта", None)
 
     def _capture_polling_error(self, task: asyncio.Task) -> None:
+        if task.cancelled():
+            return
+        try:
+            task.result()
+        except Exception as exc:
+            self._last_error = str(exc)
+
+    def _capture_background_error(self, task: asyncio.Task) -> None:
         if task.cancelled():
             return
         try:
@@ -1312,13 +1347,31 @@ class TelegramBotService:
         if role != ROLE_ADMIN:
             await callback.answer("Только для администратора.", show_alert=True)
             return
-        if callback.message is not None:
-            await callback.message.answer("Перезапускаю бота...")
-        await callback.answer()
-        await self._notify_system_event(
-            f"Telegram-бот перезапускается. Администратор: {callback.from_user.id}"
-        )
-        asyncio.create_task(self.restart())
+        if self._restart_requested or self._restart_lock.locked():
+            await callback.answer("Перезапуск уже выполняется.", show_alert=True)
+            return
+        self._restart_requested = True
+        scheduled = False
+        try:
+            if callback.message is not None:
+                await callback.message.answer("Перезапускаю бота...")
+            await callback.answer()
+            await self._notify_system_event(
+                f"Telegram-бот перезапускается. Администратор: {callback.from_user.id}"
+            )
+            task = asyncio.create_task(self._restart_after_callback())
+            task.add_done_callback(self._capture_background_error)
+            scheduled = True
+        finally:
+            if not scheduled:
+                self._restart_requested = False
+
+    async def _restart_after_callback(self) -> None:
+        try:
+            await asyncio.sleep(0.2)
+            await self.restart()
+        finally:
+            self._restart_requested = False
 
     async def _toggle_notification_callback(
         self,
