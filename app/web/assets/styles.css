@@ -19,11 +19,17 @@
   box-sizing: border-box;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
+  width: 100%;
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
+  overflow-x: hidden;
 }
 
 [hidden] {
@@ -44,6 +50,14 @@ input,
 select,
 textarea {
   font: inherit;
+  min-width: 0;
+  max-width: 100%;
+}
+
+button {
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .auth-screen {
@@ -72,10 +86,12 @@ textarea {
 .app-shell {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
+  width: 100%;
   min-height: 100vh;
 }
 
 .sidebar {
+  min-width: 0;
   border-right: 1px solid var(--line);
   background: #151821;
   padding: 20px;
@@ -83,6 +99,8 @@ textarea {
 
 .brand {
   display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
   gap: 12px;
   align-items: center;
   margin-bottom: 28px;
@@ -287,6 +305,9 @@ textarea {
 .brand-copy strong,
 .brand-copy span {
   display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .brand-copy span {
@@ -353,6 +374,7 @@ textarea {
 
 .workspace {
   min-width: 0;
+  width: 100%;
   padding: 24px;
 }
 
@@ -360,8 +382,15 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 22px;
+}
+
+.topbar > div:first-child,
+.panel-heading > div,
+.file-manager-header > div {
+  min-width: 0;
 }
 
 h1,
@@ -372,10 +401,12 @@ p {
 
 h1 {
   font-size: 28px;
+  overflow-wrap: anywhere;
 }
 
 h2 {
   font-size: 18px;
+  overflow-wrap: anywhere;
 }
 
 .eyebrow {
@@ -393,7 +424,18 @@ h2 {
 .invite-link-row {
   display: flex;
   align-items: center;
+  min-width: 0;
+  flex-wrap: wrap;
   gap: 10px;
+}
+
+.topbar-status {
+  justify-content: flex-end;
+}
+
+#active-server-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .panel-heading {
@@ -417,6 +459,7 @@ h2 {
 }
 
 .panel {
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--panel);
@@ -464,6 +507,7 @@ h2 {
 }
 
 .btn {
+  max-width: 100%;
   min-height: 38px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -498,7 +542,7 @@ h2 {
 .summary-grid,
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
   gap: 10px;
   margin-top: 18px;
 }
@@ -518,7 +562,9 @@ h2 {
 }
 
 .metric strong {
+  display: block;
   font-size: 20px;
+  overflow-wrap: anywhere;
 }
 
 .log-window {
@@ -532,6 +578,7 @@ h2 {
   margin: 0;
   padding: 14px;
   white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .log-window.compact {
@@ -562,15 +609,29 @@ h2 {
   align-items: stretch;
 }
 
+.invite-link-row input {
+  flex: 1 1 220px;
+}
+
 .server-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto);
   gap: 12px;
   align-items: center;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: #171b22;
   padding: 12px;
+}
+
+.server-row > div {
+  min-width: 0;
+}
+
+.server-row strong,
+.server-meta,
+.file-meta {
+  overflow-wrap: anywhere;
 }
 
 .file-manager-panel {
@@ -583,6 +644,7 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
@@ -594,7 +656,7 @@ h2 {
   min-width: 0;
   display: flex;
   align-items: center;
-  flex: 1;
+  flex: 1 1 240px;
   gap: 6px;
   overflow-x: auto;
   white-space: nowrap;
@@ -619,6 +681,7 @@ h2 {
 }
 
 .search-field {
+  flex: 1 1 220px;
   width: min(280px, 100%);
 }
 
@@ -647,21 +710,27 @@ h2 {
 
 .file-browser-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 300px);
   gap: 14px;
   min-height: 420px;
 }
 
 .file-main-pane {
   min-width: 0;
+  overflow-x: auto;
 }
 
 .file-list-header,
 .file-row {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) 130px 110px 170px;
+  grid-template-columns: minmax(170px, 1fr) minmax(80px, 0.45fr) minmax(72px, 0.3fr) minmax(110px, 0.55fr);
   gap: 12px;
   align-items: center;
+}
+
+.file-list-header,
+.file-list:not(.grid-mode) .file-row {
+  min-width: 480px;
 }
 
 .file-list-header {
@@ -675,6 +744,7 @@ h2 {
 
 .file-list {
   display: grid;
+  min-width: 0;
   gap: 6px;
 }
 
@@ -803,7 +873,7 @@ h2 {
 }
 
 .file-list.grid-mode {
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(160px, 100%), 1fr));
   gap: 10px;
 }
 
@@ -885,6 +955,7 @@ h2 {
 
 .row-actions {
   display: flex;
+  min-width: 0;
   flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-end;
@@ -892,7 +963,7 @@ h2 {
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: 12px;
 }
 
@@ -1148,6 +1219,28 @@ textarea {
   transform: translateY(0);
 }
 
+@media (max-width: 1180px) {
+  .file-browser-layout,
+  .server-row {
+    grid-template-columns: 1fr;
+  }
+
+  .file-details-pane {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding-left: 0;
+    padding-top: 14px;
+  }
+
+  .server-row {
+    align-items: start;
+  }
+
+  .row-actions {
+    justify-content: flex-start;
+  }
+}
+
 @media (max-width: 980px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -1177,9 +1270,22 @@ textarea {
 }
 
 @media (max-width: 620px) {
+  .auth-screen {
+    padding: 14px;
+  }
+
+  .auth-card,
+  .panel {
+    padding: 14px;
+  }
+
   .workspace,
   .sidebar {
     padding: 14px;
+  }
+
+  h1 {
+    font-size: 24px;
   }
 
   .topbar,
@@ -1198,11 +1304,32 @@ textarea {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .btn {
+    width: 100%;
+  }
+
+  .pill {
+    justify-content: center;
+  }
+
   .summary-grid,
   .metric-grid,
   .server-row,
   .file-row {
     grid-template-columns: 1fr;
+  }
+
+  .console-form,
+  .file-list.grid-mode {
+    grid-template-columns: 1fr;
+  }
+
+  .file-list:not(.grid-mode) .file-row {
+    min-width: 0;
+  }
+
+  .file-name-cell {
+    width: 100%;
   }
 
   .search-field {
@@ -1220,4 +1347,24 @@ textarea {
     display: block;
   }
 
+  .modal-backdrop {
+    align-items: stretch;
+    padding: 10px;
+  }
+
+  .modal {
+    max-height: calc(100dvh - 20px);
+  }
+
+  .modal-header,
+  .modal-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .toast {
+    right: 14px;
+    bottom: 14px;
+    max-width: calc(100vw - 28px);
+  }
 }

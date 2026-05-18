@@ -4,5 +4,5 @@ MC_PANEL_ADMIN_PASSWORD=12341234
 systemctl cat mc-panel.service | grep -E 'MC_PANEL_ADMIN_USERNAME|MC_PANEL_ADMIN_PASSWORD'
 
 Запуск:
-$env:MC_PANEL_HOME = ".\runtime\mc-panel"    #это команда под винду
+$env:MC_PANEL_HOME = ".\runtime\mc-panel"
 .\.venv\Scripts\python -m uvicorn app.main:app --reload
