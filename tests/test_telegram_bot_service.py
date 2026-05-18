@@ -1,5 +1,6 @@
 import asyncio
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -14,13 +15,27 @@ from app.services.telegram_bot import (
     QUICK_SCOPE_USER_SHARED,
     ROLE_ADMIN,
     ROLE_USER,
+    SERVER_STATE_OFF_EMOJI,
+    SERVER_STATE_ON_EMOJI,
     TelegramBotService,
 )
 
 
+class DummyInstanceService:
+    def __init__(self) -> None:
+        self.active_server = None
+
+    def get_active_server(self):
+        return self.active_server
+
+
 class DummyManager:
+    def __init__(self) -> None:
+        self.status = "OFF"
+        self.instance_service = DummyInstanceService()
+
     def get_status(self) -> dict[str, str]:
-        return {"status": "OFF"}
+        return {"status": self.status}
 
     def get_work_data(self) -> dict:
         return {"status": "OFF", "active_server": None, "metrics": {}}
@@ -125,6 +140,37 @@ def test_telegram_bot_notification_toggles_are_per_admin(tmp_path: Path) -> None
     assert service._toggle_notification(1001, "server_starts") is True
     assert service._notification_settings(1001)["server_starts"] is True
     assert service._admin_notification_ids("server_starts") == [1001]
+
+
+def test_telegram_bot_admin_toggle_button_shows_server_state(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+
+    assert service._server_toggle_button_text().startswith(SERVER_STATE_OFF_EMOJI)
+
+    service.manager.status = "RUNNING"
+
+    assert service._server_toggle_button_text().startswith(SERVER_STATE_ON_EMOJI)
+
+
+def test_telegram_bot_reads_full_active_server_properties(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+    server_dir = tmp_path / "server"
+    server_dir.mkdir()
+    raw = "motd=Test server\nmax-players=20\n"
+    (server_dir / "server.properties").write_text(raw, encoding="utf-8")
+    service.manager.instance_service.active_server = SimpleNamespace(
+        id="main",
+        display_name="Main",
+        server_dir=str(server_dir),
+    )
+
+    title, content = service._read_active_server_properties()
+    chunks = service._telegram_text_chunks(raw * 100, limit=80)
+
+    assert title == "Main"
+    assert content == raw
+    assert "".join(chunks) == raw * 100
+    assert all(len(chunk) <= 80 for chunk in chunks)
 
 
 def test_telegram_bot_stop_waits_for_dispatcher_polling_shutdown(tmp_path: Path) -> None:

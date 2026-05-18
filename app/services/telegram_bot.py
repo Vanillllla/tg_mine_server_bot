@@ -28,6 +28,10 @@ ROLE_ADMIN = "admin"
 ROLE_USER = "user"
 QUICK_SCOPE_ADMIN_PERSONAL = "admin_personal"
 QUICK_SCOPE_USER_SHARED = "user_shared"
+SERVER_STATE_ON_EMOJI = "🟢"
+SERVER_STATE_OFF_EMOJI = "🔴"
+TELEGRAM_TEXT_CHUNK_LIMIT = 3600
+SERVER_PROPERTIES_FILENAME = "server.properties"
 
 BUTTON_BACK = "⬅️ Назад"
 BUTTON_MAIN_MENU = "Главное меню"
@@ -433,7 +437,7 @@ class TelegramBotService:
 
     def _main_keyboard(self, role: str) -> ReplyKeyboardMarkup:
         if role == ROLE_ADMIN:
-            toggle_button = BUTTON_ADMIN_STOP if self._server_is_online() else BUTTON_ADMIN_START
+            toggle_button = self._server_toggle_button_text()
             keyboard = [
                 [KeyboardButton(text=toggle_button)],
                 [KeyboardButton(text=BUTTON_QUICK_COMMANDS), KeyboardButton(text=BUTTON_ONLINE)],
@@ -456,6 +460,11 @@ class TelegramBotService:
             keyboard=[[KeyboardButton(text=BUTTON_BACK), KeyboardButton(text=BUTTON_CONSOLE_EXIT)]],
             resize_keyboard=True,
         )
+
+    def _server_toggle_button_text(self) -> str:
+        if self._server_is_online():
+            return f"{SERVER_STATE_ON_EMOJI} {BUTTON_ADMIN_STOP}"
+        return f"{SERVER_STATE_OFF_EMOJI} {BUTTON_ADMIN_START}"
 
     @staticmethod
     def _inline_keyboard(rows: list[list[tuple[str, str]]]) -> InlineKeyboardMarkup:
@@ -583,6 +592,7 @@ class TelegramBotService:
                             ("Настройка никнейма пользователя", "nav:admin.user_nickname_settings"),
                             ("Настройка уведомлений", "nav:admin.notifications"),
                         ],
+                        [("📄 server.properties", "action:server.properties.view")],
                         [("➡️ Ещё настройки", "nav:admin.settings.page_2")],
                         [(BUTTON_BACK, "nav:back")],
                     ]
@@ -718,9 +728,11 @@ class TelegramBotService:
             return
 
         role = profile["role"]
-        if text == BUTTON_ADMIN_START:
+        start_buttons = {BUTTON_ADMIN_START, f"{SERVER_STATE_OFF_EMOJI} {BUTTON_ADMIN_START}"}
+        stop_buttons = {BUTTON_ADMIN_STOP, f"{SERVER_STATE_ON_EMOJI} {BUTTON_ADMIN_STOP}"}
+        if text in start_buttons:
             await self._start_server(message, role)
-        elif text == BUTTON_ADMIN_STOP and role == ROLE_ADMIN:
+        elif text in stop_buttons and role == ROLE_ADMIN:
             await self._stop_server(message)
         elif (
             text in {BUTTON_ADMIN_STATUS, LEGACY_BUTTON_STATUS, LEGACY_BUTTON_METRICS}
@@ -785,6 +797,8 @@ class TelegramBotService:
             await self._confirm_restart(callback, role)
         elif data == "action:bot.restart":
             await self._restart_from_callback(callback, role)
+        elif data == "action:server.properties.view":
+            await self._show_server_properties(callback, role)
         elif data.startswith("toggle_notify:"):
             await self._toggle_notification_callback(
                 callback,
@@ -1385,6 +1399,74 @@ class TelegramBotService:
         self._toggle_notification(callback.from_user.id, key)
         text, markup = self._notifications_screen(callback.from_user.id)
         await self._send_response(callback, text, reply_markup=markup, edit_inline=True)
+
+    async def _show_server_properties(self, callback: CallbackQuery, role: str) -> None:
+        if role != ROLE_ADMIN:
+            await callback.answer("Только для администратора.", show_alert=True)
+            return
+        if callback.message is None:
+            await callback.answer()
+            return
+        try:
+            title, raw = self._read_active_server_properties()
+        except ValueError:
+            await callback.answer("Активный сервер не выбран.", show_alert=True)
+            return
+        except FileNotFoundError:
+            await callback.answer("server.properties не найден.", show_alert=True)
+            return
+
+        chunks = self._telegram_text_chunks(raw or "(файл пустой)")
+        await callback.answer()
+        for index, chunk in enumerate(chunks, start=1):
+            header = f"{SERVER_PROPERTIES_FILENAME} - {title}"
+            if len(chunks) > 1:
+                header = f"{header}\nЧасть {index}/{len(chunks)}"
+            reply_markup = None
+            if index == len(chunks):
+                reply_markup = self._inline_keyboard([[(BUTTON_BACK, "nav:admin.settings.page_1")]])
+            await callback.message.answer(f"{header}\n\n{chunk}", reply_markup=reply_markup)
+
+    def _read_active_server_properties(self) -> tuple[str, str]:
+        server = self.manager.instance_service.get_active_server()
+        if server is None:
+            raise ValueError("active_server_not_selected")
+        path = Path(server.server_dir) / SERVER_PROPERTIES_FILENAME
+        if not path.is_file():
+            raise FileNotFoundError(SERVER_PROPERTIES_FILENAME)
+        title = server.display_name or server.id
+        return title, path.read_text(encoding="utf-8", errors="replace")
+
+    @staticmethod
+    def _telegram_text_chunks(text: str, limit: int = TELEGRAM_TEXT_CHUNK_LIMIT) -> list[str]:
+        if len(text) <= limit:
+            return [text]
+
+        chunks: list[str] = []
+        current: list[str] = []
+        current_size = 0
+        for line in text.splitlines(keepends=True):
+            if len(line) > limit:
+                if current:
+                    chunks.append("".join(current))
+                    current = []
+                    current_size = 0
+                chunks.extend(
+                    line[start : start + limit]
+                    for start in range(0, len(line), limit)
+                )
+                continue
+            if current_size + len(line) > limit:
+                chunks.append("".join(current))
+                current = [line]
+                current_size = len(line)
+                continue
+            current.append(line)
+            current_size += len(line)
+
+        if current:
+            chunks.append("".join(current))
+        return chunks or [""]
 
     async def _start_server(self, message: Message, role: str) -> None:
         try:
