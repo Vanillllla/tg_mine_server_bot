@@ -173,6 +173,45 @@ def test_telegram_bot_reads_full_active_server_properties(tmp_path: Path) -> Non
     assert all(len(chunk) <= 80 for chunk in chunks)
 
 
+def test_telegram_bot_personal_quick_command_fsm_uses_callback_actor(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+
+    class FakeState:
+        def __init__(self) -> None:
+            self.data = {"current_screen": "common.quick_commands"}
+            self.state = None
+
+        async def get_data(self) -> dict:
+            return dict(self.data)
+
+        async def set_state(self, state) -> None:
+            self.state = state
+
+        async def update_data(self, **kwargs) -> None:
+            self.data.update(kwargs)
+
+    class FakeMessage:
+        from_user = SimpleNamespace(id=9999)
+
+        async def answer(self, text: str, reply_markup=None) -> None:
+            return None
+
+    state = FakeState()
+
+    asyncio.run(
+        service._start_fsm(
+            FakeMessage(),
+            state,
+            "quick_command.wait_name",
+            ROLE_ADMIN,
+            actor_id=1001,
+        )
+    )
+
+    assert state.data["quick_command_scope"] == QUICK_SCOPE_ADMIN_PERSONAL
+    assert state.data["quick_command_owner_id"] == 1001
+
+
 def test_telegram_bot_stop_waits_for_dispatcher_polling_shutdown(tmp_path: Path) -> None:
     service = make_service(tmp_path)
 

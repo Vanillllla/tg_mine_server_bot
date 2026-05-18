@@ -592,8 +592,10 @@ class TelegramBotService:
                             ("Настройка никнейма пользователя", "nav:admin.user_nickname_settings"),
                             ("Настройка уведомлений", "nav:admin.notifications"),
                         ],
-                        [("📄 server.properties", "action:server.properties.view")],
-                        [("➡️ Ещё настройки", "nav:admin.settings.page_2")],
+                        [
+                            ("📄 server.properties", "action:server.properties.view"),
+                            ("➡️ Ещё настройки", "nav:admin.settings.page_2"),
+                        ],
                         [(BUTTON_BACK, "nav:back")],
                     ]
                 ),
@@ -772,7 +774,13 @@ class TelegramBotService:
             await self._open_screen(callback, state, data.removeprefix("nav:"), role)
         elif data.startswith("fsm:"):
             if message is not None:
-                await self._start_fsm(message, state, data.removeprefix("fsm:"), role)
+                await self._start_fsm(
+                    message,
+                    state,
+                    data.removeprefix("fsm:"),
+                    role,
+                    actor_id=callback.from_user.id,
+                )
             await callback.answer()
         elif data.startswith("quick:"):
             await self._execute_quick_command(callback, data.removeprefix("quick:"), role)
@@ -908,6 +916,7 @@ class TelegramBotService:
         state: FSMContext,
         state_id: str,
         role: str,
+        actor_id: int | None = None,
     ) -> None:
         if role != ROLE_ADMIN and not state_id.startswith("nickname."):
             await message.answer("Действие доступно только администратору.")
@@ -962,12 +971,13 @@ class TelegramBotService:
 
         await state.set_state(prompt[1])
         data: dict[str, Any] = {"return_screen": await self._current_screen(state, role)}
-        if state_id == "quick_command.wait_name" and message.from_user is not None:
+        owner_id = actor_id or (message.from_user.id if message.from_user else None)
+        if state_id == "quick_command.wait_name" and owner_id is not None:
             data["quick_command_scope"] = QUICK_SCOPE_ADMIN_PERSONAL
-            data["quick_command_owner_id"] = message.from_user.id
+            data["quick_command_owner_id"] = owner_id
         if state_id == "quick_command.wait_public_name":
             data["quick_command_scope"] = QUICK_SCOPE_USER_SHARED
-            data["quick_command_owner_id"] = message.from_user.id if message.from_user else None
+            data["quick_command_owner_id"] = owner_id
         await state.update_data(**data)
         reply_markup = self._console_keyboard() if prompt[1] == TelegramBotStates.console else None
         await message.answer(prompt[0], reply_markup=reply_markup)
