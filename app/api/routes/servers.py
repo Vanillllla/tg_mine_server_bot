@@ -4,7 +4,13 @@ from zipfile import BadZipFile, ZipFile, ZipInfo
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from pydantic import ValidationError
 
-from app.api.deps import get_instance_service, get_log_buffer, get_manager, require_permission
+from app.api.deps import (
+    get_instance_service,
+    get_log_buffer,
+    get_manager,
+    get_telegram_bot_service,
+    require_permission,
+)
 from app.models.auth import AuthUser
 from app.models.server import (
     ConsoleCommandRequest,
@@ -346,6 +352,7 @@ async def start_active_server(
 ) -> dict:
     try:
         await get_manager(request).start()
+        await get_telegram_bot_service(request).notify_server_started_from_web(current_user)
         return get_manager(request).get_status()
     except RuntimeError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc

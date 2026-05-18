@@ -8,7 +8,13 @@ from app.core.settings import AppSettings
 from app.models.settings import TelegramSettings
 from app.services.log_buffer import LogBuffer
 from app.services.panel_settings import PanelSettingsService
-from app.services.telegram_bot import ROLE_ADMIN, ROLE_USER, TelegramBotService
+from app.services.telegram_bot import (
+    QUICK_SCOPE_ADMIN_PERSONAL,
+    QUICK_SCOPE_USER_SHARED,
+    ROLE_ADMIN,
+    ROLE_USER,
+    TelegramBotService,
+)
 
 
 class DummyManager:
@@ -51,15 +57,37 @@ def test_telegram_bot_roles_and_blocks_are_persisted(tmp_path: Path) -> None:
 def test_telegram_bot_quick_commands_are_persisted(tmp_path: Path) -> None:
     service = make_service(tmp_path)
 
-    first = service._save_quick_command("Say hi", "say hello")
-    second = service._save_quick_command("Say hi", "say hello again")
+    first = service._save_quick_command("Say hi", "say hello", owner_id=1001)
+    second = service._save_quick_command("Say hi", "say hello again", owner_id=1001)
     updated = service._update_quick_command(first["id"], "say updated")
 
     assert first["id"] == "say-hi"
+    assert first["scope"] == QUICK_SCOPE_ADMIN_PERSONAL
+    assert first["owner_id"] == 1001
     assert second["id"] == "say-hi-2"
     assert updated["command"] == "say updated"
     assert service._delete_quick_command(first["id"]) is True
     assert service._quick_command_by_id(first["id"]) is None
+
+
+def test_telegram_bot_quick_commands_are_split_by_audience(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+
+    admin_command = service._save_quick_command("Admin only", "say admin", owner_id=1001)
+    service._save_quick_command("Other admin", "say other", owner_id=1002)
+    user_command = service._save_quick_command(
+        "User command",
+        "kill {nick}",
+        owner_id=1001,
+        scope=QUICK_SCOPE_USER_SHARED,
+    )
+
+    assert service._quick_commands_for_role(ROLE_ADMIN, 1001) == [admin_command]
+    assert service._quick_commands_for_role(ROLE_USER, 3003) == [user_command]
+    assert service._can_use_quick_command(admin_command, ROLE_ADMIN, 1001) is True
+    assert service._can_use_quick_command(admin_command, ROLE_ADMIN, 1002) is False
+    assert service._can_use_quick_command(user_command, ROLE_USER, 3003) is True
+    assert service._can_use_quick_command(user_command, ROLE_ADMIN, 1001) is False
 
 
 def test_telegram_bot_nickname_validation(tmp_path: Path) -> None:
@@ -70,3 +98,29 @@ def test_telegram_bot_nickname_validation(tmp_path: Path) -> None:
     assert profile["minecraft_nickname"] == "Steve_123"
     with pytest.raises(ValueError):
         service._save_nickname(3003, "bad-name!")
+
+
+def test_telegram_bot_quick_command_substitutes_nickname(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+    command = service._save_quick_command(
+        "Kill self",
+        "kill {nick}",
+        owner_id=1001,
+        scope=QUICK_SCOPE_USER_SHARED,
+    )
+
+    with pytest.raises(ValueError, match="minecraft_nickname_required"):
+        service._command_text_for_user(command, 3003)
+
+    service._save_nickname(3003, "Steve_123")
+
+    assert service._command_text_for_user(command, 3003) == "kill Steve_123"
+
+
+def test_telegram_bot_notification_toggles_are_per_admin(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+
+    assert service._notification_settings(1001)["server_starts"] is False
+    assert service._toggle_notification(1001, "server_starts") is True
+    assert service._notification_settings(1001)["server_starts"] is True
+    assert service._admin_notification_ids("server_starts") == [1001]

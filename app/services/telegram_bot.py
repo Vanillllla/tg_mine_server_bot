@@ -1,8 +1,5 @@
 import asyncio
-import io
-import json
 import re
-import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -12,7 +9,6 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import (
-    BufferedInputFile,
     CallbackQuery,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -30,6 +26,8 @@ from app.services.panel_settings import PanelSettingsService
 
 ROLE_ADMIN = "admin"
 ROLE_USER = "user"
+QUICK_SCOPE_ADMIN_PERSONAL = "admin_personal"
+QUICK_SCOPE_USER_SHARED = "user_shared"
 
 BUTTON_BACK = "⬅️ Назад"
 BUTTON_MAIN_MENU = "Главное меню"
@@ -56,6 +54,7 @@ COMMAND_ID_RE = re.compile(r"[^a-z0-9_-]+")
 DEFAULT_BOT_DATA: dict[str, Any] = {
     "users": {},
     "quick_commands": [],
+    "notifications": {},
 }
 
 
@@ -69,6 +68,8 @@ class TelegramBotStates(StatesGroup):
     block_user = State()
     unblock_user = State()
     nickname = State()
+    user_nickname_identifier = State()
+    user_nickname_value = State()
     server_archive = State()
 
 
@@ -144,17 +145,24 @@ class TelegramBotService:
 
     def status(self) -> dict[str, Any]:
         settings = self.panel_settings_service.telegram_settings()
-        data_admin_ids = {
-            int(user_id)
-            for user_id, profile in self._read_bot_data().get("users", {}).items()
-            if profile.get("role") == ROLE_ADMIN
-        }
+        data_admin_ids: set[int] = set()
+        for user_id, profile in self._read_bot_data().get("users", {}).items():
+            if profile.get("role") != ROLE_ADMIN:
+                continue
+            try:
+                data_admin_ids.add(int(user_id))
+            except ValueError:
+                continue
         return {
             "running": self.is_running,
             "last_error": self._last_error,
             "configured": bool(settings.bot_token),
             "admin_count": len(set(settings.admin_ids) | data_admin_ids),
         }
+
+    async def notify_server_started_from_web(self, user: Any) -> None:
+        role = ROLE_ADMIN if getattr(user, "role", "") == ROLE_ADMIN else ROLE_USER
+        await self._notify_server_start(role, "сайта", None)
 
     def _capture_polling_error(self, task: asyncio.Task) -> None:
         if task.cancelled():
@@ -288,19 +296,52 @@ class TelegramBotService:
         commands = self._read_bot_data().setdefault("quick_commands", [])
         return [command for command in commands if isinstance(command, dict)]
 
+    def _quick_commands_for_role(self, role: str, user_id: int | None) -> list[dict[str, Any]]:
+        commands = self._quick_commands()
+        if role == ROLE_ADMIN:
+            return [
+                command
+                for command in commands
+                if command.get("scope", QUICK_SCOPE_ADMIN_PERSONAL) == QUICK_SCOPE_ADMIN_PERSONAL
+                and int(command.get("owner_id") or 0) == int(user_id or 0)
+            ]
+        return [
+            command
+            for command in commands
+            if command.get("scope", QUICK_SCOPE_ADMIN_PERSONAL) == QUICK_SCOPE_USER_SHARED
+        ]
+
+    def _user_shared_quick_commands(self) -> list[dict[str, Any]]:
+        return [
+            command
+            for command in self._quick_commands()
+            if command.get("scope", QUICK_SCOPE_ADMIN_PERSONAL) == QUICK_SCOPE_USER_SHARED
+        ]
+
     def _quick_command_by_id(self, command_id: str) -> dict[str, Any] | None:
         return next(
             (command for command in self._quick_commands() if command.get("id") == command_id),
             None,
         )
 
-    def _save_quick_command(self, title: str, command: str) -> dict[str, Any]:
+    def _save_quick_command(
+        self,
+        title: str,
+        command: str,
+        *,
+        owner_id: int | None = None,
+        scope: str = QUICK_SCOPE_ADMIN_PERSONAL,
+    ) -> dict[str, Any]:
         title = title.strip()
         command = command.strip()
         if not title:
             raise ValueError("quick_command_title_required")
         if not command:
             raise ValueError("quick_command_command_required")
+        if scope not in {QUICK_SCOPE_ADMIN_PERSONAL, QUICK_SCOPE_USER_SHARED}:
+            raise ValueError("quick_command_scope_invalid")
+        if scope == QUICK_SCOPE_ADMIN_PERSONAL and not owner_id:
+            raise ValueError("quick_command_owner_required")
 
         data = self._read_bot_data()
         commands = data.setdefault("quick_commands", [])
@@ -310,7 +351,9 @@ class TelegramBotService:
             "id": command_id,
             "title": title,
             "command": command,
-            "visible_for_roles": [ROLE_USER, ROLE_ADMIN],
+            "owner_id": owner_id,
+            "scope": scope,
+            "visible_for_roles": [ROLE_USER] if scope == QUICK_SCOPE_USER_SHARED else [ROLE_ADMIN],
             "require_server_online": True,
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
@@ -391,20 +434,105 @@ class TelegramBotService:
             ]
         )
 
-    def _quick_commands_keyboard(self, role: str) -> InlineKeyboardMarkup:
+    def _notification_settings(self, user_id: int | None) -> dict[str, bool]:
+        if not user_id:
+            return {"system_restarts": False, "server_starts": False}
+        notifications = self._read_bot_data().setdefault("notifications", {})
+        settings = notifications.get(str(user_id), {})
+        return {
+            "system_restarts": bool(settings.get("system_restarts", False)),
+            "server_starts": bool(settings.get("server_starts", False)),
+        }
+
+    def _toggle_notification(self, user_id: int, key: str) -> bool:
+        if key not in {"system_restarts", "server_starts"}:
+            raise KeyError(key)
+        data = self._read_bot_data()
+        notifications = data.setdefault("notifications", {})
+        settings = notifications.setdefault(str(user_id), {})
+        settings[key] = not bool(settings.get(key, False))
+        self._write_bot_data(data)
+        return bool(settings[key])
+
+    def _notifications_screen(self, user_id: int | None) -> tuple[str, InlineKeyboardMarkup]:
+        settings = self._notification_settings(user_id)
+        system_state = "ON" if settings["system_restarts"] else "OFF"
+        server_state = "ON" if settings["server_starts"] else "OFF"
+        return (
+            "Настройка уведомлений",
+            self._inline_keyboard(
+                [
+                    [
+                        (
+                            f"Перезапуск бота/сайта/системы: {system_state}",
+                            "toggle_notify:system_restarts",
+                        )
+                    ],
+                    [(f"Включение сервера: {server_state}", "toggle_notify:server_starts")],
+                    [(BUTTON_BACK, "nav:back")],
+                ]
+            ),
+        )
+
+    def _admin_notification_ids(self, key: str) -> list[int]:
+        data = self._read_bot_data()
+        users = data.get("users", {})
+        notifications = data.get("notifications", {})
+        result: list[int] = []
+        for user_id, settings in notifications.items():
+            try:
+                telegram_id = int(user_id)
+            except ValueError:
+                continue
+            if not settings.get(key):
+                continue
+            profile = users.get(user_id, {})
+            if telegram_id in self._admin_ids or profile.get("role") == ROLE_ADMIN:
+                result.append(telegram_id)
+        return result
+
+    async def _notify_admins(self, key: str, text: str) -> None:
+        if self.bot is None:
+            return
+        for user_id in self._admin_notification_ids(key):
+            try:
+                await self.bot.send_message(user_id, text)
+            except Exception as exc:
+                self._last_error = str(exc)
+
+    async def _notify_system_event(self, text: str) -> None:
+        await self._notify_admins("system_restarts", text)
+
+    async def _notify_server_start(self, role: str, source: str, actor_id: int | None) -> None:
+        actor = "админ" if role == ROLE_ADMIN else "простой пользователь"
+        actor_id_text = f" Telegram ID: {actor_id}" if actor_id else ""
+        await self._notify_admins(
+            "server_starts",
+            f"Сервер включён.\nИсточник: {actor} с {source}.{actor_id_text}",
+        )
+
+    def _quick_commands_keyboard(self, role: str, user_id: int | None) -> InlineKeyboardMarkup:
         rows = [
             [(str(command.get("title") or command.get("id")), f"quick:{command.get('id')}")]
-            for command in self._quick_commands()
-            if role in command.get("visible_for_roles", [ROLE_USER, ROLE_ADMIN])
+            for command in self._quick_commands_for_role(role, user_id)
         ]
         if role == ROLE_ADMIN:
-            rows.append([("➕ Добавить команду", "fsm:quick_command.wait_name")])
+            rows.append([("➕ Добавить команду себе", "fsm:quick_command.wait_name")])
+            rows.append([("⚙️ Команды пользователей", "nav:admin.quick_command_settings")])
         rows.append([(BUTTON_BACK, "nav:back")])
         return self._inline_keyboard(rows)
 
-    def _screen_payload(self, screen_id: str, role: str) -> tuple[str, InlineKeyboardMarkup]:
+    def _screen_payload(
+        self,
+        screen_id: str,
+        role: str,
+        user_id: int | None = None,
+    ) -> tuple[str, InlineKeyboardMarkup]:
         if screen_id == "common.quick_commands":
-            return "Быстрые команды\nВыберите команду:", self._quick_commands_keyboard(role)
+            return (
+                "Быстрые команды\nВыберите команду:",
+                self._quick_commands_keyboard(role, user_id),
+            )
         if screen_id == "common.help":
             return self._help_text(role), self._inline_keyboard([[(BUTTON_BACK, "nav:back")]])
         if screen_id == "admin.settings.page_1" and role == ROLE_ADMIN:
@@ -413,17 +541,14 @@ class TelegramBotService:
                 self._inline_keyboard(
                     [
                         [
-                            ("SFTP / файлы / порт", "nav:admin.files_settings"),
+                            ("⌨️ Консоль сервера", "fsm:admin.console_mode"),
                             ("Пользователи", "nav:admin.users"),
                         ],
                         [
-                            ("⌨️ Консоль сервера", "fsm:admin.console_mode"),
-                            ("⚡ Настройка быстрых команд", "nav:admin.quick_command_settings"),
+                            ("Настройка никнейма пользователя", "nav:admin.user_nickname_settings"),
+                            ("Настройка уведомлений", "nav:admin.notifications"),
                         ],
-                        [
-                            ("Web-описание", "nav:admin.web_description"),
-                            ("➡️ Ещё настройки", "nav:admin.settings.page_2"),
-                        ],
+                        [("➡️ Ещё настройки", "nav:admin.settings.page_2")],
                         [(BUTTON_BACK, "nav:back")],
                     ]
                 ),
@@ -462,29 +587,35 @@ class TelegramBotService:
                     ]
                 ),
             )
-        if screen_id == "admin.files_settings" and role == ROLE_ADMIN:
-            return (
-                "Файлы / запуск / SFTP",
-                self._inline_keyboard(
-                    [
-                        [("Загрузить архив сервера", "fsm:files.wait_server_archive")],
-                        [("Отправить zip-архив с командами", "action:files.send_commands_archive")],
-                        [(BUTTON_BACK, "nav:back")],
-                    ]
-                ),
-            )
         if screen_id == "admin.quick_command_settings" and role == ROLE_ADMIN:
             return (
-                "Настройка быстрых команд",
+                "Настройка быстрых команд пользователей",
                 self._inline_keyboard(
                     [
-                        [("➕ Добавить команду", "fsm:quick_command.wait_name")],
+                        [
+                            (
+                                "➕ Добавить команду пользователям",
+                                "fsm:quick_command.wait_public_name",
+                            )
+                        ],
                         [("✏️ Изменить команду", "menu:quick_edit")],
                         [("Удалить команду", "menu:quick_delete")],
                         [(BUTTON_BACK, "nav:back")],
                     ]
                 ),
             )
+        if screen_id == "admin.user_nickname_settings" and role == ROLE_ADMIN:
+            return (
+                "Настройка никнейма пользователя",
+                self._inline_keyboard(
+                    [
+                        [("✏️ Установить ник по Telegram ID", "fsm:users.wait_nickname_user_id")],
+                        [(BUTTON_BACK, "nav:back")],
+                    ]
+                ),
+            )
+        if screen_id == "admin.notifications" and role == ROLE_ADMIN:
+            return self._notifications_screen(user_id)
         if screen_id == "user.nickname_settings":
             return (
                 "Настройка никнейма\nВведите ваш никнейм в Minecraft.",
@@ -494,12 +625,6 @@ class TelegramBotService:
                         [(BUTTON_BACK, "nav:back")],
                     ]
                 ),
-            )
-        if screen_id == "admin.web_description" and role == ROLE_ADMIN:
-            return (
-                "Web-описание\n"
-                "В backend сейчас нет отдельного API для Telegram-редактирования web-описания.",
-                self._inline_keyboard([[(BUTTON_BACK, "nav:back")]]),
             )
         if screen_id == "admin.bot_panel_settings" and role == ROLE_ADMIN:
             return (
@@ -625,8 +750,12 @@ class TelegramBotService:
             await self._confirm_restart(callback, role)
         elif data == "action:bot.restart":
             await self._restart_from_callback(callback, role)
-        elif data == "action:files.send_commands_archive":
-            await self._send_commands_archive(callback, role)
+        elif data.startswith("toggle_notify:"):
+            await self._toggle_notification_callback(
+                callback,
+                data.removeprefix("toggle_notify:"),
+                role,
+            )
         else:
             await callback.answer("Действие не найдено.", show_alert=True)
 
@@ -665,7 +794,7 @@ class TelegramBotService:
             )
             return
 
-        text, markup = self._screen_payload(screen_id, role)
+        text, markup = self._screen_payload(screen_id, role, self._source_user_id(source))
         await self._send_response(source, text, reply_markup=markup, edit_inline=True)
 
     async def _go_back(self, callback: CallbackQuery, state: FSMContext, role: str) -> None:
@@ -692,9 +821,14 @@ class TelegramBotService:
                 reply_markup=self._main_keyboard(role),
             )
         else:
-            text, markup = self._screen_payload(screen_id, role)
+            text, markup = self._screen_payload(screen_id, role, callback.from_user.id)
             await self._send_response(callback, text, reply_markup=markup, edit_inline=True)
         await callback.answer()
+
+    @staticmethod
+    def _source_user_id(source: Message | CallbackQuery) -> int | None:
+        user = source.from_user
+        return int(user.id) if user is not None else None
 
     async def _send_response(
         self,
@@ -736,7 +870,11 @@ class TelegramBotService:
                 TelegramBotStates.console,
             ),
             "quick_command.wait_name": (
-                "Введите название быстрой команды.",
+                "Введите название личной быстрой команды.",
+                TelegramBotStates.quick_command_name,
+            ),
+            "quick_command.wait_public_name": (
+                "Введите название быстрой команды для простых пользователей.",
                 TelegramBotStates.quick_command_name,
             ),
             "users.wait_add_admin_id": (
@@ -757,6 +895,10 @@ class TelegramBotService:
                 TelegramBotStates.unblock_user,
             ),
             "nickname.wait_value": ("Введите ваш Minecraft-ник.", TelegramBotStates.nickname),
+            "users.wait_nickname_user_id": (
+                "Введите Telegram ID пользователя или @username.",
+                TelegramBotStates.user_nickname_identifier,
+            ),
         }
         if state_id == "files.wait_server_archive":
             await message.answer(
@@ -770,7 +912,14 @@ class TelegramBotService:
             return
 
         await state.set_state(prompt[1])
-        await state.update_data(return_screen=await self._current_screen(state, role))
+        data: dict[str, Any] = {"return_screen": await self._current_screen(state, role)}
+        if state_id == "quick_command.wait_name" and message.from_user is not None:
+            data["quick_command_scope"] = QUICK_SCOPE_ADMIN_PERSONAL
+            data["quick_command_owner_id"] = message.from_user.id
+        if state_id == "quick_command.wait_public_name":
+            data["quick_command_scope"] = QUICK_SCOPE_USER_SHARED
+            data["quick_command_owner_id"] = message.from_user.id if message.from_user else None
+        await state.update_data(**data)
         reply_markup = self._console_keyboard() if prompt[1] == TelegramBotStates.console else None
         await message.answer(prompt[0], reply_markup=reply_markup)
 
@@ -821,6 +970,12 @@ class TelegramBotService:
         if current_state == TelegramBotStates.nickname.state:
             await self._finish_nickname(message, state, text, role)
             return
+        if current_state == TelegramBotStates.user_nickname_identifier.state:
+            await self._handle_user_nickname_identifier(message, state, text)
+            return
+        if current_state == TelegramBotStates.user_nickname_value.state:
+            await self._finish_user_nickname(message, state, text, role)
+            return
         if current_state == TelegramBotStates.server_archive.state:
             await message.answer("Загрузка архива через Telegram пока не реализована.")
 
@@ -834,14 +989,24 @@ class TelegramBotService:
         data = await state.get_data()
         title = str(data.get("quick_command_title", ""))
         try:
-            self._save_quick_command(title, command_text)
+            self._save_quick_command(
+                title,
+                command_text,
+                owner_id=data.get("quick_command_owner_id"),
+                scope=str(data.get("quick_command_scope") or QUICK_SCOPE_ADMIN_PERSONAL),
+            )
         except ValueError as exc:
             await message.answer(f"Команда не сохранена: {exc}")
             return
         await state.clear()
-        await state.update_data(current_screen="common.quick_commands", nav_stack=[])
+        return_screen = (
+            "admin.quick_command_settings"
+            if data.get("quick_command_scope") == QUICK_SCOPE_USER_SHARED
+            else "common.quick_commands"
+        )
+        await state.update_data(current_screen=return_screen, nav_stack=[])
         await message.answer("Быстрая команда сохранена.")
-        await self._open_screen(message, state, "common.quick_commands", role)
+        await self._open_screen(message, state, return_screen, role)
 
     async def _finish_edit_quick_command(
         self,
@@ -935,6 +1100,44 @@ class TelegramBotService:
         await state.update_data(current_screen=f"{role}.main", nav_stack=[])
         await message.answer("Никнейм сохранён.", reply_markup=self._main_keyboard(role))
 
+    async def _handle_user_nickname_identifier(
+        self,
+        message: Message,
+        state: FSMContext,
+        identifier: str,
+    ) -> None:
+        user_id = self._resolve_user_identifier(identifier)
+        if user_id is None:
+            await message.answer(
+                "Пользователь не найден. Укажите Telegram ID или известный @username."
+            )
+            return
+        await state.update_data(target_nickname_user_id=user_id)
+        await state.set_state(TelegramBotStates.user_nickname_value)
+        await message.answer("Введите Minecraft-ник для этого пользователя.")
+
+    async def _finish_user_nickname(
+        self,
+        message: Message,
+        state: FSMContext,
+        nickname: str,
+        role: str,
+    ) -> None:
+        data = await state.get_data()
+        user_id = int(data.get("target_nickname_user_id") or 0)
+        if not user_id:
+            await message.answer("Пользователь для настройки ника не выбран.")
+            return
+        try:
+            self._save_nickname(user_id, nickname)
+        except ValueError:
+            await message.answer("Ник должен быть 3-16 символов: латиница, цифры или _.")
+            return
+        await state.clear()
+        await state.update_data(current_screen="admin.user_nickname_settings", nav_stack=[])
+        await message.answer("Никнейм пользователя сохранён.")
+        await self._open_screen(message, state, "admin.user_nickname_settings", role)
+
     def _resolve_user_identifier(self, identifier: str) -> int | None:
         normalized = identifier.strip()
         if USER_ID_RE.match(normalized):
@@ -952,6 +1155,31 @@ class TelegramBotService:
         data = await state.get_data()
         return str(data.get("current_screen") or f"{role}.main")
 
+    @staticmethod
+    def _can_use_quick_command(command: dict[str, Any], role: str, user_id: int) -> bool:
+        scope = command.get("scope", QUICK_SCOPE_ADMIN_PERSONAL)
+        if scope == QUICK_SCOPE_ADMIN_PERSONAL:
+            return role == ROLE_ADMIN and int(command.get("owner_id") or 0) == user_id
+        if scope == QUICK_SCOPE_USER_SHARED:
+            return role == ROLE_USER
+        return False
+
+    def _command_text_for_user(self, command: dict[str, Any], user_id: int) -> str:
+        command_text = str(command.get("command", "")).strip()
+        if not command_text:
+            raise ValueError("quick_command_command_required")
+        if "{nick}" not in command_text:
+            return command_text
+        nickname = (
+            self._read_bot_data()
+            .get("users", {})
+            .get(str(user_id), {})
+            .get("minecraft_nickname")
+        )
+        if not nickname:
+            raise ValueError("minecraft_nickname_required")
+        return command_text.replace("{nick}", str(nickname))
+
     async def _execute_quick_command(
         self,
         callback: CallbackQuery,
@@ -962,13 +1190,23 @@ class TelegramBotService:
         if command is None:
             await callback.answer("Команда не найдена.", show_alert=True)
             return
-        if role not in command.get("visible_for_roles", [ROLE_USER, ROLE_ADMIN]):
+        if not self._can_use_quick_command(command, role, callback.from_user.id):
             await callback.answer(
                 "Команда недоступна для вашей роли.",
                 show_alert=True,
             )
             return
-        command_text = str(command.get("command", "")).strip()
+        try:
+            command_text = self._command_text_for_user(command, callback.from_user.id)
+        except ValueError as exc:
+            if str(exc) == "minecraft_nickname_required":
+                await callback.answer(
+                    "Сначала настройте Minecraft-ник.",
+                    show_alert=True,
+                )
+                return
+            await callback.answer("Команда пустая.", show_alert=True)
+            return
         if not command_text:
             await callback.answer("Команда пустая.", show_alert=True)
             return
@@ -991,9 +1229,9 @@ class TelegramBotService:
         if role != ROLE_ADMIN:
             await callback.answer("Только для администратора.", show_alert=True)
             return
-        commands = self._quick_commands()
+        commands = self._user_shared_quick_commands()
         if not commands:
-            await callback.answer("Быстрые команды не настроены.", show_alert=True)
+            await callback.answer("Команды пользователей не настроены.", show_alert=True)
             return
         prefix = "quick_edit" if mode == "edit" else "quick_delete"
         rows = [
@@ -1049,7 +1287,11 @@ class TelegramBotService:
         await self._send_response(
             callback,
             "Быстрая команда удалена.",
-            reply_markup=self._screen_payload("admin.quick_command_settings", role)[1],
+            reply_markup=self._screen_payload(
+                "admin.quick_command_settings",
+                role,
+                callback.from_user.id,
+            )[1],
             edit_inline=True,
         )
 
@@ -1073,25 +1315,23 @@ class TelegramBotService:
         if callback.message is not None:
             await callback.message.answer("Перезапускаю бота...")
         await callback.answer()
+        await self._notify_system_event(
+            f"Telegram-бот перезапускается. Администратор: {callback.from_user.id}"
+        )
         asyncio.create_task(self.restart())
 
-    async def _send_commands_archive(self, callback: CallbackQuery, role: str) -> None:
+    async def _toggle_notification_callback(
+        self,
+        callback: CallbackQuery,
+        key: str,
+        role: str,
+    ) -> None:
         if role != ROLE_ADMIN:
             await callback.answer("Только для администратора.", show_alert=True)
             return
-        payload = json.dumps(
-            {"quick_commands": self._quick_commands()},
-            ensure_ascii=False,
-            indent=2,
-        )
-        buffer = io.BytesIO()
-        with zipfile.ZipFile(buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
-            archive.writestr("quick_commands.json", payload)
-        if callback.message is not None:
-            await callback.message.answer_document(
-                BufferedInputFile(buffer.getvalue(), filename="telegram-quick-commands.zip")
-            )
-        await callback.answer("Архив подготовлен.")
+        self._toggle_notification(callback.from_user.id, key)
+        text, markup = self._notifications_screen(callback.from_user.id)
+        await self._send_response(callback, text, reply_markup=markup, edit_inline=True)
 
     async def _start_server(self, message: Message, role: str) -> None:
         try:
@@ -1099,6 +1339,11 @@ class TelegramBotService:
             await message.answer(
                 "Сервер запускается...",
                 reply_markup=self._main_keyboard(role),
+            )
+            await self._notify_server_start(
+                role,
+                "тг бота",
+                message.from_user.id if message.from_user else None,
             )
         except (RuntimeError, ValueError, FileNotFoundError) as exc:
             await message.answer(
