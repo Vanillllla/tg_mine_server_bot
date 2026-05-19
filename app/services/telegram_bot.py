@@ -31,6 +31,7 @@ QUICK_SCOPE_USER_SHARED = "user_shared"
 SERVER_STATE_ON_EMOJI = "🟢"
 SERVER_STATE_OFF_EMOJI = "🔴"
 TELEGRAM_TEXT_CHUNK_LIMIT = 3600
+HELP_TEXT_LIMIT = 3600
 SERVER_PROPERTIES_FILENAME = "server.properties"
 
 BUTTON_BACK = "⬅️ Назад"
@@ -59,6 +60,7 @@ DEFAULT_BOT_DATA: dict[str, Any] = {
     "users": {},
     "quick_commands": [],
     "notifications": {},
+    "help_text": {},
 }
 
 
@@ -75,6 +77,7 @@ class TelegramBotStates(StatesGroup):
     user_nickname_identifier = State()
     user_nickname_value = State()
     server_archive = State()
+    help_text = State()
 
 
 class TelegramBotService:
@@ -609,6 +612,7 @@ class TelegramBotService:
                             ("❓ Помощь", "nav:common.help"),
                             ("Перезапустить бота", "confirm:bot.restart"),
                         ],
+                        [("📝 Настройка помощи", "nav:admin.help_settings")],
                         [
                             ("Настройки бот-панели", "nav:admin.bot_panel_settings"),
                             ("Настройки пользователя", "nav:admin.user_settings"),
@@ -663,6 +667,18 @@ class TelegramBotService:
             )
         if screen_id == "admin.notifications" and role == ROLE_ADMIN:
             return self._notifications_screen(user_id)
+        if screen_id == "admin.help_settings" and role == ROLE_ADMIN:
+            return (
+                "Настройка помощи\n\n"
+                "Текущий текст для обычных пользователей:\n\n"
+                f"{self._help_text(ROLE_USER)}",
+                self._inline_keyboard(
+                    [
+                        [("✏️ Изменить текст помощи", "fsm:help.wait_user_text")],
+                        [(BUTTON_BACK, "nav:back")],
+                    ]
+                ),
+            )
         if screen_id == "user.nickname_settings":
             return (
                 "Настройка никнейма\nВведите ваш никнейм в Minecraft.",
@@ -690,8 +706,37 @@ class TelegramBotService:
             self._inline_keyboard([[(BUTTON_BACK, "nav:back")]]),
         )
 
+    def _help_text(self, role: str) -> str:
+        if role == ROLE_USER:
+            return self._render_help_placeholders(self._user_help_text())
+        return self._default_help_text(role)
+
+    def _user_help_text(self) -> str:
+        help_text = self._read_bot_data().get("help_text", {})
+        text = str(help_text.get(ROLE_USER) or "").strip() if isinstance(help_text, dict) else ""
+        return text or self._default_help_text(ROLE_USER)
+
+    def _save_user_help_text(self, text: str) -> str:
+        text = text.strip()
+        if not text:
+            raise ValueError("help_text_required")
+        if len(text) > HELP_TEXT_LIMIT:
+            raise ValueError(f"help_text_too_long_{HELP_TEXT_LIMIT}")
+        data = self._read_bot_data()
+        help_text = data.setdefault("help_text", {})
+        help_text[ROLE_USER] = text
+        self._write_bot_data(data)
+        return text
+
+    def _render_help_placeholders(self, text: str) -> str:
+        domains = self.panel_settings_service.domain_settings()
+        return (
+            text.replace("{domain_site}", domains.site)
+            .replace("{domain}", domains.minecraft)
+        )
+
     @staticmethod
-    def _help_text(role: str) -> str:
+    def _default_help_text(role: str) -> str:
         base = [
             "Помощь",
             "• Запуск сервера доступен из главного меню.",
@@ -957,6 +1002,11 @@ class TelegramBotService:
                 "Введите Telegram ID пользователя или @username.",
                 TelegramBotStates.user_nickname_identifier,
             ),
+            "help.wait_user_text": (
+                "Отправьте новый текст помощи для обычных пользователей. "
+                "Можно использовать {domain} и {domain_site}.",
+                TelegramBotStates.help_text,
+            ),
         }
         if state_id == "files.wait_server_archive":
             await message.answer(
@@ -1034,6 +1084,9 @@ class TelegramBotService:
             return
         if current_state == TelegramBotStates.user_nickname_value.state:
             await self._finish_user_nickname(message, state, text, role)
+            return
+        if current_state == TelegramBotStates.help_text.state:
+            await self._finish_help_text(message, state, text, role)
             return
         if current_state == TelegramBotStates.server_archive.state:
             await message.answer("Загрузка архива через Telegram пока не реализована.")
@@ -1196,6 +1249,26 @@ class TelegramBotService:
         await state.update_data(current_screen="admin.user_nickname_settings", nav_stack=[])
         await message.answer("Никнейм пользователя сохранён.")
         await self._open_screen(message, state, "admin.user_nickname_settings", role)
+
+    async def _finish_help_text(
+        self,
+        message: Message,
+        state: FSMContext,
+        text: str,
+        role: str,
+    ) -> None:
+        if role != ROLE_ADMIN:
+            await message.answer("Действие доступно только администратору.")
+            return
+        try:
+            self._save_user_help_text(text)
+        except ValueError as exc:
+            await message.answer(f"Текст помощи не сохранён: {exc}")
+            return
+        await state.clear()
+        await state.update_data(current_screen="admin.help_settings", nav_stack=[])
+        await message.answer("Текст помощи обновлён.")
+        await self._open_screen(message, state, "admin.help_settings", role)
 
     def _resolve_user_identifier(self, identifier: str) -> int | None:
         normalized = identifier.strip()

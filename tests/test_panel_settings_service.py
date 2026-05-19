@@ -2,7 +2,7 @@ from pathlib import Path
 
 from app.core.json_store import read_json, write_json_atomic
 from app.core.settings import AppSettings
-from app.models.settings import EmptyShutdownSettings, TelegramSettings
+from app.models.settings import DomainSettings, EmptyShutdownSettings, TelegramSettings
 from app.services.panel_settings import PanelSettingsService
 
 
@@ -19,6 +19,8 @@ def test_public_settings_returns_default_discord_link(tmp_path: Path) -> None:
 
     assert settings.links.discord.url == "https://discord.gg/cUt6nYVEyn"
     assert settings.links.discord.icon_path == "/assets/icons/discord.svg"
+    assert settings.domains.minecraft == "mc.vanilla.xazux.ru"
+    assert settings.domains.site == ""
 
 
 def test_public_settings_keeps_custom_discord_link(tmp_path: Path) -> None:
@@ -50,6 +52,22 @@ def test_empty_shutdown_settings_have_defaults_and_can_be_updated(tmp_path: Path
     assert defaults.shutdown_if_empty_minutes == 5
     assert updated.enabled is True
     assert updated.shutdown_if_empty_minutes == 12
+
+
+def test_domain_settings_have_defaults_and_can_be_updated(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+
+    defaults = service.domain_settings()
+    updated = service.update_domain_settings(
+        DomainSettings(minecraft=" mc.example.ru ", site=" https://panel.example.ru ")
+    )
+    public = service.public_settings()
+
+    assert defaults.minecraft == "mc.vanilla.xazux.ru"
+    assert defaults.site == ""
+    assert updated.minecraft == "mc.example.ru"
+    assert updated.site == "https://panel.example.ru"
+    assert public.domains == updated
 
 
 def test_telegram_settings_have_defaults_and_can_be_updated(tmp_path: Path) -> None:

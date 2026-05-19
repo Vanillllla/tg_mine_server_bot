@@ -4,6 +4,7 @@ from typing import Any
 from app.core.json_store import read_json, write_json_atomic
 from app.core.settings import AppSettings, DEFAULT_PANEL
 from app.models.settings import (
+    DomainSettings,
     EmptyShutdownSettings,
     JavaRuntime,
     PublicPanelSettings,
@@ -38,9 +39,26 @@ class PanelSettingsService:
     def public_settings(self) -> PublicPanelSettings:
         panel = self._read_panel()
         changed = self._ensure_public_link_defaults(panel)
+        changed = self._ensure_domain_defaults(panel) or changed
         if changed:
             self._write_panel(panel)
-        return PublicPanelSettings(links=panel["links"])
+        return PublicPanelSettings(links=panel["links"], domains=panel["domains"])
+
+    def domain_settings(self) -> DomainSettings:
+        panel = self._read_panel()
+        changed = self._ensure_domain_defaults(panel)
+        if changed:
+            self._write_panel(panel)
+        return DomainSettings(**panel["domains"])
+
+    def update_domain_settings(self, payload: DomainSettings) -> DomainSettings:
+        panel = self._read_panel()
+        self._ensure_domain_defaults(panel)
+        domains = panel.setdefault("domains", {})
+        domains["minecraft"] = payload.minecraft
+        domains["site"] = payload.site
+        self._write_panel(panel)
+        return self.domain_settings()
 
     def empty_shutdown_settings(self) -> EmptyShutdownSettings:
         panel = self._read_panel()
@@ -181,6 +199,17 @@ class PanelSettingsService:
                 discord[key] = value
                 changed = True
 
+        return changed
+
+    @staticmethod
+    def _ensure_domain_defaults(panel: dict[str, Any]) -> bool:
+        domains = panel.setdefault("domains", {})
+        defaults = DEFAULT_PANEL["domains"]
+        changed = False
+        for key, value in defaults.items():
+            if key not in domains:
+                domains[key] = value
+                changed = True
         return changed
 
     @staticmethod

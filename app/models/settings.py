@@ -76,5 +76,16 @@ class PublicLinks(BaseModel):
     discord: PublicLink
 
 
+class DomainSettings(BaseModel):
+    minecraft: str = Field(default="", max_length=253)
+    site: str = Field(default="", max_length=253)
+
+    @field_validator("minecraft", "site")
+    @classmethod
+    def normalize_domain(cls, value: str) -> str:
+        return value.strip()
+
+
 class PublicPanelSettings(BaseModel):
     links: PublicLinks
+    domains: DomainSettings

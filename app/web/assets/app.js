@@ -16,6 +16,7 @@ const state = {
   javaRuntimes: [],
   invite: null,
   telegramSettings: null,
+  domainSettings: null,
 };
 
 const defaultPublicLinks = {
@@ -23,6 +24,11 @@ const defaultPublicLinks = {
     url: "https://discord.gg/cUt6nYVEyn",
     icon_path: "/assets/icons/discord.svg",
   },
+};
+
+const defaultDomains = {
+  minecraft: "mc.vanilla.xazux.ru",
+  site: "",
 };
 
 const quickPropertyFields = [
@@ -158,10 +164,13 @@ async function loadPublicSettings() {
   try {
     const response = await api("/api/settings/public");
     state.publicLinks = { ...defaultPublicLinks, ...(response.links || {}) };
+    state.domainSettings = { ...defaultDomains, ...(response.domains || {}) };
   } catch {
     state.publicLinks = defaultPublicLinks;
+    state.domainSettings = defaultDomains;
   }
   renderPublicLinks();
+  renderDomainSettings();
 }
 
 function renderPublicLinks() {
@@ -172,6 +181,19 @@ function renderPublicLinks() {
   $$('[data-public-link-icon="discord"]').forEach((icon) => {
     icon.src = discord.icon_path || defaultPublicLinks.discord.icon_path;
   });
+}
+
+function minecraftDomain() {
+  return state.domainSettings?.minecraft ?? defaultDomains.minecraft;
+}
+
+function renderDomainSettings() {
+  const form = $("#domain-settings-form");
+  if (!form) return;
+  const domains = state.domainSettings || defaultDomains;
+  form.elements.minecraft.value = domains.minecraft || "";
+  form.elements.site.value = domains.site || "";
+  $("#minecraft-domain").value = minecraftDomain();
 }
 
 async function authenticateInviteIfPresent() {
@@ -345,6 +367,28 @@ async function refreshInvite() {
   state.invite = await api("/api/auth/invite");
 }
 
+async function loadDomainSettings() {
+  state.domainSettings = await api("/api/settings/domains");
+  renderDomainSettings();
+  renderDashboard();
+}
+
+async function saveDomainSettings(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const payload = {
+    minecraft: String(form.elements.minecraft.value || "").trim(),
+    site: String(form.elements.site.value || "").trim(),
+  };
+  state.domainSettings = await api("/api/settings/domains", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  renderDomainSettings();
+  renderDashboard();
+  toast("Домены сохранены");
+}
+
 function renderHeader() {
   const status = state.workData?.status || "OFF";
   $("#current-user-label").textContent = state.currentUser
@@ -395,6 +439,7 @@ function renderDashboard() {
   const status = state.workData?.status || "OFF";
   $("#dashboard-server-name").textContent = active?.display_name || "Сервер не выбран";
   setStatusPill($("#dashboard-status"), status);
+  $("#minecraft-domain").value = minecraftDomain();
   $("#dashboard-summary").innerHTML = [
     metric("ID", active?.id || "-"),
     metric("Версия", active?.minecraft_version || "-"),
@@ -1130,6 +1175,7 @@ function switchView(view) {
   if (view === "properties") loadProperties().catch((error) => toast(error.message));
   if (view === "files") loadFiles().catch((error) => toast(error.message));
   if (view === "telegram") loadTelegramSettings().catch((error) => toast(error.message));
+  if (view === "settings" && isAdmin()) loadDomainSettings().catch((error) => toast(error.message));
 }
 
 function escapeHtml(value) {
@@ -1158,6 +1204,7 @@ function bindEvents() {
   bindValidationToast("#create-server-form");
   bindValidationToast("#import-server-form");
   bindValidationToast("#telegram-settings-form");
+  bindValidationToast("#domain-settings-form");
 
   $("#login-form").addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -1386,6 +1433,10 @@ function bindEvents() {
     } catch (error) {
       toast(error.message);
     }
+  });
+
+  bindIfExists("#domain-settings-form", "submit", (event) => {
+    saveDomainSettings(event).catch((error) => toast(error.message));
   });
 
   $("#create-invite-btn").addEventListener("click", async () => {

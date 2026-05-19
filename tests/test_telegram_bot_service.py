@@ -7,12 +7,13 @@ import pytest
 pytest.importorskip("aiogram")
 
 from app.core.settings import AppSettings
-from app.models.settings import TelegramSettings
+from app.models.settings import DomainSettings, TelegramSettings
 from app.services.log_buffer import LogBuffer
 from app.services.panel_settings import PanelSettingsService
 from app.services.telegram_bot import (
     QUICK_SCOPE_ADMIN_PERSONAL,
     QUICK_SCOPE_USER_SHARED,
+    HELP_TEXT_LIMIT,
     ROLE_ADMIN,
     ROLE_USER,
     SERVER_STATE_OFF_EMOJI,
@@ -140,6 +141,25 @@ def test_telegram_bot_notification_toggles_are_per_admin(tmp_path: Path) -> None
     assert service._toggle_notification(1001, "server_starts") is True
     assert service._notification_settings(1001)["server_starts"] is True
     assert service._admin_notification_ids("server_starts") == [1001]
+
+
+def test_telegram_bot_user_help_text_can_be_customized(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+
+    service.panel_settings_service.update_domain_settings(
+        DomainSettings(minecraft="mc.example.ru", site="https://panel.example.ru")
+    )
+    service._save_user_help_text("Server: {domain}\nSite: {domain_site}")
+    text, markup = service._screen_payload("admin.help_settings", ROLE_ADMIN, 1001)
+
+    assert service._help_text(ROLE_USER) == "Server: mc.example.ru\nSite: https://panel.example.ru"
+    assert service._help_text(ROLE_ADMIN) != service._help_text(ROLE_USER)
+    assert "Server: mc.example.ru\nSite: https://panel.example.ru" in text
+    assert markup.inline_keyboard[0][0].callback_data == "fsm:help.wait_user_text"
+    with pytest.raises(ValueError):
+        service._save_user_help_text("")
+    with pytest.raises(ValueError):
+        service._save_user_help_text("x" * (HELP_TEXT_LIMIT + 1))
 
 
 def test_telegram_bot_admin_toggle_button_shows_server_state(tmp_path: Path) -> None:

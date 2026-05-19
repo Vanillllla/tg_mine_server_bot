@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from app.api.deps import get_panel_settings_service, get_telegram_bot_service, require_admin
 from app.models.auth import AuthUser
 from app.models.settings import (
+    DomainSettings,
     EmptyShutdownSettings,
     JavaRuntime,
     PublicPanelSettings,
@@ -35,6 +36,23 @@ async def update_empty_shutdown_settings(
     current_user: AuthUser = Depends(require_admin),
 ) -> EmptyShutdownSettings:
     return get_panel_settings_service(request).update_empty_shutdown_settings(payload)
+
+
+@router.get("/domains", response_model=DomainSettings)
+async def get_domain_settings(
+    request: Request,
+    current_user: AuthUser = Depends(require_admin),
+) -> DomainSettings:
+    return get_panel_settings_service(request).domain_settings()
+
+
+@router.put("/domains", response_model=DomainSettings)
+async def update_domain_settings(
+    request: Request,
+    payload: DomainSettings,
+    current_user: AuthUser = Depends(require_admin),
+) -> DomainSettings:
+    return get_panel_settings_service(request).update_domain_settings(payload)
 
 
 def _telegram_settings_response(request: Request) -> TelegramSettingsResponse:

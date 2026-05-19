@@ -14,6 +14,10 @@ DEFAULT_PANEL = {
             "icon_path": "/assets/icons/discord.svg",
         },
     },
+    "domains": {
+        "minecraft": "mc.vanilla.xazux.ru",
+        "site": "",
+    },
     "server": {
         "active_server_id": "",
         "use_last_active_server": True,
