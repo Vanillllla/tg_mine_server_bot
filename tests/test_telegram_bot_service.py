@@ -33,10 +33,19 @@ class DummyInstanceService:
 class DummyManager:
     def __init__(self) -> None:
         self.status = "OFF"
+        self.status_sequence: list[str] = []
+        self.uptime_seconds = 0
+        self.start_error = ""
         self.instance_service = DummyInstanceService()
 
-    def get_status(self) -> dict[str, str]:
-        return {"status": self.status}
+    def get_status(self) -> dict[str, str | int]:
+        if self.status_sequence:
+            self.status = self.status_sequence.pop(0)
+        return {
+            "status": self.status,
+            "uptime_seconds": self.uptime_seconds,
+            "start_error": self.start_error,
+        }
 
     def get_work_data(self) -> dict:
         return {"status": "OFF", "active_server": None, "metrics": {}}
@@ -170,6 +179,26 @@ def test_telegram_bot_admin_toggle_button_shows_server_state(tmp_path: Path) -> 
     service.manager.status = "RUNNING"
 
     assert service._server_toggle_button_text().startswith(SERVER_STATE_ON_EMOJI)
+
+
+def test_telegram_bot_waits_for_server_start_result(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+    service.manager.status_sequence = ["STARTING", "RUNNING"]
+    service.manager.uptime_seconds = 12
+
+    result = asyncio.run(service._wait_for_server_start_result(poll_interval=0))
+
+    assert result == (True, "12s", "")
+
+
+def test_telegram_bot_waits_for_server_start_error(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+    service.manager.status_sequence = ["STARTING", "ERROR"]
+    service.manager.start_error = "server_start_timeout_or_crash"
+
+    result = asyncio.run(service._wait_for_server_start_result(poll_interval=0))
+
+    assert result == (False, "", "server_start_timeout_or_crash")
 
 
 def test_telegram_bot_reads_full_active_server_properties(tmp_path: Path) -> None:

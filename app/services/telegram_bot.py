@@ -196,7 +196,10 @@ class TelegramBotService:
 
     async def notify_server_started_from_web(self, user: Any) -> None:
         role = ROLE_ADMIN if getattr(user, "role", "") == ROLE_ADMIN else ROLE_USER
-        await self._notify_server_start(role, "сайта", None)
+        task = asyncio.create_task(
+            self._track_server_start(None, role, "сайта", None)
+        )
+        task.add_done_callback(self._capture_background_error)
 
     def _capture_polling_error(self, task: asyncio.Task) -> None:
         if task.cancelled():
@@ -550,12 +553,20 @@ class TelegramBotService:
     async def _notify_system_event(self, text: str) -> None:
         await self._notify_admins("system_restarts", text)
 
-    async def _notify_server_start(self, role: str, source: str, actor_id: int | None) -> None:
+    async def _notify_server_start(
+        self,
+        role: str,
+        source: str,
+        actor_id: int | None,
+        launch_time: str,
+    ) -> None:
         actor = "админ" if role == ROLE_ADMIN else "простой пользователь"
         actor_id_text = f" Telegram ID: {actor_id}" if actor_id else ""
         await self._notify_admins(
             "server_starts",
-            f"Сервер включён.\nИсточник: {actor} с {source}.{actor_id_text}",
+            "Сервер запущен.\n"
+            f"Время запуска: {launch_time}\n"
+            f"Источник: {actor} с {source}.{actor_id_text}",
         )
 
     def _quick_commands_keyboard(self, role: str, user_id: int | None) -> InlineKeyboardMarkup:
@@ -1551,6 +1562,59 @@ class TelegramBotService:
             chunks.append("".join(current))
         return chunks or [""]
 
+    async def _track_server_start(
+        self,
+        message: Message | None,
+        role: str,
+        source: str,
+        actor_id: int | None,
+    ) -> None:
+        started, launch_time, error = await self._wait_for_server_start_result()
+        if started:
+            if message is not None:
+                await message.answer(
+                    f"Сервер запущен.\nВремя запуска: {launch_time}",
+                    reply_markup=self._main_keyboard(role),
+                )
+            await self._notify_server_start(role, source, actor_id, launch_time)
+            return
+        if message is not None:
+            await message.answer(
+                f"Сервер не запустился: {error}",
+                reply_markup=self._main_keyboard(role),
+            )
+
+    async def _wait_for_server_start_result(
+        self,
+        poll_interval: float = 1.0,
+    ) -> tuple[bool, str, str]:
+        deadline = asyncio.get_running_loop().time() + self._server_start_wait_timeout()
+        last_status = ""
+        last_error = ""
+        while asyncio.get_running_loop().time() <= deadline:
+            status = self.manager.get_status()
+            last_status = str(status.get("status") or "")
+            last_error = str(status.get("start_error") or "")
+            if last_status == ServerStatus.RUNNING.value:
+                launch_time = self._format_seconds(float(status.get("uptime_seconds") or 0))
+                return True, launch_time, ""
+            if last_status in {
+                ServerStatus.ERROR.value,
+                ServerStatus.OFF.value,
+                ServerStatus.STOPPING.value,
+            }:
+                return False, "", last_error or last_status
+            await asyncio.sleep(poll_interval)
+        return False, "", last_error or last_status or "server_start_timeout"
+
+    def _server_start_wait_timeout(self) -> float:
+        try:
+            server = self.manager.instance_service.get_active_server()
+        except Exception:
+            server = None
+        timeout = float(getattr(server, "startup_timeout", 180) or 180)
+        return max(10.0, timeout + 10.0)
+
     async def _start_server(self, message: Message, role: str) -> None:
         try:
             await self.manager.start()
@@ -1558,11 +1622,15 @@ class TelegramBotService:
                 "Сервер запускается...",
                 reply_markup=self._main_keyboard(role),
             )
-            await self._notify_server_start(
-                role,
-                "тг бота",
-                message.from_user.id if message.from_user else None,
+            task = asyncio.create_task(
+                self._track_server_start(
+                    message,
+                    role,
+                    "тг бота",
+                    message.from_user.id if message.from_user else None,
+                )
             )
+            task.add_done_callback(self._capture_background_error)
         except (RuntimeError, ValueError, FileNotFoundError) as exc:
             await message.answer(
                 f"Не удалось запустить сервер: {exc}",
