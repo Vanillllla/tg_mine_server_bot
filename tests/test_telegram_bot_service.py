@@ -152,6 +152,19 @@ def test_telegram_bot_notification_toggles_are_per_admin(tmp_path: Path) -> None
     assert service._admin_notification_ids("server_starts") == [1001]
 
 
+def test_telegram_bot_status_reports_error_until_stopped(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+
+    service._last_error = "Cannot connect to host api.telegram.org"
+
+    assert service.status()["status"] == "ERROR"
+
+    asyncio.run(service.stop(clear_error=True))
+
+    assert service.status()["status"] == "OFF"
+    assert service.status()["last_error"] == ""
+
+
 def test_telegram_bot_user_help_text_can_be_customized(tmp_path: Path) -> None:
     service = make_service(tmp_path)
 

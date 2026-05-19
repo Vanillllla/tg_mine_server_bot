@@ -332,6 +332,7 @@ async function refreshAll() {
   const tasks = [refreshWorkData()];
   if (isAdmin()) {
     tasks.push(refreshServers(), refreshJavaRuntimes(), refreshInvite());
+    if (state.activeView === "telegram") tasks.push(loadTelegramSettings());
   }
   await Promise.all(tasks);
   if (!isAdmin()) {
@@ -609,12 +610,14 @@ function renderTelegramSettings() {
   const settings = state.telegramSettings || { autostart: false, bot_token: "", admin_ids: [], running: false };
   const form = $("#telegram-settings-form");
   if (!form) return;
+  const status = settings.status || (settings.running ? "RUNNING" : "OFF");
   form.elements.bot_token.value = settings.bot_token || "";
   form.elements.admin_ids.value = (settings.admin_ids || []).join("\n");
   form.elements.autostart.checked = Boolean(settings.autostart);
-  setStatusPill($("#telegram-status"), settings.running ? "RUNNING" : "OFF");
-  $("#telegram-status").textContent = settings.running ? "RUNNING" : "OFF";
+  setStatusPill($("#telegram-status"), status);
+  $("#telegram-status").textContent = status;
   $("#telegram-error").textContent = settings.last_error ? `Last error: ${settings.last_error}` : "";
+  $("#stop-telegram-btn").disabled = status === "OFF" && !settings.autostart;
 }
 
 function parseTelegramAdminIds(value) {
@@ -642,6 +645,12 @@ async function saveTelegramSettings(event) {
   });
   renderTelegramSettings();
   toast("Telegram bot settings saved");
+}
+
+async function stopTelegramBot() {
+  state.telegramSettings = await api("/api/settings/telegram/stop", { method: "POST" });
+  renderTelegramSettings();
+  toast("Telegram bot stopped");
 }
 
 function formatLog(item) {
@@ -1460,6 +1469,9 @@ function bindEvents() {
 
   bindIfExists("#telegram-settings-form", "submit", (event) => {
     saveTelegramSettings(event).catch((error) => toast(error.message));
+  });
+  bindIfExists("#stop-telegram-btn", "click", () => {
+    stopTelegramBot().catch((error) => toast(error.message));
   });
 
   $("#servers-list").addEventListener("click", async (event) => {

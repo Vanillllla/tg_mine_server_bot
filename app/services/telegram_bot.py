@@ -117,7 +117,7 @@ class TelegramBotService:
                 if raise_errors:
                     raise
             return
-        await self.stop()
+        await self.stop(clear_error=True)
 
     async def start(self) -> None:
         if self.is_running:
@@ -139,7 +139,7 @@ class TelegramBotService:
             await self.stop()
             await self.start()
 
-    async def stop(self) -> None:
+    async def stop(self, *, clear_error: bool = False) -> None:
         task = self._polling_task
         dispatcher = self.dispatcher
         bot = self.bot
@@ -176,6 +176,8 @@ class TelegramBotService:
             self.bot = None
         if self.dispatcher is dispatcher:
             self.dispatcher = None
+        if clear_error:
+            self._last_error = ""
 
     def status(self) -> dict[str, Any]:
         settings = self.panel_settings_service.telegram_settings()
@@ -187,8 +189,11 @@ class TelegramBotService:
                 data_admin_ids.add(int(user_id))
             except ValueError:
                 continue
+        running = self.is_running
+        status = "RUNNING" if running else "ERROR" if self._last_error else "OFF"
         return {
-            "running": self.is_running,
+            "running": running,
+            "status": status,
             "last_error": self._last_error,
             "configured": bool(settings.bot_token),
             "admin_count": len(set(settings.admin_ids) | data_admin_ids),

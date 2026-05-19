@@ -64,6 +64,7 @@ class TelegramSettings(BaseModel):
 
 class TelegramSettingsResponse(TelegramSettings):
     running: bool = False
+    status: str = "OFF"
     last_error: str = ""
 
 
