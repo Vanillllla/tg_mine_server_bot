@@ -114,6 +114,23 @@ class AuthService:
         user_id = f"invite:{self._token_hash(active_token)[:12]}"
         return self._create_session(user_id=user_id, username="invited-user", role="user")
 
+    def invite_token_is_active(self, token: str) -> bool:
+        auth = self._read_auth()
+        invite = auth.setdefault("invite", {})
+        active_token = str(invite.get("token", "") or "")
+        return bool(
+            active_token
+            and not invite.get("revoked_at")
+            and self._safe_equals(token, active_token)
+        )
+
+    def active_invite_token_hash(self) -> str:
+        invite = self._read_auth().setdefault("invite", {})
+        active_token = str(invite.get("token", "") or "")
+        if not active_token or invite.get("revoked_at"):
+            return ""
+        return self._token_hash(active_token)
+
     def get_user_by_session_token(self, token: str | None) -> AuthUser | None:
         if not token:
             return None

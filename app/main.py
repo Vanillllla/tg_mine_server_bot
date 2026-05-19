@@ -38,6 +38,7 @@ async def lifespan(app: FastAPI):
         app.state.panel_settings_service,
         manager,
         log_buffer,
+        app.state.auth_service,
     )
     await app.state.telegram_bot_service.apply_settings()
     yield

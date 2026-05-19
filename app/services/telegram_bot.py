@@ -19,6 +19,7 @@ from aiogram.types import (
 
 from app.core.json_store import read_json, write_json_atomic
 from app.models.server import ServerStatus
+from app.services.auth import AuthService
 from app.services.log_buffer import LogBuffer
 from app.services.minecraft_manager import MinecraftServerManager
 from app.services.panel_settings import PanelSettingsService
@@ -55,6 +56,7 @@ LEGACY_BUTTON_EXIT = "Выйти из консоли"
 NICKNAME_RE = re.compile(r"^[A-Za-z0-9_]{3,16}$")
 USER_ID_RE = re.compile(r"^-?\d+$")
 COMMAND_ID_RE = re.compile(r"[^a-z0-9_-]+")
+INVITE_TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{20,}$")
 
 DEFAULT_BOT_DATA: dict[str, Any] = {
     "users": {},
@@ -86,10 +88,12 @@ class TelegramBotService:
         panel_settings_service: PanelSettingsService,
         manager: MinecraftServerManager,
         log_buffer: LogBuffer,
+        auth_service: AuthService,
     ) -> None:
         self.panel_settings_service = panel_settings_service
         self.manager = manager
         self.log_buffer = log_buffer
+        self.auth_service = auth_service
         self.bot: Bot | None = None
         self.dispatcher: Dispatcher | None = None
         self._polling_task: asyncio.Task | None = None
@@ -276,6 +280,7 @@ class TelegramBotService:
             "role": role,
             "is_blocked": bool(existing.get("is_blocked", False)),
             "minecraft_nickname": existing.get("minecraft_nickname"),
+            "invite_token_hash": existing.get("invite_token_hash", ""),
         }
         if existing != profile:
             users[key] = profile
@@ -297,6 +302,7 @@ class TelegramBotService:
             "role": role,
             "is_blocked": bool(existing.get("is_blocked", False)),
             "minecraft_nickname": existing.get("minecraft_nickname"),
+            "invite_token_hash": existing.get("invite_token_hash", ""),
         }
         users[str(user_id)] = profile
         self._write_bot_data(data)
@@ -313,6 +319,7 @@ class TelegramBotService:
             "role": role,
             "is_blocked": blocked,
             "minecraft_nickname": existing.get("minecraft_nickname"),
+            "invite_token_hash": existing.get("invite_token_hash", ""),
         }
         users[str(user_id)] = profile
         self._write_bot_data(data)
@@ -330,8 +337,62 @@ class TelegramBotService:
             "role": role,
             "is_blocked": bool(existing.get("is_blocked", False)),
             "minecraft_nickname": nickname,
+            "invite_token_hash": existing.get("invite_token_hash", ""),
         }
         users[str(user_id)] = profile
+        self._write_bot_data(data)
+        return profile
+
+    @staticmethod
+    def _invite_token_from_text(text: str) -> str:
+        for raw_part in re.split(r"\s+", text.strip()):
+            part = raw_part.strip().strip(".,;")
+            if "/invite/" in part:
+                part = part.rsplit("/invite/", 1)[1]
+            part = part.split("?", 1)[0].split("#", 1)[0].strip("/")
+            if INVITE_TOKEN_RE.match(part):
+                return part
+        return ""
+
+    def _profile_has_active_invite(self, profile: dict[str, Any]) -> bool:
+        if profile.get("role") == ROLE_ADMIN:
+            return True
+        invite_token_hash = str(profile.get("invite_token_hash") or "")
+        active_token_hash = self.auth_service.active_invite_token_hash()
+        return bool(
+            invite_token_hash
+            and active_token_hash
+            and invite_token_hash == active_token_hash
+        )
+
+    def _authorize_user_invite(
+        self,
+        telegram_user: Any,
+        text: str,
+    ) -> dict[str, Any] | None:
+        token = self._invite_token_from_text(text)
+        if not token or not self.auth_service.invite_token_is_active(token):
+            return None
+
+        data = self._read_bot_data()
+        users = data.setdefault("users", {})
+        user_id = int(telegram_user.id)
+        key = str(user_id)
+        existing = users.get(key, {})
+        role = (
+            ROLE_ADMIN
+            if existing.get("role") == ROLE_ADMIN or user_id in self._admin_ids
+            else ROLE_USER
+        )
+        profile = {
+            "telegram_id": user_id,
+            "username": getattr(telegram_user, "username", None),
+            "role": role,
+            "is_blocked": bool(existing.get("is_blocked", False)),
+            "minecraft_nickname": existing.get("minecraft_nickname"),
+            "invite_token_hash": self.auth_service.active_invite_token_hash(),
+        }
+        users[key] = profile
         self._write_bot_data(data)
         return profile
 
@@ -819,6 +880,13 @@ class TelegramBotService:
         if profile.get("is_blocked"):
             await callback.answer("Вы заблокированы.", show_alert=True)
             return
+        if not self._profile_has_active_invite(profile):
+            if message is not None:
+                await message.answer(
+                    "Отправьте инвайт-ссылку с сайта, чтобы пользоваться ботом."
+                )
+            await callback.answer("Нужна инвайт-ссылка.", show_alert=True)
+            return
 
         role = profile["role"]
         data = callback.data or ""
@@ -876,6 +944,25 @@ class TelegramBotService:
         profile = self._ensure_user_profile(message.from_user)
         if profile.get("is_blocked"):
             await message.answer("Вы заблокированы.")
+            return None
+        if not self._profile_has_active_invite(profile):
+            text = message.text or ""
+            if self._invite_token_from_text(text):
+                authorized_profile = self._authorize_user_invite(message.from_user, text)
+                if authorized_profile is not None:
+                    await message.answer(
+                        "Доступ подтверждён.",
+                        reply_markup=self._main_keyboard(authorized_profile["role"]),
+                    )
+                    return None
+                await message.answer(
+                    "Инвайт-ссылка недействительна. "
+                    "Отправьте активную инвайт-ссылку с сайта."
+                )
+                return None
+            await message.answer(
+                "Отправьте инвайт-ссылку с сайта, чтобы пользоваться ботом."
+            )
             return None
         return profile
 

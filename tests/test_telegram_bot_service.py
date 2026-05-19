@@ -8,6 +8,7 @@ pytest.importorskip("aiogram")
 
 from app.core.settings import AppSettings
 from app.models.settings import DomainSettings, TelegramSettings
+from app.services.auth import AuthService
 from app.services.log_buffer import LogBuffer
 from app.services.panel_settings import PanelSettingsService
 from app.services.telegram_bot import (
@@ -62,7 +63,12 @@ def make_service(tmp_path: Path) -> TelegramBotService:
             admin_ids=[1001],
         )
     )
-    service = TelegramBotService(panel_settings, DummyManager(), LogBuffer())
+    service = TelegramBotService(
+        panel_settings,
+        DummyManager(),
+        LogBuffer(),
+        AuthService(settings),
+    )
     service._admin_ids = {1001}
     return service
 
@@ -124,6 +130,26 @@ def test_telegram_bot_nickname_validation(tmp_path: Path) -> None:
     assert profile["minecraft_nickname"] == "Steve_123"
     with pytest.raises(ValueError):
         service._save_nickname(3003, "bad-name!")
+
+
+def test_telegram_bot_user_invite_access_follows_site_invite(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+    telegram_user = SimpleNamespace(id=3003, username="player")
+    profile = service._ensure_user_profile(telegram_user)
+
+    assert profile["role"] == ROLE_USER
+    assert service._profile_has_active_invite(profile) is False
+
+    invite = service.auth_service.create_invite("http://testserver")
+    authorized = service._authorize_user_invite(telegram_user, invite["url"])
+
+    assert service._invite_token_from_text(invite["url"]) == invite["token"]
+    assert authorized is not None
+    assert service._profile_has_active_invite(authorized) is True
+
+    service.auth_service.revoke_invite("http://testserver")
+
+    assert service._profile_has_active_invite(authorized) is False
 
 
 def test_telegram_bot_quick_command_substitutes_nickname(tmp_path: Path) -> None:

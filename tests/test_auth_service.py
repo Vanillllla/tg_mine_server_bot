@@ -54,6 +54,20 @@ def test_recreated_invite_invalidates_existing_sessions(tmp_path: Path) -> None:
     assert service.get_user_by_session_token(token) is None
 
 
+def test_invite_token_helpers_follow_active_invite(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+    invite = service.create_invite("http://testserver")
+
+    assert service.invite_token_is_active(invite["token"]) is True
+    assert service.invite_token_is_active("bad-token") is False
+    assert service.active_invite_token_hash()
+
+    service.revoke_invite("http://testserver")
+
+    assert service.invite_token_is_active(invite["token"]) is False
+    assert service.active_invite_token_hash() == ""
+
+
 def test_revoked_invite_rejects_login(tmp_path: Path) -> None:
     service = make_service(tmp_path)
     invite = service.create_invite("http://testserver")
