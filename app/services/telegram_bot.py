@@ -626,11 +626,10 @@ class TelegramBotService:
                     [
                         [
                             ("❓ Помощь", "nav:common.help"),
-                            ("Перезапустить бота", "confirm:bot.restart"),
+                            ("📝 Настройка помощи", "nav:admin.help_settings"),
                         ],
-                        [("📝 Настройка помощи", "nav:admin.help_settings")],
                         [
-                            ("Настройки бот-панели", "nav:admin.bot_panel_settings"),
+                            ("Перезапустить бота", "confirm:bot.restart"),
                             ("Настройки пользователя", "nav:admin.user_settings"),
                         ],
                         [(BUTTON_BACK, "nav:back")],
@@ -704,12 +703,6 @@ class TelegramBotService:
                         [(BUTTON_BACK, "nav:back")],
                     ]
                 ),
-            )
-        if screen_id == "admin.bot_panel_settings" and role == ROLE_ADMIN:
-            return (
-                "Настройки бот-панели\n"
-                "Токен, автозапуск и список базовых админов редактируются в web-панели.",
-                self._inline_keyboard([[(BUTTON_BACK, "nav:back")]]),
             )
         if screen_id == "admin.user_settings" and role == ROLE_ADMIN:
             return (

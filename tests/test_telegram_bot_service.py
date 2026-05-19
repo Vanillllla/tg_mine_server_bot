@@ -165,6 +165,25 @@ def test_telegram_bot_status_reports_error_until_stopped(tmp_path: Path) -> None
     assert service.status()["last_error"] == ""
 
 
+def test_telegram_bot_settings_page_2_layout(tmp_path: Path) -> None:
+    service = make_service(tmp_path)
+
+    _, markup = service._screen_payload("admin.settings.page_2", ROLE_ADMIN, 1001)
+    callbacks = [
+        button.callback_data
+        for row in markup.inline_keyboard
+        for button in row
+    ]
+
+    assert callbacks[:4] == [
+        "nav:common.help",
+        "nav:admin.help_settings",
+        "confirm:bot.restart",
+        "nav:admin.user_settings",
+    ]
+    assert "nav:admin.bot_panel_settings" not in callbacks
+
+
 def test_telegram_bot_user_help_text_can_be_customized(tmp_path: Path) -> None:
     service = make_service(tmp_path)
 
