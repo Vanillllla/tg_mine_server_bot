@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from app.models.server import LaunchMode, ServerInstance
@@ -36,7 +37,8 @@ def test_jar_launch_args_use_jar_flag(tmp_path: Path) -> None:
 
 def test_forge_args_launch_args_do_not_use_jar_flag(tmp_path: Path) -> None:
     server_dir = tmp_path / "server"
-    forge_args = server_dir / "libraries" / "net" / "minecraftforge" / "forge" / "1.20.1-47.2.0" / "win_args.txt"
+    args_name = "win_args.txt" if os.name == "nt" else "unix_args.txt"
+    forge_args = server_dir / "libraries" / "net" / "minecraftforge" / "forge" / "1.20.1-47.2.0" / args_name
     forge_args.parent.mkdir(parents=True)
     forge_args.write_text("--launchTarget forge_server\n", encoding="utf-8")
     (server_dir / "user_jvm_args.txt").write_text("# user args\n", encoding="utf-8")
@@ -44,7 +46,7 @@ def test_forge_args_launch_args_do_not_use_jar_flag(tmp_path: Path) -> None:
         id="forge_server",
         display_name="Forge Server",
         server_dir=str(server_dir),
-        jar_file="libraries/net/minecraftforge/forge/1.20.1-47.2.0/win_args.txt",
+        jar_file=f"libraries/net/minecraftforge/forge/1.20.1-47.2.0/{args_name}",
         launch_mode=LaunchMode.FORGE_ARGS,
     )
 
@@ -52,8 +54,44 @@ def test_forge_args_launch_args_do_not_use_jar_flag(tmp_path: Path) -> None:
 
     assert "-jar" not in args
     assert "@user_jvm_args.txt" in args
-    assert "@libraries/net/minecraftforge/forge/1.20.1-47.2.0/win_args.txt" in args
+    assert f"@libraries/net/minecraftforge/forge/1.20.1-47.2.0/{args_name}" in args
     assert args[-1] == "nogui"
+
+
+def test_forge_args_launch_uses_current_os_sibling_when_available(tmp_path: Path) -> None:
+    server_dir = tmp_path / "server"
+    forge_dir = server_dir / "libraries" / "net" / "minecraftforge" / "forge" / "1.20.1-47.2.0"
+    forge_dir.mkdir(parents=True)
+    configured_name = "unix_args.txt" if os.name == "nt" else "win_args.txt"
+    desired_name = "win_args.txt" if os.name == "nt" else "unix_args.txt"
+    (forge_dir / configured_name).write_text("configured\n", encoding="utf-8")
+    (forge_dir / desired_name).write_text("desired\n", encoding="utf-8")
+    (server_dir / "user_jvm_args.txt").write_text("# user args\n", encoding="utf-8")
+    server = ServerInstance(
+        id="forge_server",
+        display_name="Forge Server",
+        server_dir=str(server_dir),
+        jar_file=f"libraries/net/minecraftforge/forge/1.20.1-47.2.0/{configured_name}",
+        launch_mode=LaunchMode.FORGE_ARGS,
+    )
+
+    args = MinecraftServerManager._build_launch_args(server)
+
+    assert f"@libraries/net/minecraftforge/forge/1.20.1-47.2.0/{desired_name}" in args
+
+
+def test_tps_command_is_limited_to_plugin_servers(tmp_path: Path) -> None:
+    paper_root = tmp_path / "paper"
+    forge_root = tmp_path / "forge"
+    paper_root.mkdir()
+    forge_root.mkdir()
+    paper = make_server(paper_root)
+    forge = make_server(forge_root)
+    paper.server_type = "paper"
+    forge.server_type = "forge"
+
+    assert MinecraftServerManager._server_supports_tps_command(paper) is True
+    assert MinecraftServerManager._server_supports_tps_command(forge) is False
 
 
 def test_launch_validation_rejects_txt_in_jar_mode(tmp_path: Path) -> None:
@@ -78,7 +116,8 @@ def test_launch_validation_rejects_txt_in_jar_mode(tmp_path: Path) -> None:
 
 def test_launch_validation_accepts_forge_args_mode(tmp_path: Path) -> None:
     server_dir = tmp_path / "server"
-    forge_args = server_dir / "libraries" / "net" / "minecraftforge" / "forge" / "1.20.1-47.2.0" / "unix_args.txt"
+    args_name = "win_args.txt" if os.name == "nt" else "unix_args.txt"
+    forge_args = server_dir / "libraries" / "net" / "minecraftforge" / "forge" / "1.20.1-47.2.0" / args_name
     forge_args.parent.mkdir(parents=True)
     forge_args.write_text("--launchTarget forge_server\n", encoding="utf-8")
     (server_dir / "user_jvm_args.txt").write_text("# user args\n", encoding="utf-8")
@@ -87,7 +126,7 @@ def test_launch_validation_accepts_forge_args_mode(tmp_path: Path) -> None:
         id="forge_server",
         display_name="Forge Server",
         server_dir=str(server_dir),
-        jar_file="libraries/net/minecraftforge/forge/1.20.1-47.2.0/unix_args.txt",
+        jar_file=f"libraries/net/minecraftforge/forge/1.20.1-47.2.0/{args_name}",
         launch_mode=LaunchMode.FORGE_ARGS,
     )
 

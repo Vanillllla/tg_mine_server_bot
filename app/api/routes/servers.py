@@ -27,6 +27,15 @@ from app.models.server import (
 router = APIRouter(prefix="/api/servers", tags=["servers"])
 
 UPLOAD_COPY_CHUNK_SIZE = 8 * 1024 * 1024
+LAUNCH_SETTING_FIELDS = {
+    "jar_file",
+    "launch_mode",
+    "java_path",
+    "xms_mb",
+    "xmx_mb",
+    "jvm_args",
+    "server_args",
+}
 
 
 def _validation_error_detail(exc: ValidationError) -> str:
@@ -49,6 +58,14 @@ def _safe_active_server_payload(payload: dict | None, current_user: AuthUser) ->
         "minecraft_version": payload.get("minecraft_version", ""),
         "server_type": payload.get("server_type", ""),
     }
+
+
+def _reject_active_launch_settings_change_while_running(request: Request, server_id: str | None = None) -> None:
+    manager = get_manager(request)
+    service = get_instance_service(request)
+    active_id = service.active_server_id
+    if manager.is_running() and active_id and (server_id is None or server_id == active_id):
+        raise HTTPException(status_code=409, detail="active_launch_settings_cannot_be_changed_while_running")
 
 
 def _safe_archive_entries(archive: ZipFile) -> list[tuple[ZipInfo, Path, bool]]:
@@ -333,6 +350,7 @@ async def select_active_server_jar(
     payload: SelectActiveServerJarRequest,
     current_user: AuthUser = Depends(require_permission("servers.edit_launch_settings")),
 ) -> ServerInstance:
+    _reject_active_launch_settings_change_while_running(request)
     try:
         return get_instance_service(request).set_active_server_jar(payload.path)
     except KeyError as exc:
@@ -349,6 +367,7 @@ async def select_active_launch_target(
     payload: SelectActiveLaunchTargetRequest,
     current_user: AuthUser = Depends(require_permission("servers.edit_launch_settings")),
 ) -> ServerInstance:
+    _reject_active_launch_settings_change_while_running(request)
     try:
         return get_instance_service(request).set_active_launch_target(payload.path, payload.launch_mode)
     except KeyError as exc:
@@ -375,6 +394,7 @@ async def auto_select_active_forge_args(
     request: Request,
     current_user: AuthUser = Depends(require_permission("servers.edit_launch_settings")),
 ) -> ServerInstance:
+    _reject_active_launch_settings_change_while_running(request)
     try:
         return get_instance_service(request).auto_select_active_forge_args()
     except KeyError as exc:
@@ -422,6 +442,9 @@ async def update_server(
     payload: UpdateServerInstanceRequest,
     current_user: AuthUser = Depends(require_permission("servers.edit_launch_settings")),
 ) -> ServerInstance:
+    changes = payload.model_dump(exclude_unset=True, exclude_none=True)
+    if LAUNCH_SETTING_FIELDS & changes.keys():
+        _reject_active_launch_settings_change_while_running(request, server_id)
     try:
         return get_instance_service(request).update_server(server_id, payload)
     except KeyError as exc:

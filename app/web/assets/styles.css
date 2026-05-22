@@ -533,6 +533,21 @@ h2 {
   color: #ffd6d3;
 }
 
+.action-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.server-actions {
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.secondary-actions {
+  margin-left: auto;
+}
+
 .btn.small {
   min-height: 32px;
   padding: 6px 10px;
@@ -1294,10 +1309,15 @@ textarea {
   .file-manager-header,
   .file-command-row,
   .actions,
+  .action-group,
   .toolbar,
   .invite-link-row {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .secondary-actions {
+    margin-left: 0;
   }
 
   .nav {

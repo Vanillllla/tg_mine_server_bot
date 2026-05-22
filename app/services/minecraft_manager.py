@@ -17,6 +17,7 @@ from app.services.log_buffer import LogBuffer
 from app.services.server_instances import ServerInstanceService
 
 
+TPS_CAPABLE_SERVER_TYPES = {"paper", "spigot", "purpur", "bukkit", "tuinity", "pufferfish", "folia"}
 PLAYER_JOINED_RE = re.compile(r":\s*(?P<name>[A-Za-z0-9_]{1,16}) joined the game\b")
 PLAYER_LEFT_RE = re.compile(r":\s*(?P<name>[A-Za-z0-9_]{1,16}) left the game\b")
 TPS_RE = re.compile(r"\bTPS(?: from last [^:]+)?:\s*\*?(?P<tps>\d+(?:\.\d+)?)", re.IGNORECASE)
@@ -96,7 +97,11 @@ class MinecraftServerManager:
             self._stderr_task = asyncio.create_task(self._read_stream("stderr", server.id))
             self._monitor_task = asyncio.create_task(self._monitor_startup(server))
             self._empty_shutdown_task = asyncio.create_task(self._monitor_empty_shutdown(server.id))
-            self._tps_task = asyncio.create_task(self._monitor_tps(server.id))
+            self._tps_task = (
+                asyncio.create_task(self._monitor_tps(server.id))
+                if self._server_supports_tps_command(server)
+                else None
+            )
 
     async def stop(self) -> None:
         async with self._lock:
@@ -150,8 +155,12 @@ class MinecraftServerManager:
         server_id = self.current_server_id or "active"
         if log:
             await self.log_buffer.append("stdin", server_id, f"> {line}")
-        self.process.stdin.write(line + "\n")
-        self.process.stdin.flush()
+        try:
+            self.process.stdin.write(line + "\n")
+            self.process.stdin.flush()
+        except (BrokenPipeError, OSError, ValueError) as exc:
+            self._sync_process_state()
+            raise RuntimeError("server_stdin_unavailable") from exc
 
     def get_status(self) -> dict[str, Any]:
         self._sync_process_state()
@@ -193,7 +202,7 @@ class MinecraftServerManager:
             *server.jvm_args,
         ]
         if server.launch_mode == LaunchMode.FORGE_ARGS:
-            forge_args_path = server.jar_file.replace("\\", "/")
+            forge_args_path = MinecraftServerManager._forge_args_path_for_current_os(server).as_posix()
             return [
                 *base_args,
                 "@user_jvm_args.txt",
@@ -213,8 +222,9 @@ class MinecraftServerManager:
         if not server_dir.is_dir():
             raise FileNotFoundError(f"server_dir_not_found: {server_dir}")
         if server.launch_mode == LaunchMode.FORGE_ARGS:
-            target_path = server_dir / server.jar_file
-            if not cls._is_forge_args_path(Path(server.jar_file)):
+            forge_args_path = cls._forge_args_path_for_current_os(server)
+            target_path = server_dir / forge_args_path
+            if not cls._is_forge_args_path(forge_args_path):
                 raise ValueError("forge_args_file_must_be_args_txt")
             if not target_path.is_file():
                 raise FileNotFoundError(f"forge_args_file_not_found: {target_path}")
@@ -244,6 +254,25 @@ class MinecraftServerManager:
         return (
             path.name.lower() in {"win_args.txt", "unix_args.txt"} or path.name.lower().endswith("_args.txt")
         ) and root_index >= 0
+
+    @staticmethod
+    def _forge_args_path_for_current_os(server: ServerInstance) -> Path:
+        configured = Path(server.jar_file.replace("\\", "/"))
+        desired_name = "win_args.txt" if os.name == "nt" else "unix_args.txt"
+        if configured.name.lower() == desired_name:
+            return configured
+
+        sibling = configured.with_name(desired_name)
+        if configured.name.lower() in {"win_args.txt", "unix_args.txt"}:
+            return sibling
+        if (Path(server.server_dir) / sibling).is_file():
+            return sibling
+        return configured
+
+    @staticmethod
+    def _server_supports_tps_command(server: ServerInstance) -> bool:
+        server_type = str(server.server_type or "").lower()
+        return any(token in server_type for token in TPS_CAPABLE_SERVER_TYPES)
 
     @staticmethod
     def _eula_file_is_accepted(path: Path) -> bool:

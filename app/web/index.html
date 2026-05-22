@@ -126,12 +126,16 @@
                 </div>
                 <span id="dashboard-status" class="pill status-off">OFF</span>
               </div>
-              <div class="actions">
-                <button id="start-btn" class="btn primary">Start</button>
-                <button id="download-client-mods-btn" class="btn">Скачать моды</button>
-                <button id="stop-btn" class="btn" data-admin-only>Stop</button>
-                <button id="restart-btn" class="btn" data-admin-only>Restart</button>
-                <button id="kill-btn" class="btn danger" data-admin-only>Kill</button>
+              <div class="actions server-actions">
+                <div class="action-group lifecycle-actions">
+                  <button id="start-btn" class="btn primary">Start</button>
+                  <button id="stop-btn" class="btn" data-admin-only>Stop</button>
+                  <button id="restart-btn" class="btn" data-admin-only>Restart</button>
+                  <button id="kill-btn" class="btn danger" data-admin-only>Kill</button>
+                </div>
+                <div class="action-group secondary-actions">
+                  <button id="download-client-mods-btn" class="btn">Скачать моды</button>
+                </div>
               </div>
               <div class="invite-link-row">
                 <input id="minecraft-domain" readonly value="mc.vanilla.xazux.ru" aria-label="Minecraft server domain" />
@@ -253,6 +257,7 @@
               <div class="toolbar">
                 <button id="files-refresh-btn" class="btn small" type="button" title="Обновить">↻</button>
                 <button id="files-up-btn" class="btn small" type="button" title="Вверх">↑</button>
+                <button id="mkdir-btn" class="btn small" type="button">Новая папка</button>
                 <button id="client-mods-folder-btn" class="btn small" type="button">Client mods</button>
                 <button id="upload-files-btn" class="btn small" type="button">Upload files</button>
                 <button id="upload-folder-btn" class="btn small" type="button">Upload folder</button>
@@ -315,7 +320,6 @@
                   </div>
                 </dl>
                 <div class="file-details-actions">
-                  <button id="mkdir-btn" class="btn small" type="button">Новая папка</button>
                   <button id="file-details-select-core" class="btn small" type="button">Выбрать ядро</button>
                   <button id="file-details-open" class="btn small" type="button">Открыть</button>
                   <button id="file-details-edit" class="btn small" type="button">Редактировать</button>

@@ -187,6 +187,33 @@ def test_files_upload_endpoint_writes_file_to_active_server(tmp_path: Path, monk
         client.__exit__(None, None, None)
 
 
+def test_launch_target_cannot_change_while_active_server_is_running(tmp_path: Path, monkeypatch) -> None:
+    client = make_client(tmp_path, monkeypatch)
+    try:
+        create_response = client.post(
+            "/api/servers/upload-core",
+            data={
+                "id": "running_server",
+                "display_name": "Running Server",
+                "java_path": "java",
+                "xms_mb": "1024",
+                "xmx_mb": "1024",
+            },
+            files={"core_file": ("server.jar", b"jar-content", "application/java-archive")},
+        )
+        assert create_response.status_code == 201
+        server_dir = Path(create_response.json()["server_dir"])
+        (server_dir / "paper.jar").write_text("new jar", encoding="utf-8")
+        monkeypatch.setattr(client.app.state.minecraft_manager, "is_running", lambda: True)
+
+        response = client.post("/api/servers/active/jar", json={"path": "paper.jar"})
+
+        assert response.status_code == 409
+        assert response.json()["detail"] == "active_launch_settings_cannot_be_changed_while_running"
+    finally:
+        client.__exit__(None, None, None)
+
+
 def test_files_upload_endpoint_accepts_folder_upload_filename(tmp_path: Path, monkeypatch) -> None:
     client = make_client(tmp_path, monkeypatch)
     try:

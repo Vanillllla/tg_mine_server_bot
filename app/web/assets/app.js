@@ -1379,7 +1379,6 @@ function bindEvents() {
       display_name: String(formNode.elements.display_name.value || "").trim(),
       minecraft_version: String(formNode.elements.minecraft_version.value || "").trim(),
       server_type: String(formNode.elements.server_type.value || "").trim() || "custom",
-      launch_mode: String(formNode.elements.launch_mode.value || "jar"),
       java_path: String(formNode.elements.java_path.value || "").trim() || defaultJavaPath(),
       xms_mb: gbToMb(formNode.elements.xms_gb.value, 1),
       xmx_mb: gbToMb(formNode.elements.xmx_gb.value, 1),

@@ -159,7 +159,7 @@ Supported actions:
 - download files;
 - rename files and directories;
 - delete files and directories;
-- select a `.jar` file as the active server core.
+- select a `.jar` file as the active server core or a Forge 1.17+ args file as the active launch target.
 
 Editable text file types include:
 
