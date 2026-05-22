@@ -25,11 +25,17 @@ class ServerStatus(str, Enum):
     UNKNOWN = "UNKNOWN"
 
 
+class LaunchMode(str, Enum):
+    JAR = "jar"
+    FORGE_ARGS = "forge_args"
+
+
 class ServerInstance(BaseModel):
     id: str
     display_name: str
     server_dir: str
     jar_file: str
+    launch_mode: LaunchMode = LaunchMode.JAR
     minecraft_version: str = ""
     server_type: str = "custom"
     java_path: str = "java"
@@ -78,6 +84,7 @@ class CreateServerInstanceRequest(BaseModel):
     display_name: str
     server_dir: str | None = None
     jar_file: str
+    launch_mode: LaunchMode = LaunchMode.JAR
     minecraft_version: str = ""
     server_type: str = "custom"
     java_path: str = "java"
@@ -98,6 +105,7 @@ class CreateServerInstanceRequest(BaseModel):
 class UpdateServerInstanceRequest(BaseModel):
     display_name: str | None = None
     jar_file: str | None = None
+    launch_mode: LaunchMode | None = None
     minecraft_version: str | None = None
     server_type: str | None = None
     java_path: str | None = None
@@ -112,6 +120,11 @@ class UpdateServerInstanceRequest(BaseModel):
 
 class SelectActiveServerJarRequest(BaseModel):
     path: str = Field(min_length=1, max_length=512)
+
+
+class SelectActiveLaunchTargetRequest(BaseModel):
+    path: str = Field(min_length=1, max_length=512)
+    launch_mode: LaunchMode = LaunchMode.JAR
 
 
 class ConsoleCommandRequest(BaseModel):

@@ -447,7 +447,8 @@ function renderDashboard() {
     metric("Тип", active?.server_type || "-"),
     metric("Uptime", formatSeconds(state.workData?.uptime_seconds)),
     metric("PID", state.workData?.pid || "-"),
-    metric("Jar", active?.jar_file || "-"),
+    metric("Launch", active?.launch_mode || "jar"),
+    metric("Target", active?.jar_file || "-"),
   ].join("");
 
   const metrics = state.workData?.metrics || {};
@@ -483,7 +484,7 @@ function renderServers() {
             <div>
               <strong>${escapeHtml(server.display_name)}</strong>
               ${active ? '<span class="pill status-running">Активен</span>' : ""}
-              <div class="server-meta">${escapeHtml(server.id)} · ${escapeHtml(server.server_type || "custom")} · ${escapeHtml(server.minecraft_version || "version?")} · ${escapeHtml(server.jar_file)}</div>
+              <div class="server-meta">${escapeHtml(server.id)} · ${escapeHtml(server.server_type || "custom")} · ${escapeHtml(server.minecraft_version || "version?")} · ${escapeHtml(server.launch_mode || "jar")} · ${escapeHtml(server.jar_file)}</div>
             </div>
             <div class="row-actions">
               <button class="btn small" data-action="activate" data-id="${escapeHtml(server.id)}" ${active ? "disabled" : ""}>Активировать</button>
@@ -555,6 +556,7 @@ function openServerSettings(serverId) {
   form.elements.id.value = server.id;
   form.elements.display_name.value = server.display_name || "";
   form.elements.jar_file.value = server.jar_file || "";
+  form.elements.launch_mode.value = server.launch_mode || "jar";
   form.elements.minecraft_version.value = server.minecraft_version || "";
   form.elements.server_type.value = server.server_type || "";
   form.elements.xms_gb.value = mbToGb(server.xms_mb);
@@ -942,9 +944,9 @@ function renderFileDetails() {
   $("#file-details-edit").hidden = !item?.editable;
   $("#file-details-download").hidden = item?.type !== "file";
   $("#file-details-download").href = item ? downloadUrl(item.path) : "#";
-  $("#file-details-select-core").hidden = !isJarFile(item);
-  $("#file-details-select-core").disabled = !isJarFile(item) || isServerCoreFile(item);
-  $("#file-details-select-core").textContent = isServerCoreFile(item) ? "Текущее ядро" : "Выбрать ядро";
+  $("#file-details-select-core").hidden = !isLaunchTargetFile(item);
+  $("#file-details-select-core").disabled = !isLaunchTargetFile(item) || isServerCoreFile(item);
+  $("#file-details-select-core").textContent = isServerCoreFile(item) ? "Current launch target" : launchTargetButtonLabel(item);
 }
 
 function filteredFileItems() {
@@ -1015,15 +1017,32 @@ function isJarFile(item) {
   return item?.type === "file" && normalizeFilePath(item.path).endsWith(".jar");
 }
 
+function isForgeArgsFile(item) {
+  const path = normalizeFilePath(item?.path || "");
+  return item?.type === "file" && /(^|\/)libraries\/net\/minecraftforge\/forge\/[^/]+\/(win_args|unix_args)\.txt$/.test(path);
+}
+
+function isLaunchTargetFile(item) {
+  return isJarFile(item) || isForgeArgsFile(item);
+}
+
 function isServerCoreFile(item) {
-  return isJarFile(item) && normalizeFilePath(item.path) === activeServerJarPath();
+  return isLaunchTargetFile(item) && normalizeFilePath(item.path) === activeServerJarPath();
+}
+
+function launchModeForFile(item) {
+  return isForgeArgsFile(item) ? "forge_args" : "jar";
+}
+
+function launchTargetButtonLabel(item) {
+  return isForgeArgsFile(item) ? "Use Forge args launch" : "Use JAR core";
 }
 
 async function selectActiveServerCore(item) {
-  if (!isJarFile(item)) return;
-  const server = await api("/api/servers/active/jar", {
+  if (!isLaunchTargetFile(item)) return;
+  const server = await api("/api/servers/active/launch-target", {
     method: "POST",
-    body: JSON.stringify({ path: item.path }),
+    body: JSON.stringify({ path: item.path, launch_mode: launchModeForFile(item) }),
   });
   state.activeServer = server;
   state.servers = state.servers.map((candidate) => (candidate.id === server.id ? server : candidate));
@@ -1032,12 +1051,13 @@ async function selectActiveServerCore(item) {
   }
   renderHeader();
   renderFileBrowser();
-  toast("Ядро сервера выбрано");
+  toast("Launch target selected");
 }
 
 function fileTypeLabel(item) {
   if (item.type === "directory") return "Папка";
   if (isJarFile(item)) return "JAR файл";
+  if (isForgeArgsFile(item)) return "Forge args";
   return item.editable ? "Текстовый файл" : "Файл";
 }
 
@@ -1359,6 +1379,7 @@ function bindEvents() {
       display_name: String(formNode.elements.display_name.value || "").trim(),
       minecraft_version: String(formNode.elements.minecraft_version.value || "").trim(),
       server_type: String(formNode.elements.server_type.value || "").trim() || "custom",
+      launch_mode: String(formNode.elements.launch_mode.value || "jar"),
       java_path: String(formNode.elements.java_path.value || "").trim() || defaultJavaPath(),
       xms_mb: gbToMb(formNode.elements.xms_gb.value, 1),
       xmx_mb: gbToMb(formNode.elements.xmx_gb.value, 1),

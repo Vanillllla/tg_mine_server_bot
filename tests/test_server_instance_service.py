@@ -3,7 +3,7 @@ from pathlib import Path
 import app.services.server_instances as server_instances
 from app.core.json_store import write_json_atomic
 from app.core.settings import AppSettings
-from app.models.server import CreateServerInstanceRequest, UpdateServerInstanceRequest
+from app.models.server import CreateServerInstanceRequest, LaunchMode, UpdateServerInstanceRequest
 from app.services.server_instances import ServerInstanceService
 
 
@@ -204,3 +204,78 @@ def test_set_active_server_jar_updates_core_file(tmp_path: Path) -> None:
 
     assert updated.jar_file == "paper.jar"
     assert service.get_active_server().jar_file == "paper.jar"
+
+
+def test_set_active_server_jar_rejects_txt_file(tmp_path: Path) -> None:
+    settings = AppSettings(panel_home=tmp_path / "mc-panel")
+    settings.ensure_runtime_layout()
+    service = ServerInstanceService(settings)
+
+    server = service.create_server(
+        CreateServerInstanceRequest(
+            id="test_server",
+            display_name="Test Server",
+            jar_file="server.jar",
+        )
+    )
+    server_dir = Path(server.server_dir)
+    (server_dir / "server.txt").write_text("not a jar", encoding="utf-8")
+
+    try:
+        service.set_active_server_jar("server.txt")
+    except ValueError as exc:
+        assert str(exc) == "jar_file_must_be_jar"
+    else:
+        raise AssertionError("txt file was accepted as jar launch target")
+
+
+def test_set_active_launch_target_accepts_forge_args_file(tmp_path: Path) -> None:
+    settings = AppSettings(panel_home=tmp_path / "mc-panel")
+    settings.ensure_runtime_layout()
+    service = ServerInstanceService(settings)
+
+    server = service.create_server(
+        CreateServerInstanceRequest(
+            id="forge_server",
+            display_name="Forge Server",
+            jar_file="server.jar",
+        )
+    )
+    server_dir = Path(server.server_dir)
+    forge_args = server_dir / "libraries" / "net" / "minecraftforge" / "forge" / "1.20.1-47.2.0" / "win_args.txt"
+    forge_args.parent.mkdir(parents=True)
+    forge_args.write_text("--launchTarget forge_server\n", encoding="utf-8")
+
+    updated = service.set_active_launch_target(
+        "libraries/net/minecraftforge/forge/1.20.1-47.2.0/win_args.txt",
+        LaunchMode.FORGE_ARGS,
+    )
+
+    assert updated.launch_mode == LaunchMode.FORGE_ARGS
+    assert updated.jar_file == "libraries/net/minecraftforge/forge/1.20.1-47.2.0/win_args.txt"
+
+
+def test_find_forge_args_files_prefers_newest_version(tmp_path: Path) -> None:
+    settings = AppSettings(panel_home=tmp_path / "mc-panel")
+    settings.ensure_runtime_layout()
+    service = ServerInstanceService(settings)
+
+    server = service.create_server(
+        CreateServerInstanceRequest(
+            id="forge_server",
+            display_name="Forge Server",
+            jar_file="server.jar",
+        )
+    )
+    server_dir = Path(server.server_dir)
+    args_name = "win_args.txt" if server_instances.os.name == "nt" else "unix_args.txt"
+    old_args = server_dir / "libraries" / "net" / "minecraftforge" / "forge" / "1.19.4-45.1.0" / args_name
+    new_args = server_dir / "libraries" / "net" / "minecraftforge" / "forge" / "1.20.1-47.2.0" / args_name
+    old_args.parent.mkdir(parents=True)
+    new_args.parent.mkdir(parents=True)
+    old_args.write_text("old\n", encoding="utf-8")
+    new_args.write_text("new\n", encoding="utf-8")
+
+    matches = service.find_forge_args_files(server)
+
+    assert matches[0] == f"libraries/net/minecraftforge/forge/1.20.1-47.2.0/{args_name}"

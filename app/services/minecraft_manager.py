@@ -12,7 +12,7 @@ except ImportError:  # pragma: no cover - optional until dependencies are instal
     psutil = None
 
 from app.core.json_store import read_json
-from app.models.server import ServerInstance, ServerStatus
+from app.models.server import LaunchMode, ServerInstance, ServerStatus
 from app.services.log_buffer import LogBuffer
 from app.services.server_instances import ServerInstanceService
 
@@ -84,7 +84,10 @@ class MinecraftServerManager:
                 )
             except Exception as exc:
                 self.status = ServerStatus.ERROR
-                self.start_error = f"start_failed: {exc}"
+                if isinstance(exc, FileNotFoundError):
+                    self.start_error = f"java_not_found: {server.java_path}"
+                else:
+                    self.start_error = f"start_failed: {exc}"
                 self.process = None
                 await self.log_buffer.append("stderr", server.id, self.start_error)
                 raise
@@ -181,12 +184,24 @@ class MinecraftServerManager:
         if self.process and self.process.poll() is None:
             await self.stop()
 
-    def _build_launch_args(self, server: ServerInstance) -> list[str]:
-        return [
+    @staticmethod
+    def _build_launch_args(server: ServerInstance) -> list[str]:
+        base_args = [
             server.java_path,
             f"-Xms{server.xms_mb}M",
             f"-Xmx{server.xmx_mb}M",
             *server.jvm_args,
+        ]
+        if server.launch_mode == LaunchMode.FORGE_ARGS:
+            forge_args_path = server.jar_file.replace("\\", "/")
+            return [
+                *base_args,
+                "@user_jvm_args.txt",
+                f"@{forge_args_path}",
+                *server.server_args,
+            ]
+        return [
+            *base_args,
             "-jar",
             str(Path(server.server_dir) / server.jar_file),
             *server.server_args,
@@ -197,10 +212,38 @@ class MinecraftServerManager:
         server_dir = Path(server.server_dir)
         if not server_dir.is_dir():
             raise FileNotFoundError(f"server_dir_not_found: {server_dir}")
-        if not server.jar_path.is_file():
-            raise FileNotFoundError(f"jar_file_not_found: {server.jar_path}")
+        if server.launch_mode == LaunchMode.FORGE_ARGS:
+            target_path = server_dir / server.jar_file
+            if not cls._is_forge_args_path(Path(server.jar_file)):
+                raise ValueError("forge_args_file_must_be_args_txt")
+            if not target_path.is_file():
+                raise FileNotFoundError(f"forge_args_file_not_found: {target_path}")
+            user_jvm_args = server_dir / "user_jvm_args.txt"
+            if not user_jvm_args.is_file():
+                raise FileNotFoundError(f"user_jvm_args_file_not_found: {user_jvm_args}")
+        else:
+            if Path(server.jar_file).suffix.lower() != ".jar":
+                raise ValueError("jar_file_must_be_jar")
+            if not server.jar_path.is_file():
+                raise FileNotFoundError(f"jar_file_not_found: {server.jar_path}")
         if not cls._eula_file_is_accepted(server_dir / "eula.txt"):
             raise ValueError("eula_must_be_accepted_before_start")
+
+    @staticmethod
+    def _is_forge_args_path(path: Path) -> bool:
+        parts = [part.lower() for part in path.parts]
+        forge_root = ["libraries", "net", "minecraftforge", "forge"]
+        root_index = next(
+            (
+                index
+                for index in range(len(parts) - len(forge_root) + 1)
+                if parts[index : index + len(forge_root)] == forge_root
+            ),
+            -1,
+        )
+        return (
+            path.name.lower() in {"win_args.txt", "unix_args.txt"} or path.name.lower().endswith("_args.txt")
+        ) and root_index >= 0
 
     @staticmethod
     def _eula_file_is_accepted(path: Path) -> bool:

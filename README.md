@@ -61,11 +61,28 @@ The panel can control the active Minecraft server process:
 - store startup errors;
 - shut the process down when the backend exits.
 
-The launch command is assembled from the selected server settings:
+The default `jar` launch mode is assembled from the selected server settings:
 
 ```text
 <java_path> -Xms<XMS>M -Xmx<XMX>M <jvm_args> -jar <server.jar> <server_args>
 ```
+
+Forge 1.17+ servers can use the `forge_args` launch mode instead of `-jar`.
+In this mode the active launch target is the Forge args file inside the server
+folder, for example:
+
+```text
+libraries/net/minecraftforge/forge/1.20.1-47.x.x/win_args.txt
+```
+
+The resulting command is:
+
+```text
+<java_path> -Xms<XMS>M -Xmx<XMX>M <jvm_args> @user_jvm_args.txt @libraries/net/minecraftforge/forge/<version>/win_args.txt <server_args>
+```
+
+On Linux/macOS the target is `unix_args.txt` instead of `win_args.txt`.
+Minecraft 1.20.1 requires Java 17.
 
 Default JVM/server arguments:
 
@@ -475,9 +492,14 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000
 2. Click **Add server**.
 3. Select **Import from zip**.
 4. Upload a `.zip` archive with the ready server folder.
-5. Optionally specify the `.jar` file inside the archive.
-6. If no `.jar` is specified, the backend tries to choose a suitable one automatically.
-7. Create and activate the server.
+5. Choose the launch mode:
+   - **JAR core** for Vanilla, Paper, Spigot, and old Forge servers.
+   - **Forge 1.17+ / args launch** for new Forge servers.
+6. Optionally specify the launch target inside the archive.
+7. If no target is specified, the backend tries to choose a suitable `.jar` or Forge args file automatically.
+8. For Forge 1.20.1 the args file usually looks like `libraries/net/minecraftforge/forge/1.20.1-47.x.x/win_args.txt`.
+9. Minecraft 1.20.1 requires Java 17.
+10. Create and activate the server.
 
 #### Use the console
 
@@ -704,6 +726,17 @@ Add a `LICENSE` file to the repository with the MIT license text.
 ```text
 <java_path> -Xms<XMS>M -Xmx<XMX>M <jvm_args> -jar <server.jar> <server_args>
 ```
+
+Forge 1.17+ can also use `forge_args` launch mode:
+
+```text
+<java_path> -Xms<XMS>M -Xmx<XMX>M <jvm_args> @user_jvm_args.txt @libraries/net/minecraftforge/forge/<version>/unix_args.txt <server_args>
+```
+
+Use `win_args.txt` on Windows and `unix_args.txt` on Linux/macOS. For Forge
+1.20.1 the path usually looks like
+`libraries/net/minecraftforge/forge/1.20.1-47.x.x/win_args.txt`, and Minecraft
+1.20.1 requires Java 17.
 
 Аргументы по умолчанию:
 
