@@ -31,6 +31,8 @@ PERMISSIONS = {
     "console.send_command",
     "console.send_dangerous_command",
     "client_mods.download",
+    "map.view",
+    "map.manage",
     "files.view",
     "files.upload",
     "files.download",
@@ -65,6 +67,7 @@ INVITED_USER_PERMISSIONS = sorted(
         "server.view_status",
         "server.view_metrics",
         "client_mods.download",
+        "map.view",
     }
 )
 

@@ -12,6 +12,7 @@ from app.core.json_store import read_json, write_json_atomic
 from app.core.settings import AppSettings
 from app.models.server import (
     CreateServerInstanceRequest,
+    ServerMapSettings,
     ServerInstance,
     UpdateServerInstanceRequest,
 )
@@ -137,6 +138,9 @@ class ServerInstanceService:
             raise FileNotFoundError("jar_file_not_found")
 
         return self.update_server(server.id, UpdateServerInstanceRequest(jar_file=candidate.as_posix()))
+
+    def update_server_map(self, server_id: str, map_settings: ServerMapSettings) -> ServerInstance:
+        return self.update_server(server_id, UpdateServerInstanceRequest(map=map_settings))
 
     def delete_server(self, server_id: str, delete_files: bool = True) -> None:
         server = self.get_server(server_id)

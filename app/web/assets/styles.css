@@ -586,6 +586,35 @@ h2 {
   max-height: 260px;
 }
 
+.map-panel {
+  min-height: calc(100vh - 150px);
+}
+
+.map-frame {
+  width: 100%;
+  height: min(72vh, 820px);
+  min-height: 520px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #05070a;
+}
+
+.map-placeholder {
+  display: grid;
+  min-height: 520px;
+  place-content: center;
+  gap: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.map-placeholder h2,
+.map-placeholder p {
+  margin: 0;
+}
+
 .servers-list,
 .invite-box {
   display: grid;

@@ -7,6 +7,7 @@ from app.models.auth import AuthUser
 from app.services.auth import SESSION_COOKIE_NAME, AuthService
 from app.services.file_manager import FileManagerService
 from app.services.log_buffer import LogBuffer
+from app.services.map_integration import BlueMapIntegrationService
 from app.services.minecraft_manager import MinecraftServerManager
 from app.services.panel_settings import PanelSettingsService
 from app.services.server_properties import ServerPropertiesService
@@ -28,6 +29,10 @@ def get_log_buffer(request: Request) -> LogBuffer:
 
 def get_manager(request: Request) -> MinecraftServerManager:
     return cast(MinecraftServerManager, request.app.state.minecraft_manager)
+
+
+def get_map_service(request: Request) -> BlueMapIntegrationService:
+    return cast(BlueMapIntegrationService, request.app.state.map_service)
 
 
 def get_properties_service(request: Request) -> ServerPropertiesService:
