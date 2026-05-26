@@ -1,3 +1,5 @@
+import os
+import re
 from pathlib import Path, PurePosixPath
 from zipfile import BadZipFile, ZipFile, ZipInfo
 
@@ -15,6 +17,8 @@ from app.models.auth import AuthUser
 from app.models.server import (
     ConsoleCommandRequest,
     CreateServerInstanceRequest,
+    LaunchMode,
+    SelectActiveLaunchTargetRequest,
     SelectActiveServerJarRequest,
     ServerInstance,
     UpdateServerInstanceRequest,
@@ -23,6 +27,15 @@ from app.models.server import (
 router = APIRouter(prefix="/api/servers", tags=["servers"])
 
 UPLOAD_COPY_CHUNK_SIZE = 8 * 1024 * 1024
+LAUNCH_SETTING_FIELDS = {
+    "jar_file",
+    "launch_mode",
+    "java_path",
+    "xms_mb",
+    "xmx_mb",
+    "jvm_args",
+    "server_args",
+}
 
 
 def _validation_error_detail(exc: ValidationError) -> str:
@@ -96,6 +109,55 @@ def _choose_jar_file(entries: list[tuple[ZipInfo, Path, bool]], requested: str =
     return jars[0].as_posix()
 
 
+def _is_forge_args_file(path: Path) -> bool:
+    normalized = path.as_posix().lower()
+    filename = path.name.lower()
+    in_forge_lib = "/libraries/net/minecraftforge/forge/" in f"/{normalized}"
+    return in_forge_lib and (filename in {"win_args.txt", "unix_args.txt"} or filename.endswith("_args.txt"))
+
+
+def _forge_args_sort_key(path: Path) -> tuple:
+    version = path.parent.name
+    parts: list[int | str] = []
+    for token in re.split(r"([0-9]+)", version):
+        if not token:
+            continue
+        parts.append(int(token) if token.isdigit() else token.lower())
+    preferred = "win_args.txt" if os.name == "nt" else "unix_args.txt"
+    preferred_os = 0 if path.name.lower() == preferred else 1
+    return (*parts, -preferred_os)
+
+
+def _choose_forge_args_file(entries: list[tuple[ZipInfo, Path, bool]], requested: str = "") -> str:
+    if requested:
+        candidate_path = PurePosixPath(requested.replace("\\", "/"))
+        if candidate_path.is_absolute() or any(part in {"", ".", ".."} or part.endswith(":") for part in candidate_path.parts):
+            raise ValueError("jar_file_has_unsafe_path")
+        candidate = Path(*candidate_path.parts)
+        if not _is_forge_args_file(candidate):
+            raise ValueError("forge_args_path_invalid")
+        if any(relative.as_posix() == candidate.as_posix() for info, relative, is_dir in entries if not is_dir):
+            return candidate.as_posix()
+        raise ValueError("forge_args_file_not_found_in_archive")
+
+    args_files = [relative for info, relative, is_dir in entries if not is_dir and _is_forge_args_file(relative)]
+    if not args_files:
+        raise ValueError("archive_must_contain_forge_args_file")
+    args_files.sort(key=_forge_args_sort_key, reverse=True)
+    preferred = "win_args.txt" if os.name == "nt" else "unix_args.txt"
+    return next((path.as_posix() for path in args_files if path.name.lower() == preferred), args_files[0].as_posix())
+
+
+def _reject_active_launch_settings_change_while_running(request: Request, server_id: str, payload: UpdateServerInstanceRequest) -> None:
+    changes = payload.model_dump(exclude_unset=True, exclude_none=True)
+    if not (LAUNCH_SETTING_FIELDS & changes.keys()):
+        return
+    manager = get_manager(request)
+    service = get_instance_service(request)
+    if manager.is_running() and service.active_server_id == server_id:
+        raise HTTPException(status_code=409, detail="active_launch_settings_cannot_be_changed_while_running")
+
+
 def _extract_archive(archive: ZipFile, entries: list[tuple[ZipInfo, Path, bool]], target_dir: Path) -> None:
     root = target_dir.resolve()
     for info, relative, is_dir in entries:
@@ -142,6 +204,7 @@ async def create_server_from_uploaded_core(
     display_name: str = Form(...),
     minecraft_version: str = Form(""),
     server_type: str = Form("custom"),
+    launch_mode: LaunchMode = Form(LaunchMode.JAR),
     java_path: str = Form("java"),
     xms_mb: int = Form(1024),
     xmx_mb: int = Form(1024),
@@ -149,6 +212,8 @@ async def create_server_from_uploaded_core(
     core_file: UploadFile = File(...),
     current_user: AuthUser = Depends(require_permission("files.upload_core")),
 ) -> ServerInstance:
+    if launch_mode != LaunchMode.JAR:
+        raise HTTPException(status_code=400, detail="upload_core_supports_only_jar_launch_mode")
     if not core_file.filename:
         raise HTTPException(status_code=400, detail="core_file_required")
     jar_name = Path(core_file.filename).name
@@ -163,6 +228,7 @@ async def create_server_from_uploaded_core(
             jar_file=jar_name,
             minecraft_version=minecraft_version,
             server_type=server_type or "custom",
+            launch_mode=launch_mode,
             java_path=java_path or "java",
             xms_mb=xms_mb,
             xmx_mb=xmx_mb,
@@ -199,6 +265,7 @@ async def create_server_from_archive(
     display_name: str = Form(...),
     minecraft_version: str = Form(""),
     server_type: str = Form("custom"),
+    launch_mode: LaunchMode = Form(LaunchMode.JAR),
     java_path: str = Form("java"),
     xms_mb: int = Form(1024),
     xmx_mb: int = Form(1024),
@@ -215,6 +282,7 @@ async def create_server_from_archive(
             id=id,
             display_name=display_name,
             jar_file="server.jar",
+            launch_mode=launch_mode,
             minecraft_version=minecraft_version,
             server_type=server_type or "custom",
             java_path=java_path or "java",
@@ -237,8 +305,12 @@ async def create_server_from_archive(
 
         with ZipFile(temp_archive_path) as archive:
             entries = _safe_archive_entries(archive)
-            selected_jar = _choose_jar_file(entries, jar_file.strip())
-            payload = payload.model_copy(update={"jar_file": selected_jar})
+            selected_target = (
+                _choose_forge_args_file(entries, jar_file.strip())
+                if launch_mode == LaunchMode.FORGE_ARGS
+                else _choose_jar_file(entries, jar_file.strip())
+            )
+            payload = payload.model_copy(update={"jar_file": selected_target})
             server = service.create_server(payload)
             created_server_id = server.id
             _extract_archive(archive, entries, Path(server.server_dir))
@@ -275,8 +347,56 @@ async def select_active_server_jar(
     payload: SelectActiveServerJarRequest,
     current_user: AuthUser = Depends(require_permission("servers.edit_launch_settings")),
 ) -> ServerInstance:
+    if get_manager(request).is_running():
+        raise HTTPException(status_code=409, detail="active_launch_settings_cannot_be_changed_while_running")
     try:
         return get_instance_service(request).set_active_server_jar(payload.path)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/active/launch-target", response_model=ServerInstance)
+async def select_active_launch_target(
+    request: Request,
+    payload: SelectActiveLaunchTargetRequest,
+    current_user: AuthUser = Depends(require_permission("servers.edit_launch_settings")),
+) -> ServerInstance:
+    if get_manager(request).is_running():
+        raise HTTPException(status_code=409, detail="active_launch_settings_cannot_be_changed_while_running")
+    try:
+        return get_instance_service(request).set_active_launch_target(payload.path, payload.launch_mode)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/active/forge-args")
+async def list_active_forge_args(
+    request: Request,
+    current_user: AuthUser = Depends(require_permission("servers.view")),
+) -> dict:
+    server = get_instance_service(request).get_active_server()
+    if server is None:
+        raise HTTPException(status_code=404, detail="active_server_not_selected")
+    return {"items": get_instance_service(request).find_forge_args_files(server)}
+
+
+@router.post("/active/forge-args/auto-select", response_model=ServerInstance)
+async def auto_select_active_forge_args(
+    request: Request,
+    current_user: AuthUser = Depends(require_permission("servers.edit_launch_settings")),
+) -> ServerInstance:
+    if get_manager(request).is_running():
+        raise HTTPException(status_code=409, detail="active_launch_settings_cannot_be_changed_while_running")
+    try:
+        return get_instance_service(request).auto_select_active_forge_args()
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except FileNotFoundError as exc:
@@ -322,6 +442,7 @@ async def update_server(
     payload: UpdateServerInstanceRequest,
     current_user: AuthUser = Depends(require_permission("servers.edit_launch_settings")),
 ) -> ServerInstance:
+    _reject_active_launch_settings_change_while_running(request, server_id, payload)
     try:
         return get_instance_service(request).update_server(server_id, payload)
     except KeyError as exc:

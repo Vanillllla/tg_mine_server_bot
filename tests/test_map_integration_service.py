@@ -2,7 +2,7 @@ from pathlib import Path
 
 from app.core.settings import AppSettings
 from app.models.server import CreateServerInstanceRequest
-from app.services.map_integration import BlueMapIntegrationService
+from app.services.map_integration import BLUEMAP_PROVIDER_ID, DYNMAP_PROVIDER_ID, BlueMapIntegrationService
 from app.services.server_instances import ServerInstanceService
 
 
@@ -65,7 +65,8 @@ def test_resolve_provider_version_uses_family_game_version_tags(tmp_path: Path, 
     instance_service, map_service = make_service(tmp_path)
     create_server(instance_service)
 
-    def fake_fetch(minecraft_version, loader, featured):
+    def fake_fetch(provider_id, minecraft_version, loader, featured):
+        assert provider_id == BLUEMAP_PROVIDER_ID
         if minecraft_version is not None:
             return []
         return [
@@ -78,11 +79,45 @@ def test_resolve_provider_version_uses_family_game_version_tags(tmp_path: Path, 
             }
         ]
 
-    monkeypatch.setattr(map_service, "_fetch_bluemap_versions", fake_fetch)
+    monkeypatch.setattr(map_service, "_fetch_provider_versions", fake_fetch)
 
-    resolved = map_service.resolve_provider_version(instance_service.get_server("paper_server"))
+    provider_id, resolved = map_service.resolve_provider_version(instance_service.get_server("paper_server"))
 
+    assert provider_id == BLUEMAP_PROVIDER_ID
     assert resolved.version_number == "5.2-spigot"
+
+
+def test_resolve_provider_version_falls_back_to_dynmap_for_old_forge(tmp_path: Path, monkeypatch) -> None:
+    instance_service, map_service = make_service(tmp_path)
+    instance_service.create_server(
+        CreateServerInstanceRequest(
+            id="forge1122",
+            display_name="Forge 1.12.2",
+            jar_file="forge.jar",
+            minecraft_version="1.12.2",
+            server_type="forge",
+        )
+    )
+
+    def fake_fetch(provider_id, minecraft_version, loader, featured):
+        if provider_id == BLUEMAP_PROVIDER_ID:
+            return []
+        return [
+            {
+                "version_number": "3.7-beta-4",
+                "date_published": "2024-01-01T00:00:00Z",
+                "loaders": [loader],
+                "game_versions": ["1.12.2"],
+                "files": [{"primary": True, "filename": "Dynmap.jar", "url": "https://example.test/Dynmap.jar"}],
+            }
+        ]
+
+    monkeypatch.setattr(map_service, "_fetch_provider_versions", fake_fetch)
+
+    provider_id, resolved = map_service.resolve_provider_version(instance_service.get_server("forge1122"))
+
+    assert provider_id == DYNMAP_PROVIDER_ID
+    assert resolved.version_number == "3.7-beta-4"
 
 
 def test_version_range_match() -> None:
@@ -98,8 +133,8 @@ def test_install_writes_plugin_jar_and_map_settings(tmp_path: Path, monkeypatch)
 
     monkeypatch.setattr(
         map_service,
-        "_fetch_bluemap_versions",
-        lambda minecraft_version, loader, featured: [
+        "_fetch_provider_versions",
+        lambda provider_id, minecraft_version, loader, featured: [
             {
                 "version_number": "5.2",
                 "date_published": "2025-01-01T00:00:00Z",
@@ -130,8 +165,8 @@ def test_install_writes_mod_jar_for_fabric(tmp_path: Path, monkeypatch) -> None:
 
     monkeypatch.setattr(
         map_service,
-        "_fetch_bluemap_versions",
-        lambda minecraft_version, loader, featured: [
+        "_fetch_provider_versions",
+        lambda provider_id, minecraft_version, loader, featured: [
             {
                 "version_number": "5.2",
                 "date_published": "2025-01-01T00:00:00Z",
@@ -159,4 +194,40 @@ def test_install_rejects_running_server(tmp_path: Path) -> None:
         assert str(exc) == "stop_server_before_installing_map"
     else:
         raise AssertionError("running server map install was accepted")
+
+
+def test_install_dynmap_fallback_for_forge_1122(tmp_path: Path, monkeypatch) -> None:
+    instance_service, map_service = make_service(tmp_path)
+    instance_service.create_server(
+        CreateServerInstanceRequest(
+            id="forge1122",
+            display_name="Forge 1.12.2",
+            jar_file="forge.jar",
+            minecraft_version="1.12.2",
+            server_type="forge",
+        )
+    )
+
+    def fake_fetch(provider_id, minecraft_version, loader, featured):
+        if provider_id == BLUEMAP_PROVIDER_ID:
+            return []
+        return [
+            {
+                "version_number": "3.7-beta-4",
+                "date_published": "2024-01-01T00:00:00Z",
+                "files": [{"primary": True, "filename": "Dynmap.jar", "url": "https://example.test/Dynmap.jar"}],
+            }
+        ]
+
+    monkeypatch.setattr(map_service, "_fetch_provider_versions", fake_fetch)
+    monkeypatch.setattr(map_service, "_download_file", lambda url, target: target.write_bytes(b"dynmap"))
+
+    server = map_service.install("forge1122")
+    server_dir = Path(server.server_dir)
+
+    assert server.map.provider == DYNMAP_PROVIDER_ID
+    assert server.map.web_port == 8123
+    assert server.map.jar_path == "mods/Dynmap.jar"
+    assert (server_dir / "mods" / "Dynmap.jar").read_bytes() == b"dynmap"
+    assert (server_dir / "dynmap" / "configuration.txt").is_file()
 

@@ -42,8 +42,8 @@ def create_server(client: TestClient) -> dict:
 def stub_bluemap_download(monkeypatch) -> None:
     monkeypatch.setattr(
         BlueMapIntegrationService,
-        "_fetch_bluemap_versions",
-        lambda self, minecraft_version, loader, featured: [
+        "_fetch_provider_versions",
+        lambda self, provider_id, minecraft_version, loader, featured: [
             {
                 "version_number": "5.2",
                 "date_published": "2025-01-01T00:00:00Z",

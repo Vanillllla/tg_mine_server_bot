@@ -12,11 +12,12 @@ except ImportError:  # pragma: no cover - optional until dependencies are instal
     psutil = None
 
 from app.core.json_store import read_json
-from app.models.server import ServerInstance, ServerStatus
+from app.models.server import LaunchMode, ServerInstance, ServerStatus
 from app.services.log_buffer import LogBuffer
 from app.services.server_instances import ServerInstanceService
 
 
+TPS_CAPABLE_SERVER_TYPES = {"paper", "purpur", "spigot", "bukkit"}
 PLAYER_JOINED_RE = re.compile(r":\s*(?P<name>[A-Za-z0-9_]{1,16}) joined the game\b")
 PLAYER_LEFT_RE = re.compile(r":\s*(?P<name>[A-Za-z0-9_]{1,16}) left the game\b")
 TPS_RE = re.compile(r"\bTPS(?: from last [^:]+)?:\s*\*?(?P<tps>\d+(?:\.\d+)?)", re.IGNORECASE)
@@ -93,7 +94,11 @@ class MinecraftServerManager:
             self._stderr_task = asyncio.create_task(self._read_stream("stderr", server.id))
             self._monitor_task = asyncio.create_task(self._monitor_startup(server))
             self._empty_shutdown_task = asyncio.create_task(self._monitor_empty_shutdown(server.id))
-            self._tps_task = asyncio.create_task(self._monitor_tps(server.id))
+            self._tps_task = (
+                asyncio.create_task(self._monitor_tps(server.id))
+                if self._server_supports_tps_command(server)
+                else None
+            )
 
     async def stop(self) -> None:
         async with self._lock:
@@ -147,8 +152,11 @@ class MinecraftServerManager:
         server_id = self.current_server_id or "active"
         if log:
             await self.log_buffer.append("stdin", server_id, f"> {line}")
-        self.process.stdin.write(line + "\n")
-        self.process.stdin.flush()
+        try:
+            self.process.stdin.write(line + "\n")
+            self.process.stdin.flush()
+        except (BrokenPipeError, OSError) as exc:
+            raise RuntimeError("server_stdin_closed") from exc
 
     def get_status(self) -> dict[str, Any]:
         self._sync_process_state()
@@ -182,25 +190,56 @@ class MinecraftServerManager:
             await self.stop()
 
     def _build_launch_args(self, server: ServerInstance) -> list[str]:
-        return [
+        base_args = [
             server.java_path,
             f"-Xms{server.xms_mb}M",
             f"-Xmx{server.xmx_mb}M",
             *server.jvm_args,
-            "-jar",
-            str(Path(server.server_dir) / server.jar_file),
-            *server.server_args,
         ]
+        if server.launch_mode == LaunchMode.FORGE_ARGS:
+            forge_args_path = self._forge_args_path_for_current_os(server).as_posix()
+            return [*base_args, "@user_jvm_args.txt", f"@{forge_args_path}", *server.server_args]
+        return [*base_args, "-jar", str(Path(server.server_dir) / server.jar_file), *server.server_args]
 
     @classmethod
     def _validate_launch(cls, server: ServerInstance) -> None:
         server_dir = Path(server.server_dir)
         if not server_dir.is_dir():
             raise FileNotFoundError(f"server_dir_not_found: {server_dir}")
-        if not server.jar_path.is_file():
+        if server.launch_mode == LaunchMode.FORGE_ARGS:
+            if not cls._is_forge_args_path(server.jar_file):
+                raise ValueError("forge_args_path_invalid")
+            forge_args_path = server_dir / cls._forge_args_path_for_current_os(server)
+            if not forge_args_path.is_file():
+                raise FileNotFoundError(f"forge_args_file_not_found: {forge_args_path}")
+            user_jvm_args_path = server_dir / "user_jvm_args.txt"
+            if not user_jvm_args_path.is_file():
+                raise FileNotFoundError(f"user_jvm_args_file_not_found: {user_jvm_args_path}")
+        elif not server.jar_path.is_file():
             raise FileNotFoundError(f"jar_file_not_found: {server.jar_path}")
         if not cls._eula_file_is_accepted(server_dir / "eula.txt"):
             raise ValueError("eula_must_be_accepted_before_start")
+
+    @classmethod
+    def _forge_args_path_for_current_os(cls, server: ServerInstance) -> Path:
+        path = Path(server.jar_file.replace("\\", "/"))
+        desired_name = "win_args.txt" if os.name == "nt" else "unix_args.txt"
+        if path.name in {"win_args.txt", "unix_args.txt"} and path.name != desired_name:
+            sibling = path.with_name(desired_name)
+            if (Path(server.server_dir) / sibling).is_file():
+                return sibling
+        return path
+
+    @staticmethod
+    def _is_forge_args_path(path: str) -> bool:
+        normalized = path.replace("\\", "/").lower()
+        filename = normalized.rsplit("/", 1)[-1]
+        in_forge_lib = "/libraries/net/minecraftforge/forge/" in f"/{normalized}"
+        return in_forge_lib and (filename in {"win_args.txt", "unix_args.txt"} or filename.endswith("_args.txt"))
+
+    @staticmethod
+    def _server_supports_tps_command(server: ServerInstance) -> bool:
+        return (server.server_type or "").lower() in TPS_CAPABLE_SERVER_TYPES
 
     @staticmethod
     def _eula_file_is_accepted(path: Path) -> bool:

@@ -48,12 +48,11 @@ async def install_server_map(
     payload: MapInstallRequest | None = None,
     current_user: AuthUser = Depends(require_permission("map.manage")),
 ) -> MapStatusResponse:
-    if payload is not None and payload.provider != "bluemap":
-        raise HTTPException(status_code=400, detail="unsupported_map_provider")
     try:
         server = get_map_service(request).install(
             server_id,
             server_running=_server_is_running(request, server_id),
+            provider=payload.provider if payload is not None else "bluemap",
         )
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="server_not_found") from exc

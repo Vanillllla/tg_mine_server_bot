@@ -492,6 +492,7 @@
           <label>ID <input name="id" placeholder="vanilla_1_20_1" pattern="[a-z0-9][a-z0-9_-]{0,63}" maxlength="64" title="Только строчные латинские буквы, цифры, _ и -" autocapitalize="none" spellcheck="false" oninput="this.value = this.value.toLowerCase()" required /></label>
           <label>Название <input name="display_name" placeholder="Vanilla 1.20.1" required /></label>
           <label>Ядро .jar <input name="core_file" type="file" accept=".jar" required /></label>
+          <input name="launch_mode" type="hidden" value="jar" />
           <label>Version <select name="minecraft_version" data-minecraft-version-select></select></label>
           <label>Server type <select name="server_type" data-server-type-select data-default-type="paper"></select></label>
           <label>Java <select name="java_path" data-java-select></select></label>
@@ -526,7 +527,13 @@
           <label>ID <input name="id" placeholder="forge_1_12_2_hbm" pattern="[a-z0-9][a-z0-9_-]{0,63}" maxlength="64" title="Только строчные латинские буквы, цифры, _ и -" autocapitalize="none" spellcheck="false" oninput="this.value = this.value.toLowerCase()" required /></label>
           <label>Название <input name="display_name" placeholder="Forge 1.12.2 HBM" required /></label>
           <label>Архив .zip <input name="archive_file" type="file" accept=".zip" required /></label>
-          <label>Jar внутри архива <input name="jar_file" placeholder="оставь пустым для автоопределения" /></label>
+          <label>Launch mode
+            <select name="launch_mode">
+              <option value="jar">Jar (-jar)</option>
+              <option value="forge_args">Forge args (1.17+)</option>
+            </select>
+          </label>
+          <label>Launch target внутри архива <input name="jar_file" placeholder="оставь пустым для автоопределения" /></label>
           <label>Version <select name="minecraft_version" data-minecraft-version-select></select></label>
           <label>Server type <select name="server_type" data-server-type-select data-default-type="forge"></select></label>
           <label>Java <select name="java_path" data-java-select></select></label>
@@ -561,6 +568,12 @@
           <label>ID <input name="id" disabled /></label>
           <label>Название <input name="display_name" required /></label>
           <label>Файл ядра <input name="jar_file" disabled /></label>
+          <label>Launch mode
+            <select name="launch_mode">
+              <option value="jar">Jar (-jar)</option>
+              <option value="forge_args">Forge args</option>
+            </select>
+          </label>
           <label>Version <select name="minecraft_version" data-minecraft-version-select></select></label>
           <label>Server type <select name="server_type" data-server-type-select data-default-type="paper"></select></label>
           <label>Java <select name="java_path" data-java-select></select></label>

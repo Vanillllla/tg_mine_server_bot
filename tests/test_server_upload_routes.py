@@ -123,6 +123,47 @@ def test_import_archive_creates_server_and_extracts_zip(tmp_path: Path, monkeypa
         client.__exit__(None, None, None)
 
 
+def test_import_archive_can_select_forge_args_launch_target(tmp_path: Path, monkeypatch) -> None:
+    client = make_client(tmp_path, monkeypatch)
+    archive_bytes = BytesIO()
+    with ZipFile(archive_bytes, "w") as archive:
+        archive.writestr("forge/user_jvm_args.txt", "# user args\n")
+        archive.writestr(
+            "forge/libraries/net/minecraftforge/forge/1.20.1-47.4.10/win_args.txt",
+            "--launchTarget forgeserver\n",
+        )
+        archive.writestr(
+            "forge/libraries/net/minecraftforge/forge/1.20.1-47.4.10/forge-1.20.1-47.4.10-server.jar",
+            b"not-a-launch-jar",
+        )
+    archive_bytes.seek(0)
+
+    try:
+        response = client.post(
+            "/api/servers/import-archive",
+            data={
+                "id": "forge_1201",
+                "display_name": "Forge 1.20.1",
+                "minecraft_version": "1.20.1",
+                "server_type": "forge",
+                "launch_mode": "forge_args",
+                "java_path": "java",
+                "xms_mb": "1024",
+                "xmx_mb": "1024",
+                "eula_accept": "true",
+                "jar_file": "",
+            },
+            files={"archive_file": ("forge.zip", archive_bytes.getvalue(), "application/zip")},
+        )
+
+        assert response.status_code == 201
+        body = response.json()
+        assert body["launch_mode"] == "forge_args"
+        assert body["jar_file"] == "libraries/net/minecraftforge/forge/1.20.1-47.4.10/win_args.txt"
+    finally:
+        client.__exit__(None, None, None)
+
+
 def test_files_upload_endpoint_writes_file_to_active_server(tmp_path: Path, monkeypatch) -> None:
     client = make_client(tmp_path, monkeypatch)
     try:
