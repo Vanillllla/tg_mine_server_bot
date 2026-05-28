@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Minecraft Web Panel</title>
-    <link rel="stylesheet" href="/assets/styles.css?v=server-ui-10" />
+    <link rel="stylesheet" href="/assets/styles.css?v=server-ui-map-1" />
   </head>
   <body>
     <section id="auth-screen" class="auth-screen">
@@ -92,6 +92,7 @@
         </div>
         <nav class="nav" aria-label="Основная навигация">
           <button class="nav-item active" data-view="dashboard">Dashboard</button>
+          <button class="nav-item" data-view="map">Map</button>
           <button class="nav-item" data-view="servers" data-admin-only>Servers</button>
           <button class="nav-item" data-view="console" data-admin-only>Console</button>
           <button class="nav-item" data-view="properties" data-admin-only>Properties</button>
@@ -126,16 +127,12 @@
                 </div>
                 <span id="dashboard-status" class="pill status-off">OFF</span>
               </div>
-              <div class="actions server-actions">
-                <div class="action-group lifecycle-actions">
-                  <button id="start-btn" class="btn primary">Start</button>
-                  <button id="stop-btn" class="btn" data-admin-only>Stop</button>
-                  <button id="restart-btn" class="btn" data-admin-only>Restart</button>
-                  <button id="kill-btn" class="btn danger" data-admin-only>Kill</button>
-                </div>
-                <div class="action-group secondary-actions">
-                  <button id="download-client-mods-btn" class="btn">Скачать моды</button>
-                </div>
+              <div class="actions">
+                <button id="start-btn" class="btn primary">Start</button>
+                <button id="download-client-mods-btn" class="btn">Скачать моды</button>
+                <button id="stop-btn" class="btn" data-admin-only>Stop</button>
+                <button id="restart-btn" class="btn" data-admin-only>Restart</button>
+                <button id="kill-btn" class="btn danger" data-admin-only>Kill</button>
               </div>
               <div class="invite-link-row">
                 <input id="minecraft-domain" readonly value="mc.vanilla.xazux.ru" aria-label="Minecraft server domain" />
@@ -164,6 +161,30 @@
               <button class="btn small" data-view-jump="console">Открыть консоль</button>
             </div>
             <pre id="recent-logs" class="log-window compact"></pre>
+          </section>
+        </section>
+
+        <section id="view-map" class="view">
+          <section class="panel map-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">BlueMap</p>
+                <h2 id="map-active-server">No active server</h2>
+              </div>
+              <div class="toolbar">
+                <span id="map-status-pill" class="pill status-off">NOT INSTALLED</span>
+                <button id="open-map-settings-modal-btn" class="btn primary small" type="button" data-admin-only>Configure</button>
+                <button id="map-refresh-btn" class="btn small" type="button">Refresh</button>
+                <button id="map-open-btn" class="btn small" type="button">Fullscreen</button>
+              </div>
+            </div>
+            <p id="map-message" class="server-meta">BlueMap is not installed yet.</p>
+            <div id="map-placeholder" class="map-placeholder">
+              <p class="eyebrow">World map</p>
+              <h2>Install BlueMap and restart the server</h2>
+              <p>The map will show generated chunks and update as players explore new areas.</p>
+            </div>
+            <iframe id="map-frame" class="map-frame" title="Minecraft world map" hidden></iframe>
           </section>
         </section>
 
@@ -257,7 +278,6 @@
               <div class="toolbar">
                 <button id="files-refresh-btn" class="btn small" type="button" title="Обновить">↻</button>
                 <button id="files-up-btn" class="btn small" type="button" title="Вверх">↑</button>
-                <button id="mkdir-btn" class="btn small" type="button">Новая папка</button>
                 <button id="client-mods-folder-btn" class="btn small" type="button">Client mods</button>
                 <button id="upload-files-btn" class="btn small" type="button">Upload files</button>
                 <button id="upload-folder-btn" class="btn small" type="button">Upload folder</button>
@@ -320,6 +340,7 @@
                   </div>
                 </dl>
                 <div class="file-details-actions">
+                  <button id="mkdir-btn" class="btn small" type="button">Новая папка</button>
                   <button id="file-details-select-core" class="btn small" type="button">Выбрать ядро</button>
                   <button id="file-details-open" class="btn small" type="button">Открыть</button>
                   <button id="file-details-edit" class="btn small" type="button">Редактировать</button>
@@ -457,14 +478,15 @@
         <form id="create-server-form" class="form-grid modal-form" action="/api/servers/upload-core" method="post" enctype="multipart/form-data">
           <label>ID <input name="id" placeholder="vanilla_1_20_1" pattern="[a-z0-9][a-z0-9_-]{0,63}" maxlength="64" title="Только строчные латинские буквы, цифры, _ и -" autocapitalize="none" spellcheck="false" oninput="this.value = this.value.toLowerCase()" required /></label>
           <label>Название <input name="display_name" placeholder="Vanilla 1.20.1" required /></label>
-          <input name="launch_mode" type="hidden" value="jar" />
           <label>Ядро .jar <input name="core_file" type="file" accept=".jar" required /></label>
-          <label>Версия <input name="minecraft_version" placeholder="1.20.1" /></label>
-          <label>Тип <input name="server_type" placeholder="vanilla / forge / paper" /></label>
+          <input name="launch_mode" type="hidden" value="jar" />
+          <label>Version <select name="minecraft_version" data-minecraft-version-select></select></label>
+          <label>Server type <select name="server_type" data-server-type-select data-default-type="paper"></select></label>
           <label>Java <select name="java_path" data-java-select></select></label>
           <label>Xms GB <input name="xms_gb" type="number" min="1" step="1" value="1" data-memory-gb /></label>
           <label>Xmx GB <input name="xmx_gb" type="number" min="1" step="1" value="1" data-memory-gb /></label>
           <label class="checkbox-row"><input name="eula_accept" type="checkbox" /> EULA accepted</label>
+          <label class="checkbox-row"><input name="install_map" type="checkbox" checked /> Install BlueMap web map</label>
           <button class="btn primary" type="submit">Создать</button>
           <button class="btn" type="button" data-close-modal="create-jar-modal">Отмена</button>
           <div class="upload-progress" data-upload-progress hidden>
@@ -494,17 +516,18 @@
           <label>Архив .zip <input name="archive_file" type="file" accept=".zip" required /></label>
           <label>Launch mode
             <select name="launch_mode">
-              <option value="jar">JAR core</option>
-              <option value="forge_args">Forge 1.17+ / args launch</option>
+              <option value="jar">Jar (-jar)</option>
+              <option value="forge_args">Forge args (1.17+)</option>
             </select>
           </label>
-          <label>Launch target inside archive <input name="jar_file" placeholder="leave empty for auto-detect" /></label>
-          <label>Версия <input name="minecraft_version" placeholder="1.12.2" /></label>
-          <label>Тип <input name="server_type" value="forge" /></label>
+          <label>Launch target внутри архива <input name="jar_file" placeholder="оставь пустым для автоопределения" /></label>
+          <label>Version <select name="minecraft_version" data-minecraft-version-select></select></label>
+          <label>Server type <select name="server_type" data-server-type-select data-default-type="forge"></select></label>
           <label>Java <select name="java_path" data-java-select></select></label>
           <label>Xms GB <input name="xms_gb" type="number" min="1" step="1" value="2" data-memory-gb /></label>
           <label>Xmx GB <input name="xmx_gb" type="number" min="1" step="1" value="4" data-memory-gb /></label>
           <label class="checkbox-row"><input name="eula_accept" type="checkbox" /> EULA accepted</label>
+          <label class="checkbox-row"><input name="install_map" type="checkbox" checked /> Install BlueMap web map</label>
           <button class="btn primary" type="submit">Импортировать</button>
           <button class="btn" type="button" data-close-modal="import-zip-modal">Отмена</button>
           <div class="upload-progress" data-upload-progress hidden>
@@ -531,15 +554,15 @@
         <form id="server-settings-form" class="form-grid modal-form">
           <label>ID <input name="id" disabled /></label>
           <label>Название <input name="display_name" required /></label>
-          <label>Launch target <input name="jar_file" disabled /></label>
+          <label>Файл ядра <input name="jar_file" disabled /></label>
           <label>Launch mode
             <select name="launch_mode">
-              <option value="jar">JAR core</option>
-              <option value="forge_args">Forge 1.17+ / args launch</option>
+              <option value="jar">Jar (-jar)</option>
+              <option value="forge_args">Forge args</option>
             </select>
           </label>
-          <label>Версия <input name="minecraft_version" /></label>
-          <label>Тип <input name="server_type" placeholder="vanilla / forge / paper" /></label>
+          <label>Version <select name="minecraft_version" data-minecraft-version-select></select></label>
+          <label>Server type <select name="server_type" data-server-type-select data-default-type="paper"></select></label>
           <label>Java <select name="java_path" data-java-select></select></label>
           <label>Xms GB <input name="xms_gb" type="number" min="1" step="1" data-memory-gb required /></label>
           <label>Xmx GB <input name="xmx_gb" type="number" min="1" step="1" data-memory-gb required /></label>
@@ -547,6 +570,67 @@
           <button class="btn primary" type="submit">Сохранить</button>
           <button class="btn" type="button" data-close-modal="server-settings-modal">Отмена</button>
         </form>
+      </section>
+    </div>
+
+    <div id="map-settings-modal" class="modal-backdrop" hidden>
+      <section class="modal server-form-modal" role="dialog" aria-modal="true" aria-labelledby="map-settings-title">
+        <header class="modal-header">
+          <div>
+            <p class="eyebrow">Map integration</p>
+            <h2 id="map-settings-title">BlueMap and server mods</h2>
+          </div>
+          <button class="btn small" type="button" data-close-modal="map-settings-modal">Закрыть</button>
+        </header>
+        <div class="modal-form">
+          <div class="panel-heading compact-heading">
+            <div>
+              <p class="eyebrow">Active map</p>
+              <h3>Integration status</h3>
+            </div>
+            <div class="toolbar">
+              <button id="install-map-btn" class="btn primary small" type="button">Install / reinstall</button>
+              <button id="reconfigure-map-btn" class="btn small" type="button">Reconfigure</button>
+            </div>
+          </div>
+          <div id="map-settings-status" class="metric-grid"></div>
+
+          <div class="panel-heading compact-heading">
+            <div>
+              <p class="eyebrow">Mod memory</p>
+              <h3>Saved mods</h3>
+            </div>
+            <button id="apply-mods-active-btn" class="btn small" type="button">Apply to active server</button>
+          </div>
+          <div id="mod-catalog-list" class="servers-list"></div>
+
+          <form id="mod-upload-form" class="form-grid modal-form">
+            <label>ID <input name="id" placeholder="journeymap" pattern="[a-z0-9][a-z0-9_-]{0,63}" required /></label>
+            <label>Name <input name="display_name" placeholder="JourneyMap" required /></label>
+            <label>Server types <input name="server_types" placeholder="forge,fabric" /></label>
+            <label>Minecraft versions <input name="minecraft_versions" placeholder="1.20.1,1.21.1" /></label>
+            <label>Fallback source <input name="source" placeholder="Modrinth project id or URL" /></label>
+            <label>Jar file <input name="mod_file" type="file" accept=".jar" required /></label>
+            <label class="checkbox-row"><input name="enabled" type="checkbox" checked /> Auto install on matching servers</label>
+            <button class="btn primary" type="submit">Upload mod to memory</button>
+          </form>
+
+          <form id="mod-remote-form" class="form-grid modal-form">
+            <label>ID <input name="id" placeholder="bluemap" pattern="[a-z0-9][a-z0-9_-]{0,63}" required /></label>
+            <label>Name <input name="display_name" placeholder="BlueMap" required /></label>
+            <label>Source type
+              <select name="source_type">
+                <option value="modrinth">Modrinth project</option>
+                <option value="url">Direct URL</option>
+              </select>
+            </label>
+            <label>Source <input name="source" placeholder="bluemap or https://example/mod.jar" required /></label>
+            <label>Server types <input name="server_types" placeholder="forge,fabric,paper" /></label>
+            <label>Minecraft versions <input name="minecraft_versions" placeholder="empty = any" /></label>
+            <label class="checkbox-row"><input name="enabled" type="checkbox" checked /> Auto install on matching servers</label>
+            <button class="btn" type="submit">Add remote mod</button>
+          </form>
+        </div>
       </section>
     </div>
 
@@ -571,7 +655,7 @@
     </div>
 
     <div id="toast" class="toast" role="status"></div>
-    <script src="/assets/app.js?v=server-ui-9" type="module"></script>
+    <script src="/assets/app.js?v=server-ui-map-1" type="module"></script>
     <script src="/assets/updater.js?v=updater-1" type="module"></script>
   </body>
 </html>

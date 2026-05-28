@@ -30,6 +30,18 @@ class LaunchMode(str, Enum):
     FORGE_ARGS = "forge_args"
 
 
+class ServerMapSettings(BaseModel):
+    enabled: bool = False
+    provider: str = "bluemap"
+    installed: bool = False
+    needs_restart: bool = False
+    web_port: int | None = None
+    bind_host: str = "127.0.0.1"
+    provider_version: str = ""
+    jar_path: str = ""
+    last_error: str = ""
+
+
 class ServerInstance(BaseModel):
     id: str
     display_name: str
@@ -46,6 +58,7 @@ class ServerInstance(BaseModel):
     eula_accept: bool = False
     auto_restart: bool = False
     startup_timeout: int = 180
+    map: ServerMapSettings = Field(default_factory=ServerMapSettings)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -116,6 +129,7 @@ class UpdateServerInstanceRequest(BaseModel):
     eula_accept: bool | None = None
     auto_restart: bool | None = None
     startup_timeout: int | None = None
+    map: ServerMapSettings | None = None
 
 
 class SelectActiveServerJarRequest(BaseModel):

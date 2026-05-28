@@ -5,12 +5,28 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import auth, client_mods, console_ws, files, health, properties, servers, settings, updater, web
+from app.api.routes import (
+    auth,
+    catalog,
+    client_mods,
+    console_ws,
+    files,
+    health,
+    mods,
+    properties,
+    servers,
+    settings,
+    updater,
+    web,
+    world_map,
+)
 from app.core.settings import get_settings
 from app.services.file_manager import FileManagerService
 from app.services.auth import AuthService
 from app.services.log_buffer import LogBuffer
+from app.services.map_integration import BlueMapIntegrationService
 from app.services.minecraft_manager import MinecraftServerManager
+from app.services.mod_catalog import ModCatalogService
 from app.services.panel_settings import PanelSettingsService
 from app.services.server_properties import ServerPropertiesService
 from app.services.server_instances import ServerInstanceService
@@ -30,6 +46,8 @@ async def lifespan(app: FastAPI):
     app.state.instance_service = instance_service
     app.state.log_buffer = log_buffer
     app.state.minecraft_manager = manager
+    app.state.map_service = BlueMapIntegrationService(instance_service)
+    app.state.mod_catalog_service = ModCatalogService(settings)
     app.state.properties_service = ServerPropertiesService()
     app.state.file_manager = FileManagerService()
     app.state.panel_settings_service = PanelSettingsService(settings)
@@ -62,7 +80,10 @@ app.add_middleware(
 
 app.include_router(health.router)
 app.include_router(auth.router)
+app.include_router(catalog.router)
 app.include_router(servers.router)
+app.include_router(world_map.router)
+app.include_router(mods.router)
 app.include_router(properties.router)
 app.include_router(files.router)
 app.include_router(client_mods.router)

@@ -153,6 +153,31 @@ def test_launch_validation_rejects_missing_or_false_eula_file(tmp_path: Path) ->
         raise AssertionError("eula=false was accepted")
 
 
+def test_forge_args_launch_uses_arg_files_instead_of_server_jar(tmp_path: Path) -> None:
+    server_dir = tmp_path / "forge"
+    args_dir = server_dir / "libraries" / "net" / "minecraftforge" / "forge" / "1.20.1-47.4.10"
+    args_dir.mkdir(parents=True)
+    (args_dir / "win_args.txt").write_text("--launchTarget forgeserver\n", encoding="utf-8")
+    (server_dir / "user_jvm_args.txt").write_text("# user args\n", encoding="utf-8")
+    (server_dir / "eula.txt").write_text("eula=true\n", encoding="utf-8")
+    server = ServerInstance(
+        id="forge_1201",
+        display_name="Forge 1.20.1",
+        server_dir=str(server_dir),
+        jar_file="libraries/net/minecraftforge/forge/1.20.1-47.4.10/win_args.txt",
+        launch_mode=LaunchMode.FORGE_ARGS,
+        server_type="forge",
+        server_args=["nogui"],
+    )
+
+    MinecraftServerManager._validate_launch(server)
+    args = MinecraftServerManager(None, None)._build_launch_args(server)  # type: ignore[arg-type]
+
+    assert "-jar" not in args
+    assert "@user_jvm_args.txt" in args
+    assert "@libraries/net/minecraftforge/forge/1.20.1-47.4.10/win_args.txt" in args
+
+
 def test_player_events_are_parsed_from_minecraft_logs() -> None:
     joined = "[12:00:00] [Server thread/INFO]: Steve joined the game"
     left = "[12:10:00] [Server thread/INFO]: Steve left the game"

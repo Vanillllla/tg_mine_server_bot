@@ -14,6 +14,9 @@ const state = {
   selectedFileItem: null,
   selectedFile: "",
   javaRuntimes: [],
+  minecraftVersions: [],
+  mapStatus: null,
+  modCatalog: [],
   invite: null,
   telegramSettings: null,
   domainSettings: null,
@@ -30,6 +33,8 @@ const defaultDomains = {
   minecraft: "mc.vanilla.xazux.ru",
   site: "",
 };
+
+const serverTypeOptions = ["paper", "purpur", "spigot", "folia", "fabric", "forge", "neoforge", "sponge"];
 
 const quickPropertyFields = [
   ["motd", "MOTD", "text"],
@@ -211,7 +216,7 @@ function applyAccessRules() {
   $$("[data-admin-only]").forEach((node) => {
     node.hidden = !isAdmin();
   });
-  if (!isAdmin() && state.activeView !== "dashboard") {
+  if (!isAdmin() && state.activeView !== "dashboard" && state.activeView !== "map") {
     switchView("dashboard");
   }
 }
@@ -333,6 +338,7 @@ async function refreshAll() {
   if (isAdmin()) {
     tasks.push(refreshServers(), refreshJavaRuntimes(), refreshInvite());
     if (state.activeView === "telegram") tasks.push(loadTelegramSettings());
+    if (state.activeView === "map") tasks.push(loadModCatalog());
   }
   await Promise.all(tasks);
   if (!isAdmin()) {
@@ -340,14 +346,24 @@ async function refreshAll() {
     state.activeServer = state.workData?.active_server || null;
     state.javaRuntimes = [];
   }
+  if (hasPermission("map.view")) {
+    await refreshActiveMapStatus().catch(() => {
+      state.mapStatus = null;
+    });
+  }
   applyAccessRules();
   renderHeader();
   renderDashboard();
+  renderMapView();
+  renderMapSettings();
   if (isAdmin()) {
     renderServers();
     renderJavaRuntimeSettings();
     renderJavaSelects();
+    renderMinecraftVersionSelects();
+    renderServerTypeSelects();
     renderInviteSettings();
+    renderModCatalog();
   }
 }
 
@@ -366,6 +382,43 @@ async function refreshJavaRuntimes() {
 
 async function refreshInvite() {
   state.invite = await api("/api/auth/invite");
+}
+
+async function refreshMinecraftVersions() {
+  const response = await api("/api/catalog/minecraft-versions");
+  state.minecraftVersions = response.items || [];
+}
+
+async function ensureMinecraftVersions() {
+  if (state.minecraftVersions.length) return;
+  try {
+    await refreshMinecraftVersions();
+  } catch (error) {
+    toast(`Minecraft versions unavailable: ${error.message}`);
+  }
+  renderMinecraftVersionSelects();
+}
+
+function activeServerId() {
+  return state.activeServer?.id || state.workData?.active_server?.id || "";
+}
+
+async function refreshActiveMapStatus() {
+  const serverId = activeServerId();
+  if (!serverId || !hasPermission("map.view")) {
+    state.mapStatus = null;
+    return;
+  }
+  state.mapStatus = await api(`/api/servers/${encodeURIComponent(serverId)}/map/status`);
+}
+
+async function loadModCatalog() {
+  if (!isAdmin()) {
+    state.modCatalog = [];
+    return;
+  }
+  state.modCatalog = await api("/api/mods");
+  renderModCatalog();
 }
 
 async function loadDomainSettings() {
@@ -473,6 +526,79 @@ function renderDashboard() {
   clientModsButton.disabled = !active;
 }
 
+function mapStatusLabel() {
+  const status = state.mapStatus?.status || "not_installed";
+  return status.replaceAll("_", " ").toUpperCase();
+}
+
+function renderMapView() {
+  const frame = $("#map-frame");
+  if (!frame) return;
+  const active = state.workData?.active_server || state.activeServer;
+  const status = state.mapStatus?.status || "not_installed";
+  const installed = Boolean(state.mapStatus?.installed);
+  $("#map-active-server").textContent = active?.display_name || "No active server";
+  $("#map-message").textContent = state.mapStatus?.message || (active ? "BlueMap is not installed yet." : "Select an active server first.");
+  const pill = $("#map-status-pill");
+  pill.className = `pill ${statusClass(status)}`;
+  pill.textContent = mapStatusLabel();
+  $("#map-refresh-btn").disabled = !installed;
+  $("#map-open-btn").disabled = !installed;
+  if (installed && status === "running") {
+    if (!frame.src || !frame.src.includes("/map/active/")) frame.src = "/map/active/";
+    frame.hidden = false;
+    $("#map-placeholder").hidden = true;
+    return;
+  }
+  frame.hidden = true;
+  $("#map-placeholder").hidden = false;
+}
+
+function renderMapSettings() {
+  const node = $("#map-settings-status");
+  if (!node) return;
+  const map = state.mapStatus?.map || {};
+  node.innerHTML = [
+    metric("Provider", map.provider || "bluemap"),
+    metric("Status", mapStatusLabel()),
+    metric("Version", map.provider_version || "-"),
+    metric("Port", map.web_port || "-"),
+    metric("Jar", map.jar_path || "-"),
+    metric("Restart", map.needs_restart ? "required" : "-"),
+  ].join("");
+  $("#install-map-btn").disabled = !activeServerId();
+  $("#reconfigure-map-btn").disabled = !activeServerId() || !state.mapStatus?.installed;
+  const applyModsButton = $("#apply-mods-active-btn");
+  if (applyModsButton) applyModsButton.disabled = !activeServerId();
+}
+
+function renderModCatalog() {
+  const node = $("#mod-catalog-list");
+  if (!node) return;
+  node.innerHTML =
+    state.modCatalog
+      .map((item) => {
+        const source = item.source_type === "local" ? item.cached_path || item.file_name : item.source;
+        const filters = [
+          item.server_types?.length ? item.server_types.join(", ") : "any server type",
+          item.minecraft_versions?.length ? item.minecraft_versions.join(", ") : "any version",
+        ].join(" · ");
+        return `
+          <article class="server-row">
+            <div>
+              <strong>${escapeHtml(item.display_name)}</strong>
+              ${item.enabled ? '<span class="pill status-running">AUTO</span>' : '<span class="pill status-off">OFF</span>'}
+              <div class="server-meta">${escapeHtml(item.id)} · ${escapeHtml(item.source_type)} · ${escapeHtml(source || "-")} · ${escapeHtml(filters)}</div>
+              ${item.last_error ? `<div class="server-meta">Last error: ${escapeHtml(item.last_error)}</div>` : ""}
+            </div>
+            <div class="row-actions">
+              <button class="btn danger small" data-mod-action="delete" data-id="${escapeHtml(item.id)}">Delete</button>
+            </div>
+          </article>`;
+      })
+      .join("") || '<p class="server-meta">No saved mods yet.</p>';
+}
+
 function renderServers() {
   const activeId = state.activeServer?.id;
   $("#servers-list").innerHTML =
@@ -518,12 +644,46 @@ function renderJavaSelects() {
   });
 }
 
+function renderMinecraftVersionSelects() {
+  const options = [
+    '<option value="">Select version</option>',
+    ...state.minecraftVersions.map((version) => {
+      const value = version.id || version;
+      return `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`;
+    }),
+  ].join("");
+  $$("[data-minecraft-version-select]").forEach((select) => {
+    const previous = select.value;
+    select.innerHTML = options;
+    select.value = previous && [...select.options].some((option) => option.value === previous) ? previous : "";
+  });
+}
+
+function renderServerTypeSelects() {
+  const options = serverTypeOptions
+    .map((type) => `<option value="${escapeHtml(type)}">${escapeHtml(type)}</option>`)
+    .join("");
+  $$("[data-server-type-select]").forEach((select) => {
+    const previous = select.value || select.dataset.defaultType || "paper";
+    select.innerHTML = options;
+    select.value = serverTypeOptions.includes(previous) ? previous : "paper";
+  });
+}
+
 function setJavaSelectValue(select, value) {
   if (!select) return;
   if (value && ![...select.options].some((option) => option.value === value)) {
     select.appendChild(new Option(value, value));
   }
   select.value = value || defaultJavaPath();
+}
+
+function setSelectValue(select, value, fallback = "") {
+  if (!select) return;
+  if (value && ![...select.options].some((option) => option.value === value)) {
+    select.appendChild(new Option(value, value));
+  }
+  select.value = value || fallback;
 }
 
 function showModal(id) {
@@ -556,9 +716,9 @@ function openServerSettings(serverId) {
   form.elements.id.value = server.id;
   form.elements.display_name.value = server.display_name || "";
   form.elements.jar_file.value = server.jar_file || "";
-  form.elements.launch_mode.value = server.launch_mode || "jar";
-  form.elements.minecraft_version.value = server.minecraft_version || "";
-  form.elements.server_type.value = server.server_type || "";
+  if (form.elements.launch_mode) form.elements.launch_mode.value = server.launch_mode || "jar";
+  setSelectValue(form.elements.minecraft_version, server.minecraft_version || "");
+  setSelectValue(form.elements.server_type, server.server_type || "paper", "paper");
   form.elements.xms_gb.value = mbToGb(server.xms_mb);
   form.elements.xmx_gb.value = mbToGb(server.xmx_mb);
   form.elements.eula_accept.checked = Boolean(server.eula_accept);
@@ -946,7 +1106,7 @@ function renderFileDetails() {
   $("#file-details-download").href = item ? downloadUrl(item.path) : "#";
   $("#file-details-select-core").hidden = !isLaunchTargetFile(item);
   $("#file-details-select-core").disabled = !isLaunchTargetFile(item) || isServerCoreFile(item);
-  $("#file-details-select-core").textContent = isServerCoreFile(item) ? "Current launch target" : launchTargetButtonLabel(item);
+  $("#file-details-select-core").textContent = isServerCoreFile(item) ? "Текущий запуск" : launchTargetButtonLabel(item);
 }
 
 function filteredFileItems() {
@@ -1019,7 +1179,10 @@ function isJarFile(item) {
 
 function isForgeArgsFile(item) {
   const path = normalizeFilePath(item?.path || "");
-  return item?.type === "file" && /(^|\/)libraries\/net\/minecraftforge\/forge\/[^/]+\/(win_args|unix_args)\.txt$/.test(path);
+  const name = path.split("/").pop();
+  return item?.type === "file"
+    && path.includes("libraries/net/minecraftforge/forge/")
+    && (name === "win_args.txt" || name === "unix_args.txt" || name.endsWith("_args.txt"));
 }
 
 function isLaunchTargetFile(item) {
@@ -1035,7 +1198,7 @@ function launchModeForFile(item) {
 }
 
 function launchTargetButtonLabel(item) {
-  return isForgeArgsFile(item) ? "Use Forge args launch" : "Use JAR core";
+  return isForgeArgsFile(item) ? "Use Forge args launch" : "Выбрать ядро";
 }
 
 async function selectActiveServerCore(item) {
@@ -1051,13 +1214,12 @@ async function selectActiveServerCore(item) {
   }
   renderHeader();
   renderFileBrowser();
-  toast("Launch target selected");
+  toast(isForgeArgsFile(item) ? "Forge args выбран для запуска" : "Ядро сервера выбрано");
 }
 
 function fileTypeLabel(item) {
   if (item.type === "directory") return "Папка";
   if (isJarFile(item)) return "JAR файл";
-  if (isForgeArgsFile(item)) return "Forge args";
   return item.editable ? "Текстовый файл" : "Файл";
 }
 
@@ -1192,8 +1354,83 @@ function downloadClientModsArchive() {
   window.location.href = "/api/servers/active/client-mods/archive";
 }
 
+function commaList(value) {
+  return String(value || "")
+    .split(/[,\n]+/)
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+async function addRemoteMod(event) {
+  event.preventDefault();
+  const formNode = event.currentTarget;
+  const payload = {
+    id: String(formNode.elements.id.value || "").trim().toLowerCase(),
+    display_name: String(formNode.elements.display_name.value || "").trim(),
+    source_type: String(formNode.elements.source_type.value || "modrinth"),
+    source: String(formNode.elements.source.value || "").trim(),
+    server_types: commaList(formNode.elements.server_types.value),
+    minecraft_versions: commaList(formNode.elements.minecraft_versions.value),
+    enabled: formNode.elements.enabled.checked,
+  };
+  await api("/api/mods", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  formNode.reset();
+  formNode.elements.enabled.checked = true;
+  await loadModCatalog();
+  toast("Mod saved to memory");
+}
+
+async function uploadMod(event) {
+  event.preventDefault();
+  const formNode = event.currentTarget;
+  const form = new FormData(formNode);
+  form.set("id", String(form.get("id") || "").trim().toLowerCase());
+  form.set("enabled", formNode.elements.enabled.checked ? "true" : "false");
+  await uploadForm("/api/mods/upload", form);
+  formNode.reset();
+  formNode.elements.enabled.checked = true;
+  await loadModCatalog();
+  toast("Mod uploaded to memory");
+}
+
+async function applyCatalogModsToActiveServer() {
+  const serverId = activeServerId();
+  if (!serverId) throw new Error("server_not_selected");
+  const installed = await api(`/api/mods/apply/${encodeURIComponent(serverId)}`, { method: "POST" });
+  await loadModCatalog();
+  toast(`Applied mods: ${installed.length}`);
+}
+
+async function installMapForServer(serverId) {
+  if (!serverId) throw new Error("server_not_selected");
+  const result = await api(`/api/servers/${encodeURIComponent(serverId)}/map/install`, {
+    method: "POST",
+    body: JSON.stringify({ provider: "bluemap" }),
+  });
+  state.mapStatus = result;
+  renderMapView();
+  renderMapSettings();
+  return result;
+}
+
+async function reconfigureMapForActiveServer() {
+  const serverId = activeServerId();
+  if (!serverId) throw new Error("server_not_selected");
+  state.mapStatus = await api(`/api/servers/${encodeURIComponent(serverId)}/map/reconfigure`, {
+    method: "POST",
+  });
+  renderMapView();
+  renderMapSettings();
+}
+
 function switchView(view) {
-  if (view !== "dashboard" && !isAdmin()) {
+  if (view !== "dashboard" && view !== "map" && !isAdmin()) {
+    view = "dashboard";
+  }
+  if (view === "map" && !hasPermission("map.view")) {
     view = "dashboard";
   }
   state.activeView = view;
@@ -1203,6 +1440,15 @@ function switchView(view) {
   if (view === "console") connectConsole();
   if (view === "properties") loadProperties().catch((error) => toast(error.message));
   if (view === "files") loadFiles().catch((error) => toast(error.message));
+  if (view === "map") {
+    refreshActiveMapStatus()
+      .then(() => {
+        renderMapView();
+        renderMapSettings();
+      })
+      .catch((error) => toast(error.message));
+    if (isAdmin()) loadModCatalog().catch((error) => toast(error.message));
+  }
   if (view === "telegram") loadTelegramSettings().catch((error) => toast(error.message));
   if (view === "settings" && isAdmin()) loadDomainSettings().catch((error) => toast(error.message));
 }
@@ -1225,7 +1471,7 @@ function normalizeServerForm(form, formNode, defaultType) {
   form.delete("xms_gb");
   form.delete("xmx_gb");
   form.set("eula_accept", formNode.elements.eula_accept.checked ? "true" : "false");
-  form.set("server_type", String(form.get("server_type") || defaultType));
+  form.set("server_type", String(form.get("server_type") || defaultType).trim().toLowerCase());
   form.set("java_path", String(form.get("java_path") || defaultJavaPath()));
 }
 
@@ -1234,6 +1480,8 @@ function bindEvents() {
   bindValidationToast("#import-server-form");
   bindValidationToast("#telegram-settings-form");
   bindValidationToast("#domain-settings-form");
+  bindValidationToast("#mod-upload-form");
+  bindValidationToast("#mod-remote-form");
 
   $("#login-form").addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -1262,6 +1510,58 @@ function bindEvents() {
 
   $("#start-btn").addEventListener("click", () => serverCommand("start").catch((error) => toast(error.message)));
   $("#download-client-mods-btn").addEventListener("click", downloadClientModsArchive);
+  $("#map-refresh-btn").addEventListener("click", async () => {
+    await refreshActiveMapStatus();
+    const frame = $("#map-frame");
+    if (state.mapStatus?.installed && frame) frame.src = `/map/active/?_=${Date.now()}`;
+    renderMapView();
+    renderMapSettings();
+  });
+  $("#map-open-btn").addEventListener("click", () => {
+    if (state.mapStatus?.installed) window.open("/map/active/", "_blank", "noopener");
+  });
+  bindIfExists("#open-map-settings-modal-btn", "click", async () => {
+    await refreshActiveMapStatus().catch((error) => toast(error.message));
+    await loadModCatalog().catch((error) => toast(error.message));
+    renderMapSettings();
+    showModal("map-settings-modal");
+  });
+  $("#install-map-btn").addEventListener("click", async () => {
+    try {
+      await installMapForServer(activeServerId());
+      toast("BlueMap installed. Restart the server to load it.");
+      await refreshAll();
+    } catch (error) {
+      toast(error.message);
+    }
+  });
+  $("#reconfigure-map-btn").addEventListener("click", async () => {
+    try {
+      await reconfigureMapForActiveServer();
+      toast("BlueMap config updated. Restart the server to apply it.");
+      await refreshAll();
+    } catch (error) {
+      toast(error.message);
+    }
+  });
+  bindIfExists("#apply-mods-active-btn", "click", () => {
+    applyCatalogModsToActiveServer().catch((error) => toast(error.message));
+  });
+  bindIfExists("#mod-upload-form", "submit", (event) => {
+    uploadMod(event).catch((error) => toast(error.message));
+  });
+  bindIfExists("#mod-remote-form", "submit", (event) => {
+    addRemoteMod(event).catch((error) => toast(error.message));
+  });
+  bindIfExists("#mod-catalog-list", "click", async (event) => {
+    const button = event.target.closest("button");
+    if (!button || button.dataset.modAction !== "delete") return;
+    const id = button.dataset.id;
+    if (!confirm(`Delete mod ${id} from memory?`)) return;
+    await api(`/api/mods/${encodeURIComponent(id)}?delete_cached_file=true`, { method: "DELETE" });
+    await loadModCatalog();
+    toast("Mod deleted");
+  });
   $("#copy-minecraft-domain-btn").addEventListener("click", async () => {
     const domain = $("#minecraft-domain").value;
     await navigator.clipboard.writeText(domain);
@@ -1283,14 +1583,18 @@ function bindEvents() {
     }
     choices.hidden = !choices.hidden;
   });
-  bindIfExists("#open-create-jar-modal-btn", "click", () => {
+  bindIfExists("#open-create-jar-modal-btn", "click", async () => {
     const choices = $("#add-server-choices");
     if (choices) choices.hidden = true;
+    await ensureMinecraftVersions();
+    renderServerTypeSelects();
     showModal("create-jar-modal");
   });
-  bindIfExists("#open-import-zip-modal-btn", "click", () => {
+  bindIfExists("#open-import-zip-modal-btn", "click", async () => {
     const choices = $("#add-server-choices");
     if (choices) choices.hidden = true;
+    await ensureMinecraftVersions();
+    renderServerTypeSelects();
     showModal("import-zip-modal");
   });
   $$("[data-close-modal]").forEach((button) => {
@@ -1317,12 +1621,16 @@ function bindEvents() {
       message: `Загрузка ядра${coreFileName}`,
     });
     try {
-      await uploadForm("/api/servers/upload-core", form, (progress) => {
+      const server = await uploadForm("/api/servers/upload-core", form, (progress) => {
         setUploadProgress(formNode, progress.percent === 100 ? "processing" : "uploading", {
           ...progress,
           message: progress.percent === 100 ? undefined : `Загрузка ядра${coreFileName}`,
         });
       });
+      if (formNode.elements.install_map?.checked) {
+        setUploadProgress(formNode, "processing", { message: "Installing BlueMap..." });
+        await installMapForServer(server.id);
+      }
       formNode.reset();
       setUploadProgress(formNode, "hidden");
       hideModal("create-jar-modal");
@@ -1351,12 +1659,16 @@ function bindEvents() {
       message: `Загрузка архива${archiveFileName}`,
     });
     try {
-      await uploadForm("/api/servers/import-archive", form, (progress) => {
+      const server = await uploadForm("/api/servers/import-archive", form, (progress) => {
         setUploadProgress(formNode, progress.percent === 100 ? "processing" : "uploading", {
           ...progress,
           message: progress.percent === 100 ? undefined : `Загрузка архива${archiveFileName}`,
         });
       });
+      if (formNode.elements.install_map?.checked) {
+        setUploadProgress(formNode, "processing", { message: "Installing BlueMap..." });
+        await installMapForServer(server.id);
+      }
       formNode.reset();
       setUploadProgress(formNode, "hidden");
       hideModal("import-zip-modal");
@@ -1378,7 +1690,8 @@ function bindEvents() {
     const payload = {
       display_name: String(formNode.elements.display_name.value || "").trim(),
       minecraft_version: String(formNode.elements.minecraft_version.value || "").trim(),
-      server_type: String(formNode.elements.server_type.value || "").trim() || "custom",
+      server_type: String(formNode.elements.server_type.value || "").trim().toLowerCase() || "custom",
+      launch_mode: String(formNode.elements.launch_mode?.value || "jar"),
       java_path: String(formNode.elements.java_path.value || "").trim() || defaultJavaPath(),
       xms_mb: gbToMb(formNode.elements.xms_gb.value, 1),
       xmx_mb: gbToMb(formNode.elements.xmx_gb.value, 1),
@@ -1507,7 +1820,11 @@ function bindEvents() {
         await api(`/api/servers/${encodeURIComponent(id)}?delete_files=true`, { method: "DELETE" });
         await refreshAll();
       }
-      if (button.dataset.action === "server-settings") openServerSettings(id);
+      if (button.dataset.action === "server-settings") {
+        await ensureMinecraftVersions();
+        renderServerTypeSelects();
+        openServerSettings(id);
+      }
       if (button.dataset.action === "game-settings") {
         await activateServerIfNeeded(id);
         switchView("properties");

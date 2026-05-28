@@ -142,6 +142,31 @@ def test_get_server_rebases_stale_server_dir_to_current_runtime(tmp_path: Path) 
     assert Path(server.server_dir) == server_dir.resolve()
 
 
+def test_get_server_adds_default_map_settings_for_legacy_payload(tmp_path: Path) -> None:
+    settings = AppSettings(panel_home=tmp_path / "mc-panel")
+    settings.ensure_runtime_layout()
+    server_dir = settings.servers_dir / "legacy"
+    server_dir.mkdir()
+    write_json_atomic(
+        settings.servers_config_path,
+        {
+            "legacy": {
+                "display_name": "Legacy Server",
+                "server_dir": str(server_dir),
+                "jar_file": "server.jar",
+                "minecraft_version": "1.20.1",
+                "server_type": "paper",
+            }
+        },
+    )
+
+    server = ServerInstanceService(settings).get_server("legacy")
+
+    assert server.map.provider == "bluemap"
+    assert server.map.enabled is False
+    assert server.map.installed is False
+
+
 def test_rejects_server_dir_outside_root(tmp_path: Path) -> None:
     settings = AppSettings(panel_home=tmp_path / "mc-panel")
     settings.ensure_runtime_layout()

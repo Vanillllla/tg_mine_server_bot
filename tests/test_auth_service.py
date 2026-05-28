@@ -30,7 +30,9 @@ def test_invite_login_uses_limited_permissions(tmp_path: Path) -> None:
     assert token
     assert user.role == "user"
     assert user.has_permission("server.start")
+    assert user.has_permission("map.view")
     assert not user.has_permission("files.view")
+    assert not user.has_permission("map.manage")
     assert not user.has_permission("console.view")
 
 

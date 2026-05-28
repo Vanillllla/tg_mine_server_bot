@@ -15,6 +15,7 @@ from app.core.settings import AppSettings
 from app.models.server import (
     CreateServerInstanceRequest,
     LaunchMode,
+    ServerMapSettings,
     ServerInstance,
     UpdateServerInstanceRequest,
 )
@@ -108,13 +109,13 @@ class ServerInstanceService:
         data.update(changes)
         data["updated_at"] = datetime.now(timezone.utc)
         updated = ServerInstance(**data)
-        if {"jar_file", "launch_mode"} & changes.keys():
-            self._validate_launch_target_path(updated.jar_file, updated.launch_mode, Path(updated.server_dir), require_exists=False)
         if {"xms_mb", "xmx_mb"} & changes.keys():
             self._validate_memory_limit(updated)
 
         server_dir = Path(updated.server_dir).expanduser().resolve()
         self._ensure_server_dir_allowed(server_dir)
+        if {"jar_file", "launch_mode"} & changes.keys():
+            self._validate_launch_target_path(updated.jar_file, updated.launch_mode, server_dir)
         if updated.eula_accept:
             self._write_eula_file(server_dir, True)
 
@@ -124,17 +125,7 @@ class ServerInstanceService:
         return self.get_server(server_id)
 
     def set_active_server_jar(self, jar_file: str) -> ServerInstance:
-        try:
-            return self.set_active_launch_target(jar_file, LaunchMode.JAR)
-        except ValueError as exc:
-            legacy_errors = {
-                "launch_target_has_unsafe_path": "jar_file_has_unsafe_path",
-                "launch_target_must_be_inside_server_dir": "jar_file_must_be_inside_server_dir",
-            }
-            message = legacy_errors.get(str(exc))
-            if message:
-                raise ValueError(message) from exc
-            raise
+        return self.set_active_launch_target(jar_file, LaunchMode.JAR)
 
     def set_active_launch_target(self, path: str, launch_mode: LaunchMode) -> ServerInstance:
         server = self.get_active_server()
@@ -142,7 +133,8 @@ class ServerInstanceService:
             raise KeyError("active_server_not_selected")
 
         server_dir = Path(server.server_dir).expanduser().resolve()
-        candidate = self._validate_launch_target_path(path, launch_mode, server_dir, require_exists=True)
+        candidate = self._validate_launch_target_path(path, launch_mode, server_dir)
+
         return self.update_server(
             server.id,
             UpdateServerInstanceRequest(jar_file=candidate.as_posix(), launch_mode=launch_mode),
@@ -150,23 +142,31 @@ class ServerInstanceService:
 
     def find_forge_args_files(self, server: ServerInstance) -> list[str]:
         server_dir = Path(server.server_dir).expanduser().resolve()
-        filename = "win_args.txt" if os.name == "nt" else "unix_args.txt"
-        forge_dir = server_dir / "libraries" / "net" / "minecraftforge" / "forge"
-        if not forge_dir.is_dir():
+        forge_root = server_dir / "libraries" / "net" / "minecraftforge" / "forge"
+        if not forge_root.is_dir():
             return []
-        matches = [path for path in forge_dir.glob(f"*/{filename}") if path.is_file()]
-        matches.sort(key=self._forge_version_sort_key, reverse=True)
-        return [path.relative_to(server_dir).as_posix() for path in matches]
+        names = ("win_args.txt", "unix_args.txt")
+        matches: list[Path] = []
+        for name in names:
+            matches.extend(path for path in forge_root.glob(f"*/{name}") if path.is_file())
+        matches.extend(path for path in forge_root.glob("*/*_args.txt") if path.is_file())
+        unique = {path.resolve(): path for path in matches}
+        return [
+            path.relative_to(server_dir).as_posix()
+            for path in sorted(unique.values(), key=self._forge_version_sort_key, reverse=True)
+        ]
 
     def auto_select_active_forge_args(self) -> ServerInstance:
         server = self.get_active_server()
         if server is None:
             raise KeyError("active_server_not_selected")
+        candidates = self.find_forge_args_files(server)
+        if not candidates:
+            raise FileNotFoundError("forge_args_not_found")
+        return self.set_active_launch_target(candidates[0], LaunchMode.FORGE_ARGS)
 
-        matches = self.find_forge_args_files(server)
-        if not matches:
-            raise FileNotFoundError("forge_args_file_not_found")
-        return self.set_active_launch_target(matches[0], LaunchMode.FORGE_ARGS)
+    def update_server_map(self, server_id: str, map_settings: ServerMapSettings) -> ServerInstance:
+        return self.update_server(server_id, UpdateServerInstanceRequest(map=map_settings))
 
     def delete_server(self, server_id: str, delete_files: bool = True) -> None:
         server = self.get_server(server_id)
@@ -203,62 +203,8 @@ class ServerInstanceService:
         data["server_dir"] = str(server_dir)
         if self._eula_file_is_accepted(server_dir / "eula.txt"):
             data["eula_accept"] = True
-        return ServerInstance(id=server_id, **data)
-
-    @classmethod
-    def _validate_launch_target_path(
-        cls,
-        path: str,
-        launch_mode: LaunchMode,
-        server_dir: Path,
-        *,
-        require_exists: bool,
-    ) -> Path:
-        candidate = cls._normalize_launch_target_path(path)
-        if launch_mode == LaunchMode.JAR:
-            if candidate.suffix.lower() != ".jar":
-                raise ValueError("jar_file_must_be_jar")
-            not_found_error = "jar_file_not_found"
-        elif launch_mode == LaunchMode.FORGE_ARGS:
-            normalized_name = candidate.name.lower()
-            if normalized_name not in {"win_args.txt", "unix_args.txt"} and not normalized_name.endswith("_args.txt"):
-                raise ValueError("forge_args_file_must_be_args_txt")
-            lower_parts = [part.lower() for part in candidate.parts]
-            forge_root = ["libraries", "net", "minecraftforge", "forge"]
-            root_index = next(
-                (
-                    index
-                    for index in range(len(lower_parts) - len(forge_root) + 1)
-                    if lower_parts[index : index + len(forge_root)] == forge_root
-                ),
-                -1,
-            )
-            if root_index < 0 or len(lower_parts) <= root_index + len(forge_root) + 1:
-                raise ValueError("forge_args_file_must_be_inside_forge_libraries")
-            not_found_error = "forge_args_file_not_found"
-        else:
-            raise ValueError("launch_mode_invalid")
-
-        target = (server_dir / candidate).resolve()
-        try:
-            target.relative_to(server_dir)
-        except ValueError as exc:
-            raise ValueError("launch_target_must_be_inside_server_dir") from exc
-        if require_exists and not target.is_file():
-            raise FileNotFoundError(not_found_error)
-        return candidate
-
-    @staticmethod
-    def _normalize_launch_target_path(path: str) -> Path:
-        candidate = Path(path.replace("\\", "/"))
-        if candidate.is_absolute() or any(part in {"", ".", ".."} or part.endswith(":") for part in candidate.parts):
-            raise ValueError("launch_target_has_unsafe_path")
-        return candidate
-
-    @staticmethod
-    def _forge_version_sort_key(path: Path) -> tuple:
-        version = path.parent.name.lower()
-        return tuple(int(part) if part.isdigit() else part for part in re.split(r"(\d+)", version))
+        server = ServerInstance(id=server_id, **data)
+        return self._normalize_legacy_forge_launch_target(server)
 
     def _stored_server_dir(self, server_id: str, raw_server_dir: Any) -> Path:
         default_dir = (self.settings.servers_dir / server_id).expanduser().resolve()
@@ -318,3 +264,70 @@ class ServerInstanceService:
             if normalized.startswith("eula="):
                 return False
         return False
+
+    def _validate_launch_target_path(
+        self,
+        path: str,
+        launch_mode: LaunchMode,
+        server_dir: Path,
+        require_exists: bool = True,
+    ) -> Path:
+        candidate = self._normalize_launch_target_path(path)
+        target = (server_dir / candidate).resolve()
+        try:
+            target.relative_to(server_dir)
+        except ValueError as exc:
+            raise ValueError("launch_target_must_be_inside_server_dir") from exc
+        if require_exists and not target.is_file():
+            raise FileNotFoundError("launch_target_not_found")
+
+        if launch_mode == LaunchMode.JAR:
+            if candidate.suffix.lower() != ".jar":
+                raise ValueError("jar_file_must_be_jar")
+            return candidate
+
+        if launch_mode == LaunchMode.FORGE_ARGS:
+            normalized = candidate.as_posix().lower()
+            if not self._is_forge_args_path(normalized):
+                raise ValueError("forge_args_path_invalid")
+            return candidate
+
+        raise ValueError("launch_mode_not_supported")
+
+    @staticmethod
+    def _normalize_launch_target_path(path: str) -> Path:
+        candidate = Path(path.replace("\\", "/"))
+        if candidate.is_absolute() or any(part in {"", ".", ".."} for part in candidate.parts):
+            raise ValueError("launch_target_has_unsafe_path")
+        return candidate
+
+    @staticmethod
+    def _is_forge_args_path(normalized_path: str) -> bool:
+        normalized_path = normalized_path.replace("\\", "/").lower()
+        filename = normalized_path.rsplit("/", 1)[-1]
+        in_forge_lib = "/libraries/net/minecraftforge/forge/" in f"/{normalized_path}"
+        return in_forge_lib and (filename in {"win_args.txt", "unix_args.txt"} or filename.endswith("_args.txt"))
+
+    @classmethod
+    def _forge_version_sort_key(cls, path: Path) -> tuple:
+        version = path.parent.name
+        parts: list[int | str] = []
+        for token in re.split(r"([0-9]+)", version):
+            if not token:
+                continue
+            parts.append(int(token) if token.isdigit() else token.lower())
+        preferred_os = 0 if path.name == ("win_args.txt" if os.name == "nt" else "unix_args.txt") else 1
+        return (*parts, -preferred_os)
+
+    def _normalize_legacy_forge_launch_target(self, server: ServerInstance) -> ServerInstance:
+        if server.launch_mode != LaunchMode.JAR or "forge" not in (server.server_type or "").lower():
+            return server
+        normalized = server.jar_file.replace("\\", "/").lower()
+        if "/libraries/net/minecraftforge/forge/" not in f"/{normalized}" or not normalized.endswith("-server.jar"):
+            return server
+        candidates = self.find_forge_args_files(server)
+        if not candidates:
+            return server
+        preferred = "win_args.txt" if os.name == "nt" else "unix_args.txt"
+        selected = next((path for path in candidates if path.endswith(f"/{preferred}")), candidates[0])
+        return server.model_copy(update={"jar_file": selected, "launch_mode": LaunchMode.FORGE_ARGS})
