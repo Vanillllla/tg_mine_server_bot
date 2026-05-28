@@ -16,6 +16,7 @@ const state = {
   javaRuntimes: [],
   minecraftVersions: [],
   mapStatus: null,
+  modCatalog: [],
   invite: null,
   telegramSettings: null,
   domainSettings: null,
@@ -337,6 +338,7 @@ async function refreshAll() {
   if (isAdmin()) {
     tasks.push(refreshServers(), refreshJavaRuntimes(), refreshInvite());
     if (state.activeView === "telegram") tasks.push(loadTelegramSettings());
+    if (state.activeView === "map") tasks.push(loadModCatalog());
   }
   await Promise.all(tasks);
   if (!isAdmin()) {
@@ -361,6 +363,7 @@ async function refreshAll() {
     renderMinecraftVersionSelects();
     renderServerTypeSelects();
     renderInviteSettings();
+    renderModCatalog();
   }
 }
 
@@ -407,6 +410,15 @@ async function refreshActiveMapStatus() {
     return;
   }
   state.mapStatus = await api(`/api/servers/${encodeURIComponent(serverId)}/map/status`);
+}
+
+async function loadModCatalog() {
+  if (!isAdmin()) {
+    state.modCatalog = [];
+    return;
+  }
+  state.modCatalog = await api("/api/mods");
+  renderModCatalog();
 }
 
 async function loadDomainSettings() {
@@ -556,6 +568,35 @@ function renderMapSettings() {
   ].join("");
   $("#install-map-btn").disabled = !activeServerId();
   $("#reconfigure-map-btn").disabled = !activeServerId() || !state.mapStatus?.installed;
+  const applyModsButton = $("#apply-mods-active-btn");
+  if (applyModsButton) applyModsButton.disabled = !activeServerId();
+}
+
+function renderModCatalog() {
+  const node = $("#mod-catalog-list");
+  if (!node) return;
+  node.innerHTML =
+    state.modCatalog
+      .map((item) => {
+        const source = item.source_type === "local" ? item.cached_path || item.file_name : item.source;
+        const filters = [
+          item.server_types?.length ? item.server_types.join(", ") : "any server type",
+          item.minecraft_versions?.length ? item.minecraft_versions.join(", ") : "any version",
+        ].join(" · ");
+        return `
+          <article class="server-row">
+            <div>
+              <strong>${escapeHtml(item.display_name)}</strong>
+              ${item.enabled ? '<span class="pill status-running">AUTO</span>' : '<span class="pill status-off">OFF</span>'}
+              <div class="server-meta">${escapeHtml(item.id)} · ${escapeHtml(item.source_type)} · ${escapeHtml(source || "-")} · ${escapeHtml(filters)}</div>
+              ${item.last_error ? `<div class="server-meta">Last error: ${escapeHtml(item.last_error)}</div>` : ""}
+            </div>
+            <div class="row-actions">
+              <button class="btn danger small" data-mod-action="delete" data-id="${escapeHtml(item.id)}">Delete</button>
+            </div>
+          </article>`;
+      })
+      .join("") || '<p class="server-meta">No saved mods yet.</p>';
 }
 
 function renderServers() {
@@ -1313,6 +1354,56 @@ function downloadClientModsArchive() {
   window.location.href = "/api/servers/active/client-mods/archive";
 }
 
+function commaList(value) {
+  return String(value || "")
+    .split(/[,\n]+/)
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+async function addRemoteMod(event) {
+  event.preventDefault();
+  const formNode = event.currentTarget;
+  const payload = {
+    id: String(formNode.elements.id.value || "").trim().toLowerCase(),
+    display_name: String(formNode.elements.display_name.value || "").trim(),
+    source_type: String(formNode.elements.source_type.value || "modrinth"),
+    source: String(formNode.elements.source.value || "").trim(),
+    server_types: commaList(formNode.elements.server_types.value),
+    minecraft_versions: commaList(formNode.elements.minecraft_versions.value),
+    enabled: formNode.elements.enabled.checked,
+  };
+  await api("/api/mods", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  formNode.reset();
+  formNode.elements.enabled.checked = true;
+  await loadModCatalog();
+  toast("Mod saved to memory");
+}
+
+async function uploadMod(event) {
+  event.preventDefault();
+  const formNode = event.currentTarget;
+  const form = new FormData(formNode);
+  form.set("id", String(form.get("id") || "").trim().toLowerCase());
+  form.set("enabled", formNode.elements.enabled.checked ? "true" : "false");
+  await uploadForm("/api/mods/upload", form);
+  formNode.reset();
+  formNode.elements.enabled.checked = true;
+  await loadModCatalog();
+  toast("Mod uploaded to memory");
+}
+
+async function applyCatalogModsToActiveServer() {
+  const serverId = activeServerId();
+  if (!serverId) throw new Error("server_not_selected");
+  const installed = await api(`/api/mods/apply/${encodeURIComponent(serverId)}`, { method: "POST" });
+  await loadModCatalog();
+  toast(`Applied mods: ${installed.length}`);
+}
+
 async function installMapForServer(serverId) {
   if (!serverId) throw new Error("server_not_selected");
   const result = await api(`/api/servers/${encodeURIComponent(serverId)}/map/install`, {
@@ -1356,6 +1447,7 @@ function switchView(view) {
         renderMapSettings();
       })
       .catch((error) => toast(error.message));
+    if (isAdmin()) loadModCatalog().catch((error) => toast(error.message));
   }
   if (view === "telegram") loadTelegramSettings().catch((error) => toast(error.message));
   if (view === "settings" && isAdmin()) loadDomainSettings().catch((error) => toast(error.message));
@@ -1388,6 +1480,8 @@ function bindEvents() {
   bindValidationToast("#import-server-form");
   bindValidationToast("#telegram-settings-form");
   bindValidationToast("#domain-settings-form");
+  bindValidationToast("#mod-upload-form");
+  bindValidationToast("#mod-remote-form");
 
   $("#login-form").addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -1426,6 +1520,12 @@ function bindEvents() {
   $("#map-open-btn").addEventListener("click", () => {
     if (state.mapStatus?.installed) window.open("/map/active/", "_blank", "noopener");
   });
+  bindIfExists("#open-map-settings-modal-btn", "click", async () => {
+    await refreshActiveMapStatus().catch((error) => toast(error.message));
+    await loadModCatalog().catch((error) => toast(error.message));
+    renderMapSettings();
+    showModal("map-settings-modal");
+  });
   $("#install-map-btn").addEventListener("click", async () => {
     try {
       await installMapForServer(activeServerId());
@@ -1443,6 +1543,24 @@ function bindEvents() {
     } catch (error) {
       toast(error.message);
     }
+  });
+  bindIfExists("#apply-mods-active-btn", "click", () => {
+    applyCatalogModsToActiveServer().catch((error) => toast(error.message));
+  });
+  bindIfExists("#mod-upload-form", "submit", (event) => {
+    uploadMod(event).catch((error) => toast(error.message));
+  });
+  bindIfExists("#mod-remote-form", "submit", (event) => {
+    addRemoteMod(event).catch((error) => toast(error.message));
+  });
+  bindIfExists("#mod-catalog-list", "click", async (event) => {
+    const button = event.target.closest("button");
+    if (!button || button.dataset.modAction !== "delete") return;
+    const id = button.dataset.id;
+    if (!confirm(`Delete mod ${id} from memory?`)) return;
+    await api(`/api/mods/${encodeURIComponent(id)}?delete_cached_file=true`, { method: "DELETE" });
+    await loadModCatalog();
+    toast("Mod deleted");
   });
   $("#copy-minecraft-domain-btn").addEventListener("click", async () => {
     const domain = $("#minecraft-domain").value;

@@ -76,10 +76,19 @@ class AppSettings:
     def auth_config_path(self) -> Path:
         return self.config_dir / "auth.json"
 
+    @property
+    def mod_catalog_path(self) -> Path:
+        return self.data_dir / "mods.json"
+
+    @property
+    def mod_cache_dir(self) -> Path:
+        return self.data_dir / "mod-cache"
+
     def ensure_runtime_layout(self) -> None:
         for path in (
             self.config_dir,
             self.data_dir,
+            self.mod_cache_dir,
             self.uploads_dir / "cores",
             self.uploads_dir / "worlds",
             self.uploads_dir / "temp",

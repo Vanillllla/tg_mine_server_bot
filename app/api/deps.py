@@ -9,6 +9,7 @@ from app.services.file_manager import FileManagerService
 from app.services.log_buffer import LogBuffer
 from app.services.map_integration import BlueMapIntegrationService
 from app.services.minecraft_manager import MinecraftServerManager
+from app.services.mod_catalog import ModCatalogService
 from app.services.panel_settings import PanelSettingsService
 from app.services.server_properties import ServerPropertiesService
 from app.services.server_instances import ServerInstanceService
@@ -33,6 +34,10 @@ def get_manager(request: Request) -> MinecraftServerManager:
 
 def get_map_service(request: Request) -> BlueMapIntegrationService:
     return cast(BlueMapIntegrationService, request.app.state.map_service)
+
+
+def get_mod_catalog_service(request: Request) -> ModCatalogService:
+    return cast(ModCatalogService, request.app.state.mod_catalog_service)
 
 
 def get_properties_service(request: Request) -> ServerPropertiesService:

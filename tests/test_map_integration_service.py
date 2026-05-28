@@ -145,12 +145,14 @@ def test_install_writes_plugin_jar_and_map_settings(tmp_path: Path, monkeypatch)
         ],
     )
     monkeypatch.setattr(map_service, "_download_file", lambda url, target: target.write_bytes(b"jar"))
+    monkeypatch.setattr(map_service, "_find_available_port", lambda server_id, provider_id=BLUEMAP_PROVIDER_ID: 8100)
 
     server = map_service.install("paper_server")
     server_dir = Path(server.server_dir)
 
     assert (server_dir / "plugins" / "BlueMap.jar").read_bytes() == b"jar"
     assert (server_dir / "plugins" / "BlueMap" / "webserver.conf").is_file()
+    assert "accept-download: true" in (server_dir / "config" / "bluemap" / "core.conf").read_text(encoding="utf-8")
     assert server.map.installed is True
     assert server.map.needs_restart is True
     assert server.map.web_port == 8100
@@ -175,12 +177,14 @@ def test_install_writes_mod_jar_for_fabric(tmp_path: Path, monkeypatch) -> None:
         ],
     )
     monkeypatch.setattr(map_service, "_download_file", lambda url, target: target.write_bytes(b"jar"))
+    monkeypatch.setattr(map_service, "_find_available_port", lambda server_id, provider_id=BLUEMAP_PROVIDER_ID: 8100)
 
     server = map_service.install("fabric_server")
     server_dir = Path(server.server_dir)
 
     assert (server_dir / "mods" / "BlueMap.jar").is_file()
     assert (server_dir / "config" / "bluemap" / "webserver.conf").is_file()
+    assert "accept-download: true" in (server_dir / "config" / "bluemap" / "core.conf").read_text(encoding="utf-8")
     assert server.map.jar_path == "mods/BlueMap.jar"
 
 

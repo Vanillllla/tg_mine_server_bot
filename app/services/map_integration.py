@@ -165,7 +165,7 @@ class BlueMapIntegrationService:
         updated = server.map.model_copy(
             update={
                 "enabled": True,
-                "provider": BLUEMAP_PROVIDER_ID,
+                "provider": provider_id,
                 "needs_restart": True,
                 "web_port": port,
                 "bind_host": "127.0.0.1",
@@ -422,6 +422,7 @@ class BlueMapIntegrationService:
             ),
             encoding="utf-8",
         )
+        self._write_bluemap_accept_download(server)
 
     @staticmethod
     def _provider_jar_relative_path(provider_id: str, loader: str) -> Path:
@@ -460,6 +461,24 @@ class BlueMapIntegrationService:
         for key, replacement in replacements.items():
             if key not in seen:
                 updated.append(replacement)
+        path.write_text("\n".join(updated) + "\n", encoding="utf-8")
+
+    @staticmethod
+    def _write_bluemap_accept_download(server: ServerInstance) -> None:
+        path = Path(server.server_dir) / "config" / "bluemap" / "core.conf"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines() if path.exists() else []
+        updated: list[str] = []
+        seen = False
+        for line in lines:
+            key = line.lstrip("#").split(":", 1)[0].strip()
+            if key == "accept-download":
+                updated.append("accept-download: true")
+                seen = True
+            else:
+                updated.append(line)
+        if not seen:
+            updated.append("accept-download: true")
         path.write_text("\n".join(updated) + "\n", encoding="utf-8")
 
     @staticmethod

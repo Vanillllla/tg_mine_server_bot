@@ -173,6 +173,7 @@
               </div>
               <div class="toolbar">
                 <span id="map-status-pill" class="pill status-off">NOT INSTALLED</span>
+                <button id="open-map-settings-modal-btn" class="btn primary small" type="button" data-admin-only>Configure</button>
                 <button id="map-refresh-btn" class="btn small" type="button">Refresh</button>
                 <button id="map-open-btn" class="btn small" type="button">Fullscreen</button>
               </div>
@@ -423,20 +424,6 @@
           <section class="panel" data-admin-only>
             <div class="panel-heading">
               <div>
-                <p class="eyebrow">Map integration</p>
-                <h2>BlueMap</h2>
-              </div>
-              <div class="toolbar">
-                <button id="install-map-btn" class="btn primary small" type="button">Install / reinstall</button>
-                <button id="reconfigure-map-btn" class="btn small" type="button">Reconfigure</button>
-              </div>
-            </div>
-            <div id="map-settings-status" class="metric-grid"></div>
-          </section>
-
-          <section class="panel" data-admin-only>
-            <div class="panel-heading">
-              <div>
                 <p class="eyebrow">Admin access</p>
                 <h2>Пароль администратора</h2>
               </div>
@@ -583,6 +570,67 @@
           <button class="btn primary" type="submit">Сохранить</button>
           <button class="btn" type="button" data-close-modal="server-settings-modal">Отмена</button>
         </form>
+      </section>
+    </div>
+
+    <div id="map-settings-modal" class="modal-backdrop" hidden>
+      <section class="modal server-form-modal" role="dialog" aria-modal="true" aria-labelledby="map-settings-title">
+        <header class="modal-header">
+          <div>
+            <p class="eyebrow">Map integration</p>
+            <h2 id="map-settings-title">BlueMap and server mods</h2>
+          </div>
+          <button class="btn small" type="button" data-close-modal="map-settings-modal">Закрыть</button>
+        </header>
+        <div class="modal-form">
+          <div class="panel-heading compact-heading">
+            <div>
+              <p class="eyebrow">Active map</p>
+              <h3>Integration status</h3>
+            </div>
+            <div class="toolbar">
+              <button id="install-map-btn" class="btn primary small" type="button">Install / reinstall</button>
+              <button id="reconfigure-map-btn" class="btn small" type="button">Reconfigure</button>
+            </div>
+          </div>
+          <div id="map-settings-status" class="metric-grid"></div>
+
+          <div class="panel-heading compact-heading">
+            <div>
+              <p class="eyebrow">Mod memory</p>
+              <h3>Saved mods</h3>
+            </div>
+            <button id="apply-mods-active-btn" class="btn small" type="button">Apply to active server</button>
+          </div>
+          <div id="mod-catalog-list" class="servers-list"></div>
+
+          <form id="mod-upload-form" class="form-grid modal-form">
+            <label>ID <input name="id" placeholder="journeymap" pattern="[a-z0-9][a-z0-9_-]{0,63}" required /></label>
+            <label>Name <input name="display_name" placeholder="JourneyMap" required /></label>
+            <label>Server types <input name="server_types" placeholder="forge,fabric" /></label>
+            <label>Minecraft versions <input name="minecraft_versions" placeholder="1.20.1,1.21.1" /></label>
+            <label>Fallback source <input name="source" placeholder="Modrinth project id or URL" /></label>
+            <label>Jar file <input name="mod_file" type="file" accept=".jar" required /></label>
+            <label class="checkbox-row"><input name="enabled" type="checkbox" checked /> Auto install on matching servers</label>
+            <button class="btn primary" type="submit">Upload mod to memory</button>
+          </form>
+
+          <form id="mod-remote-form" class="form-grid modal-form">
+            <label>ID <input name="id" placeholder="bluemap" pattern="[a-z0-9][a-z0-9_-]{0,63}" required /></label>
+            <label>Name <input name="display_name" placeholder="BlueMap" required /></label>
+            <label>Source type
+              <select name="source_type">
+                <option value="modrinth">Modrinth project</option>
+                <option value="url">Direct URL</option>
+              </select>
+            </label>
+            <label>Source <input name="source" placeholder="bluemap or https://example/mod.jar" required /></label>
+            <label>Server types <input name="server_types" placeholder="forge,fabric,paper" /></label>
+            <label>Minecraft versions <input name="minecraft_versions" placeholder="empty = any" /></label>
+            <label class="checkbox-row"><input name="enabled" type="checkbox" checked /> Auto install on matching servers</label>
+            <button class="btn" type="submit">Add remote mod</button>
+          </form>
+        </div>
       </section>
     </div>
 

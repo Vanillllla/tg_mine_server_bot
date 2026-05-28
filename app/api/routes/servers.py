@@ -10,6 +10,7 @@ from app.api.deps import (
     get_instance_service,
     get_log_buffer,
     get_manager,
+    get_mod_catalog_service,
     get_telegram_bot_service,
     require_permission,
 )
@@ -177,6 +178,10 @@ def _extract_archive(archive: ZipFile, entries: list[tuple[ZipInfo, Path, bool]]
                 output.write(chunk)
 
 
+def _auto_install_catalog_mods(request: Request, server: ServerInstance) -> None:
+    get_mod_catalog_service(request).auto_install_for_server(server)
+
+
 @router.get("", response_model=list[ServerInstance])
 async def list_servers(
     request: Request,
@@ -245,6 +250,7 @@ async def create_server_from_uploaded_core(
         with jar_path.open("xb") as output:
             while chunk := await core_file.read(UPLOAD_COPY_CHUNK_SIZE):
                 output.write(chunk)
+        _auto_install_catalog_mods(request, server)
         return server
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -314,6 +320,7 @@ async def create_server_from_archive(
             server = service.create_server(payload)
             created_server_id = server.id
             _extract_archive(archive, entries, Path(server.server_dir))
+            _auto_install_catalog_mods(request, server)
             return server
     except BadZipFile as exc:
         raise HTTPException(status_code=400, detail="archive_file_is_not_valid_zip") from exc
