@@ -15,8 +15,10 @@ from app.core.settings import AppSettings
 from app.models.server import (
     CreateServerInstanceRequest,
     LaunchMode,
+    ServerDiskUsage,
     ServerMapSettings,
     ServerInstance,
+    ServerStorageSummary,
     UpdateServerInstanceRequest,
 )
 
@@ -38,6 +40,22 @@ class ServerInstanceService:
             self._server_from_payload(server_id, payload)
             for server_id, payload in self._read_servers().items()
         ]
+
+    def get_storage_summary(self) -> ServerStorageSummary:
+        disk = shutil.disk_usage(self.settings.servers_dir)
+        servers = [
+            ServerDiskUsage(id=server.id, size_bytes=self._directory_size(Path(server.server_dir)))
+            for server in self.list_servers()
+        ]
+        used_percent = (disk.used / disk.total * 100) if disk.total else 0.0
+        return ServerStorageSummary(
+            total_bytes=disk.total,
+            used_bytes=disk.used,
+            free_bytes=disk.free,
+            used_percent=round(used_percent, 1),
+            servers_bytes=sum(server.size_bytes for server in servers),
+            servers=servers,
+        )
 
     def get_server(self, server_id: str) -> ServerInstance:
         servers = self._read_servers()
@@ -264,6 +282,31 @@ class ServerInstanceService:
             if normalized.startswith("eula="):
                 return False
         return False
+
+    @staticmethod
+    def _directory_size(root: Path) -> int:
+        if not root.is_dir():
+            return 0
+
+        total = 0
+        pending = [root]
+        while pending:
+            directory = pending.pop()
+            try:
+                with os.scandir(directory) as entries:
+                    for entry in entries:
+                        try:
+                            if entry.is_symlink():
+                                continue
+                            if entry.is_dir(follow_symlinks=False):
+                                pending.append(Path(entry.path))
+                            elif entry.is_file(follow_symlinks=False):
+                                total += entry.stat(follow_symlinks=False).st_size
+                        except OSError:
+                            continue
+            except OSError:
+                continue
+        return total
 
     def _validate_launch_target_path(
         self,

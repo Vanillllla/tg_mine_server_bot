@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 import app.services.server_instances as server_instances
 from app.core.json_store import write_json_atomic
 from app.core.settings import AppSettings
@@ -207,6 +209,66 @@ def test_delete_server_removes_files_when_requested(tmp_path: Path) -> None:
 
     assert not server_dir.exists()
     assert service.get_active_server() is None
+
+
+def test_storage_summary_reports_disk_and_each_server_size(tmp_path: Path, monkeypatch) -> None:
+    class DiskUsage:
+        total = 10_000
+        used = 7_500
+        free = 2_500
+
+    monkeypatch.setattr(server_instances.shutil, "disk_usage", lambda path: DiskUsage())
+    settings = AppSettings(panel_home=tmp_path / "mc-panel")
+    settings.ensure_runtime_layout()
+    service = ServerInstanceService(settings)
+
+    first = service.create_server(
+        CreateServerInstanceRequest(
+            id="first",
+            display_name="First Server",
+            jar_file="server.jar",
+        )
+    )
+    second = service.create_server(
+        CreateServerInstanceRequest(
+            id="second",
+            display_name="Second Server",
+            jar_file="server.jar",
+        )
+    )
+    first_dir = Path(first.server_dir)
+    second_dir = Path(second.server_dir)
+    (first_dir / "server.jar").write_bytes(b"a" * 40)
+    (first_dir / "world").mkdir()
+    (first_dir / "world" / "region.mca").write_bytes(b"b" * 60)
+    (second_dir / "server.jar").write_bytes(b"c" * 25)
+
+    summary = service.get_storage_summary()
+
+    assert summary.total_bytes == 10_000
+    assert summary.used_bytes == 7_500
+    assert summary.free_bytes == 2_500
+    assert summary.used_percent == 75.0
+    assert summary.servers_bytes == 125
+    assert {item.id: item.size_bytes for item in summary.servers} == {
+        "first": 100,
+        "second": 25,
+    }
+
+
+def test_directory_size_does_not_follow_symlinks(tmp_path: Path) -> None:
+    root = tmp_path / "server"
+    outside = tmp_path / "outside"
+    root.mkdir()
+    outside.mkdir()
+    (root / "inside.dat").write_bytes(b"inside")
+    (outside / "large.dat").write_bytes(b"outside-data")
+    try:
+        (root / "linked-outside").symlink_to(outside, target_is_directory=True)
+    except OSError:
+        pytest.skip("directory symlinks are unavailable on this platform")
+
+    assert ServerInstanceService._directory_size(root) == len(b"inside")
 
 
 def test_set_active_server_jar_updates_core_file(tmp_path: Path) -> None:

@@ -550,6 +550,7 @@ POST   /api/auth/invite
 DELETE /api/auth/invite
 
 GET    /api/servers
+GET    /api/servers/storage
 POST   /api/servers
 POST   /api/servers/upload-core
 POST   /api/servers/import-archive
@@ -1199,6 +1200,7 @@ POST   /api/auth/invite
 DELETE /api/auth/invite
 
 GET    /api/servers
+GET    /api/servers/storage
 POST   /api/servers
 POST   /api/servers/upload-core
 POST   /api/servers/import-archive

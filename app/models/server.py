@@ -153,3 +153,17 @@ class ServerStatusResponse(BaseModel):
     start_error: str = ""
     exit_code: int | None = None
     details: dict[str, Any] = Field(default_factory=dict)
+
+
+class ServerDiskUsage(BaseModel):
+    id: str
+    size_bytes: int = Field(ge=0)
+
+
+class ServerStorageSummary(BaseModel):
+    total_bytes: int = Field(ge=0)
+    used_bytes: int = Field(ge=0)
+    free_bytes: int = Field(ge=0)
+    used_percent: float = Field(ge=0, le=100)
+    servers_bytes: int = Field(ge=0)
+    servers: list[ServerDiskUsage] = Field(default_factory=list)

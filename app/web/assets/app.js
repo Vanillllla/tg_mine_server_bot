@@ -3,6 +3,9 @@ const state = {
   currentUser: null,
   publicLinks: null,
   servers: [],
+  serverStorage: null,
+  serverStorageUpdatedAt: 0,
+  serverStorageRequest: null,
   activeServer: null,
   workData: null,
   consoleItems: [],
@@ -35,6 +38,7 @@ const defaultDomains = {
 };
 
 const serverTypeOptions = ["paper", "purpur", "spigot", "folia", "fabric", "forge", "neoforge", "sponge"];
+const serverStorageRefreshMs = 30_000;
 
 const quickPropertyFields = [
   ["motd", "MOTD", "text"],
@@ -153,6 +157,8 @@ function clearSessionState(message = "") {
   state.socket = null;
   state.currentUser = null;
   state.servers = [];
+  state.serverStorage = null;
+  state.serverStorageUpdatedAt = 0;
   state.activeServer = null;
   state.workData = null;
   state.consoleItems = [];
@@ -241,9 +247,15 @@ function formatSeconds(value) {
 
 function formatBytes(size) {
   if (!Number.isFinite(size)) return "-";
-  if (size < 1024) return `${size} B`;
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-  return `${(size / 1024 / 1024).toFixed(1)} MB`;
+  const units = ["B", "KB", "MB", "GB", "TB", "PB"];
+  let value = Math.max(0, size);
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  const digits = unitIndex === 0 ? 0 : 1;
+  return `${value.toFixed(digits)} ${units[unitIndex]}`;
 }
 
 function uploadForm(path, formData, onProgress) {
@@ -368,8 +380,32 @@ async function refreshAll() {
 }
 
 async function refreshServers() {
-  state.servers = await api("/api/servers");
-  state.activeServer = await api("/api/servers/active");
+  [state.servers, state.activeServer] = await Promise.all([
+    api("/api/servers"),
+    api("/api/servers/active"),
+  ]);
+  if (state.activeView === "servers") await refreshServerStorage();
+}
+
+async function refreshServerStorage(force = false) {
+  const isFresh = state.serverStorage && Date.now() - state.serverStorageUpdatedAt < serverStorageRefreshMs;
+  if (!force && isFresh) return state.serverStorage;
+  if (state.serverStorageRequest) return state.serverStorageRequest;
+
+  state.serverStorageRequest = api("/api/servers/storage")
+    .then((storage) => {
+      state.serverStorage = storage;
+      state.serverStorageUpdatedAt = Date.now();
+      return storage;
+    })
+    .finally(() => {
+      state.serverStorageRequest = null;
+    });
+  return state.serverStorageRequest;
+}
+
+function invalidateServerStorage() {
+  state.serverStorageUpdatedAt = 0;
 }
 
 async function refreshWorkData() {
@@ -601,16 +637,36 @@ function renderModCatalog() {
 
 function renderServers() {
   const activeId = state.activeServer?.id;
+  const storage = state.serverStorage;
+  const storageByServer = new Map((storage?.servers || []).map((item) => [item.id, item.size_bytes]));
+  const usedPercent = Math.min(100, Math.max(0, Number(storage?.used_percent) || 0));
+  const progress = $("#server-storage-progress");
+  progress.value = usedPercent;
+  progress.classList.toggle("storage-warning", usedPercent >= 80 && usedPercent < 90);
+  progress.classList.toggle("storage-critical", usedPercent >= 90);
+  progress.setAttribute("aria-valuetext", storage ? `${usedPercent.toFixed(1)}% занято` : "Данные загружаются");
+  const percent = $("#server-storage-percent");
+  percent.textContent = storage ? `${usedPercent.toFixed(1)}%` : "—";
+  percent.classList.toggle("storage-warning", usedPercent >= 80 && usedPercent < 90);
+  percent.classList.toggle("storage-critical", usedPercent >= 90);
+  $("#server-storage-detail").textContent = storage
+    ? `Занято ${formatBytes(storage.used_bytes)} из ${formatBytes(storage.total_bytes)} · свободно ${formatBytes(storage.free_bytes)}`
+    : "Данные загружаются...";
+  $("#server-storage-servers-total").textContent = storage
+    ? `Серверы Minecraft: ${formatBytes(storage.servers_bytes)}`
+    : "Серверы Minecraft: —";
   $("#servers-list").innerHTML =
     state.servers
       .map((server) => {
         const active = server.id === activeId;
+        const serverSize = storageByServer.get(server.id);
         return `
           <article class="server-row">
             <div>
               <strong>${escapeHtml(server.display_name)}</strong>
               ${active ? '<span class="pill status-running">Активен</span>' : ""}
               <div class="server-meta">${escapeHtml(server.id)} · ${escapeHtml(server.server_type || "custom")} · ${escapeHtml(server.minecraft_version || "version?")} · ${escapeHtml(server.launch_mode || "jar")} · ${escapeHtml(server.jar_file)}</div>
+              <div class="server-size">На диске: <strong>${formatBytes(serverSize)}</strong></div>
             </div>
             <div class="row-actions">
               <button class="btn small" data-action="activate" data-id="${escapeHtml(server.id)}" ${active ? "disabled" : ""}>Активировать</button>
@@ -1438,6 +1494,11 @@ function switchView(view) {
   $$(".nav-item").forEach((node) => node.classList.toggle("active", node.dataset.view === view));
   $("#page-title").textContent = $(`.nav-item[data-view="${view}"]`)?.textContent || "Panel";
   if (view === "console") connectConsole();
+  if (view === "servers" && isAdmin()) {
+    refreshServerStorage(true)
+      .then(renderServers)
+      .catch((error) => toast(error.message));
+  }
   if (view === "properties") loadProperties().catch((error) => toast(error.message));
   if (view === "files") loadFiles().catch((error) => toast(error.message));
   if (view === "map") {
@@ -1485,7 +1546,8 @@ function bindEvents() {
 
   $("#login-form").addEventListener("submit", async (event) => {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formNode = event.currentTarget;
+    const form = new FormData(formNode);
     try {
       await api("/api/auth/login", {
         method: "POST",
@@ -1496,7 +1558,7 @@ function bindEvents() {
       return;
     }
 
-    event.currentTarget.reset();
+    formNode.reset();
     window.location.assign("/");
   });
 
@@ -1635,6 +1697,7 @@ function bindEvents() {
       setUploadProgress(formNode, "hidden");
       hideModal("create-jar-modal");
       toast("Сервер создан");
+      invalidateServerStorage();
       refreshAll().catch((error) => toast(`Сервер создан, но данные не обновились: ${error.message}`));
     } catch (error) {
       setUploadProgress(formNode, "error", { message: error.message });
@@ -1673,6 +1736,7 @@ function bindEvents() {
       setUploadProgress(formNode, "hidden");
       hideModal("import-zip-modal");
       toast("Сервер импортирован");
+      invalidateServerStorage();
       refreshAll().catch((error) => toast(`Сервер импортирован, но данные не обновились: ${error.message}`));
     } catch (error) {
       setUploadProgress(formNode, "error", { message: error.message });
@@ -1818,6 +1882,7 @@ function bindEvents() {
       }
       if (button.dataset.action === "delete" && confirm(`Удалить сервер ${id} и его файлы?`)) {
         await api(`/api/servers/${encodeURIComponent(id)}?delete_files=true`, { method: "DELETE" });
+        invalidateServerStorage();
         await refreshAll();
       }
       if (button.dataset.action === "server-settings") {

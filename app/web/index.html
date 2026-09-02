@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Minecraft Web Panel</title>
-    <link rel="stylesheet" href="/assets/styles.css?v=server-ui-map-1" />
+    <link rel="stylesheet" href="/assets/styles.css?v=server-storage-2" />
   </head>
   <body>
     <section id="auth-screen" class="auth-screen">
@@ -195,6 +195,17 @@
                 <p class="eyebrow">Instances</p>
                 <h2>Серверы</h2>
               </div>
+            </div>
+            <div class="storage-overview" aria-live="polite">
+              <div class="storage-overview-heading">
+                <div>
+                  <strong>Диск машины</strong>
+                  <div id="server-storage-detail" class="server-meta">Данные загружаются...</div>
+                </div>
+                <strong id="server-storage-percent" class="storage-percent">—</strong>
+              </div>
+              <progress id="server-storage-progress" max="100" value="0" aria-label="Общая заполненность диска"></progress>
+              <div id="server-storage-servers-total" class="server-meta">Серверы Minecraft: —</div>
             </div>
             <div id="servers-list" class="servers-list"></div>
             <div class="add-server-box">
@@ -655,7 +666,7 @@
     </div>
 
     <div id="toast" class="toast" role="status"></div>
-    <script src="/assets/app.js?v=server-ui-map-1" type="module"></script>
+    <script src="/assets/app.js?v=server-storage-2" type="module"></script>
     <script src="/assets/updater.js?v=updater-1" type="module"></script>
   </body>
 </html>

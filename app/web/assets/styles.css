@@ -668,6 +668,86 @@ h2 {
   padding: 12px;
 }
 
+.storage-overview {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #171b22;
+  padding: 14px;
+}
+
+.storage-overview-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.storage-percent {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.storage-percent.storage-warning {
+  color: var(--warn);
+}
+
+.storage-percent.storage-critical {
+  color: var(--danger);
+}
+
+.storage-overview progress {
+  width: 100%;
+  height: 14px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #10141b;
+}
+
+.storage-overview progress::-webkit-progress-bar {
+  background: #10141b;
+}
+
+.storage-overview progress::-webkit-progress-value {
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.storage-overview progress.storage-warning::-webkit-progress-value {
+  background: var(--warn);
+}
+
+.storage-overview progress.storage-critical::-webkit-progress-value {
+  background: var(--danger);
+}
+
+.storage-overview progress::-moz-progress-bar {
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.storage-overview progress.storage-warning::-moz-progress-bar {
+  background: var(--warn);
+}
+
+.storage-overview progress.storage-critical::-moz-progress-bar {
+  background: var(--danger);
+}
+
+.server-size {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.server-size strong {
+  color: var(--text);
+  font-size: inherit;
+}
+
 .server-row > div {
   min-width: 0;
 }

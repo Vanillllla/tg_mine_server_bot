@@ -5,6 +5,7 @@ from zipfile import BadZipFile, ZipFile, ZipInfo
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from pydantic import ValidationError
+from starlette.concurrency import run_in_threadpool
 
 from app.api.deps import (
     get_instance_service,
@@ -21,6 +22,7 @@ from app.models.server import (
     LaunchMode,
     SelectActiveLaunchTargetRequest,
     SelectActiveServerJarRequest,
+    ServerStorageSummary,
     ServerInstance,
     UpdateServerInstanceRequest,
 )
@@ -188,6 +190,15 @@ async def list_servers(
     current_user: AuthUser = Depends(require_permission("servers.view")),
 ) -> list[ServerInstance]:
     return get_instance_service(request).list_servers()
+
+
+@router.get("/storage", response_model=ServerStorageSummary)
+async def get_servers_storage(
+    request: Request,
+    current_user: AuthUser = Depends(require_permission("servers.view")),
+) -> ServerStorageSummary:
+    service = get_instance_service(request)
+    return await run_in_threadpool(service.get_storage_summary)
 
 
 @router.post("", response_model=ServerInstance, status_code=status.HTTP_201_CREATED)
